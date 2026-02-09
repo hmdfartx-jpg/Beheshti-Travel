@@ -1,21 +1,140 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, MapPin, ArrowRightLeft, ChevronDown, User, Calendar, Plus, Minus, Check, Plane, ChevronLeft, ChevronRight, X, Phone, Loader2, Users } from 'lucide-react';
+import { Search, MapPin, ArrowRightLeft, ChevronDown, User, Calendar, Plus, Minus, Check, Plane, ChevronLeft, ChevronRight, X, Phone, Loader2, Users, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import PaymentModal from '../components/PaymentModal';
 
-// لیست فرودگاه‌ها (مشترک با صفحه اصلی)
+// لیست جامع فرودگاه‌ها (بیش از ۱۰۰ فرودگاه مرتبط)
 const AIRPORTS = [
+  // --- افغانستان (Afghanistan) ---
   { code: 'KBL', name: 'Kabul International', city: 'Kabul', fa: 'کابل', ps: 'کابل', country: 'Afghanistan' },
-  { code: 'DXB', name: 'Dubai International', city: 'Dubai', fa: 'دبی', ps: 'دوبی', country: 'UAE' },
-  { code: 'JED', name: 'King Abdulaziz', city: 'Jeddah', fa: 'جده', ps: 'جده', country: 'Saudi Arabia' },
-  { code: 'IST', name: 'Istanbul Airport', city: 'Istanbul', fa: 'استانبول', ps: 'استانبول', country: 'Turkey' },
-  { code: 'MZD', name: 'Mazar-i-Sharif', city: 'Mazar-i-Sharif', fa: 'مزارشریف', ps: 'مزارشریف', country: 'Afghanistan' },
   { code: 'HER', name: 'Herat International', city: 'Herat', fa: 'هرات', ps: 'هرات', country: 'Afghanistan' },
+  { code: 'MZD', name: 'Mazar-i-Sharif International', city: 'Mazar-i-Sharif', fa: 'مزارشریف', ps: 'مزارشریف', country: 'Afghanistan' },
   { code: 'KDH', name: 'Kandahar International', city: 'Kandahar', fa: 'قندهار', ps: 'کندهار', country: 'Afghanistan' },
-  { code: 'THR', name: 'Mehrabad/Imam Khomeini', city: 'Tehran', fa: 'تهران', ps: 'تهران', country: 'Iran' },
+  { code: 'KHT', name: 'Khost International', city: 'Khost', fa: 'خوست', ps: 'خوست', country: 'Afghanistan' },
+  { code: 'BST', name: 'Bost Airport', city: 'Lashkar Gah', fa: 'لشکرگاه', ps: 'لشکرګاه', country: 'Afghanistan' },
+  { code: 'BNA', name: 'Bamyan Airport', city: 'Bamyan', fa: 'بامیان', ps: 'بامیان', country: 'Afghanistan' },
+  { code: 'UND', name: 'Kunduz Airport', city: 'Kunduz', fa: 'قندوز', ps: 'کندز', country: 'Afghanistan' },
+  { code: 'FBD', name: 'Faizabad Airport', city: 'Faizabad', fa: 'فیض‌آباد', ps: 'فیض‌اباد', country: 'Afghanistan' },
+  { code: 'TII', name: 'Tarin Kowt Airport', city: 'Tarin Kowt', fa: 'ترین‌کوت', ps: 'ترینکوټ', country: 'Afghanistan' },
+  { code: 'ZAJ', name: 'Zaranj Airport', city: 'Zaranj', fa: 'زرنج', ps: 'زرنج', country: 'Afghanistan' },
+  { code: 'CCN', name: 'Chaghcharan Airport', city: 'Chaghcharan', fa: 'چغچران', ps: 'چغچران', country: 'Afghanistan' },
+
+  // --- ایران (Iran) ---
+  { code: 'IKA', name: 'Imam Khomeini International', city: 'Tehran', fa: 'تهران (امام خمینی)', ps: 'تهران (امام خمیني)', country: 'Iran' },
+  { code: 'THR', name: 'Mehrabad International', city: 'Tehran', fa: 'تهران (مهرآباد)', ps: 'تهران (مهرآباد)', country: 'Iran' },
   { code: 'MHD', name: 'Mashhad International', city: 'Mashhad', fa: 'مشهد', ps: 'مشهد', country: 'Iran' },
-  { code: 'ISB', name: 'Islamabad International', city: 'Islamabad', fa: 'اسلام‌آباد', ps: 'اسلام‌آباد', country: 'Pakistan' },
+  { code: 'SYZ', name: 'Shiraz International', city: 'Shiraz', fa: 'شیراز', ps: 'شیراز', country: 'Iran' },
+  { code: 'TBZ', name: 'Tabriz International', city: 'Tabriz', fa: 'تبریز', ps: 'تبریز', country: 'Iran' },
+  { code: 'IFN', name: 'Isfahan International', city: 'Isfahan', fa: 'اصفهان', ps: 'اصفهان', country: 'Iran' },
+  { code: 'AWZ', name: 'Ahvaz International', city: 'Ahvaz', fa: 'اهواز', ps: 'اهواز', country: 'Iran' },
+  { code: 'KIH', name: 'Kish International', city: 'Kish Island', fa: 'کیش', ps: 'کیش', country: 'Iran' },
+  { code: 'GSM', name: 'Qeshm International', city: 'Qeshm Island', fa: 'قشم', ps: 'قشم', country: 'Iran' },
+  { code: 'BND', name: 'Bandar Abbas International', city: 'Bandar Abbas', fa: 'بندرعباس', ps: 'بندرعباس', country: 'Iran' },
+  { code: 'ZAH', name: 'Zahedan International', city: 'Zahedan', fa: 'زاهدان', ps: 'زاهدان', country: 'Iran' },
+  { code: 'KER', name: 'Kerman Airport', city: 'Kerman', fa: 'کرمان', ps: 'کرمان', country: 'Iran' },
+  { code: 'RAS', name: 'Rasht Airport', city: 'Rasht', fa: 'رشت', ps: 'رشت', country: 'Iran' },
+  { code: 'OMH', name: 'Urmia Airport', city: 'Urmia', fa: 'ارومیه', ps: 'ارومیه', country: 'Iran' },
+  { code: 'AZD', name: 'Yazd Airport', city: 'Yazd', fa: 'یزد', ps: 'یزد', country: 'Iran' },
+
+  // --- پاکستان (Pakistan) ---
+  { code: 'ISB', name: 'Islamabad International', city: 'Islamabad', fa: 'اسلام‌آباد', ps: 'اسلام‌اباد', country: 'Pakistan' },
+  { code: 'LHE', name: 'Allama Iqbal International', city: 'Lahore', fa: 'لاهور', ps: 'لاهور', country: 'Pakistan' },
+  { code: 'KHI', name: 'Jinnah International', city: 'Karachi', fa: 'کراچی', ps: 'کراچۍ', country: 'Pakistan' },
+  { code: 'PEW', name: 'Bacha Khan International', city: 'Peshawar', fa: 'پیشاور', ps: 'پېښور', country: 'Pakistan' },
+  { code: 'UET', name: 'Quetta International', city: 'Quetta', fa: 'کویته', ps: 'کوټه', country: 'Pakistan' },
+  { code: 'MUX', name: 'Multan International', city: 'Multan', fa: 'مولتان', ps: 'ملتان', country: 'Pakistan' },
+  { code: 'SKT', name: 'Sialkot International', city: 'Sialkot', fa: 'سیالکوت', ps: 'سیالکوټ', country: 'Pakistan' },
+
+  // --- ترکیه (Turkey) ---
+  { code: 'IST', name: 'Istanbul Airport', city: 'Istanbul', fa: 'استانبول (اصلی)', ps: 'استانبول', country: 'Turkey' },
+  { code: 'SAW', name: 'Sabiha Gokcen', city: 'Istanbul', fa: 'استانبول (صبیحه)', ps: 'استانبول (صبیحه)', country: 'Turkey' },
+  { code: 'ESB', name: 'Ankara Esenboga', city: 'Ankara', fa: 'آنکارا', ps: 'انقره', country: 'Turkey' },
+  { code: 'AYT', name: 'Antalya Airport', city: 'Antalya', fa: 'آنتالیا', ps: 'انتالیا', country: 'Turkey' },
+  { code: 'ADB', name: 'Izmir Adnan Menderes', city: 'Izmir', fa: 'ازمیر', ps: 'ازمیر', country: 'Turkey' },
+  { code: 'TZX', name: 'Trabzon Airport', city: 'Trabzon', fa: 'ترابزون', ps: 'ترابزون', country: 'Turkey' },
+
+  // --- امارات متحده عربی (UAE) ---
+  { code: 'DXB', name: 'Dubai International', city: 'Dubai', fa: 'دبی', ps: 'دوبۍ', country: 'UAE' },
+  { code: 'SHJ', name: 'Sharjah International', city: 'Sharjah', fa: 'شارجه', ps: 'شارجه', country: 'UAE' },
+  { code: 'AUH', name: 'Abu Dhabi International', city: 'Abu Dhabi', fa: 'ابوظبی', ps: 'ابوظبۍ', country: 'UAE' },
+  { code: 'RKT', name: 'Ras Al Khaimah', city: 'Ras Al Khaimah', fa: 'راس‌الخیمه', ps: 'راس‌الخیمه', country: 'UAE' },
+  { code: 'AAN', name: 'Al Ain International', city: 'Al Ain', fa: 'العین', ps: 'العین', country: 'UAE' },
+
+  // --- عربستان سعودی (Saudi Arabia) ---
+  { code: 'JED', name: 'King Abdulaziz', city: 'Jeddah', fa: 'جده', ps: 'جده', country: 'Saudi Arabia' },
+  { code: 'RUH', name: 'King Khalid', city: 'Riyadh', fa: 'ریاض', ps: 'ریاض', country: 'Saudi Arabia' },
+  { code: 'DMM', name: 'King Fahd', city: 'Dammam', fa: 'دمام', ps: 'دمام', country: 'Saudi Arabia' },
+  { code: 'MED', name: 'Prince Mohammad', city: 'Medina', fa: 'مدینه', ps: 'مدینه', country: 'Saudi Arabia' },
+
+  // --- هند (India) ---
   { code: 'DEL', name: 'Indira Gandhi', city: 'New Delhi', fa: 'دهلی نو', ps: 'نوی ډیلي', country: 'India' },
+  { code: 'BOM', name: 'Chhatrapati Shivaji', city: 'Mumbai', fa: 'مبئی', ps: 'ممبۍ', country: 'India' },
+  { code: 'ATQ', name: 'Sri Guru Ram Dass Jee', city: 'Amritsar', fa: 'آمریتسار', ps: 'امریتسار', country: 'India' },
+  { code: 'MAA', name: 'Chennai International', city: 'Chennai', fa: 'چنای', ps: 'چنای', country: 'India' },
+  { code: 'BLR', name: 'Kempegowda', city: 'Bangalore', fa: 'بنگلور', ps: 'بنګلور', country: 'India' },
+  { code: 'HYD', name: 'Rajiv Gandhi', city: 'Hyderabad', fa: 'حیدرآباد', ps: 'حیدرآباد', country: 'India' },
+
+  // --- آسیای میانه (Central Asia) ---
+  { code: 'DYU', name: 'Dushanbe International', city: 'Dushanbe', fa: 'دوشنبه', ps: 'دوشنبه', country: 'Tajikistan' },
+  { code: 'TAS', name: 'Islam Karimov', city: 'Tashkent', fa: 'تاشکند', ps: 'تاشکند', country: 'Uzbekistan' },
+  { code: 'ASB', name: 'Ashgabat International', city: 'Ashgabat', fa: 'عشق‌آباد', ps: 'عشق اباد', country: 'Turkmenistan' },
+  { code: 'ALA', name: 'Almaty International', city: 'Almaty', fa: 'آلماتی', ps: 'الماتی', country: 'Kazakhstan' },
+  { code: 'FRU', name: 'Manas International', city: 'Bishkek', fa: 'بیشکک', ps: 'بیشکک', country: 'Kyrgyzstan' },
+  { code: 'LBD', name: 'Khujand Airport', city: 'Khujand', fa: 'خجند', ps: 'خجند', country: 'Tajikistan' },
+
+  // --- خاورمیانه و خلیج فارس (Middle East) ---
+  { code: 'DOH', name: 'Hamad International', city: 'Doha', fa: 'دوحه', ps: 'دوحه', country: 'Qatar' },
+  { code: 'KWI', name: 'Kuwait International', city: 'Kuwait', fa: 'کویت', ps: 'کویت', country: 'Kuwait' },
+  { code: 'MCT', name: 'Muscat International', city: 'Muscat', fa: 'مسقط', ps: 'مسقط', country: 'Oman' },
+  { code: 'BAH', name: 'Bahrain International', city: 'Manama', fa: 'منامه', ps: 'منامه', country: 'Bahrain' },
+  { code: 'BGW', name: 'Baghdad International', city: 'Baghdad', fa: 'بغداد', ps: 'بغداد', country: 'Iraq' },
+  { code: 'NJF', name: 'Al Najaf International', city: 'Najaf', fa: 'نجف', ps: 'نجف', country: 'Iraq' },
+  { code: 'AMM', name: 'Queen Alia', city: 'Amman', fa: 'امان', ps: 'امان', country: 'Jordan' },
+
+  // --- اروپا (Europe) ---
+  { code: 'FRA', name: 'Frankfurt Airport', city: 'Frankfurt', fa: 'فرانکفورت', ps: 'فرانکفورت', country: 'Germany' },
+  { code: 'MUC', name: 'Munich Airport', city: 'Munich', fa: 'مونیخ', ps: 'مونیخ', country: 'Germany' },
+  { code: 'BER', name: 'Berlin Brandenburg', city: 'Berlin', fa: 'برلین', ps: 'برلین', country: 'Germany' },
+  { code: 'HAM', name: 'Hamburg Airport', city: 'Hamburg', fa: 'هامبورگ', ps: 'هامبورګ', country: 'Germany' },
+  { code: 'LHR', name: 'Heathrow Airport', city: 'London', fa: 'لندن (هیترو)', ps: 'لندن (هیترو)', country: 'UK' },
+  { code: 'LGW', name: 'Gatwick Airport', city: 'London', fa: 'لندن (گت‌ویک)', ps: 'لندن (ګت‌ویک)', country: 'UK' },
+  { code: 'MAN', name: 'Manchester Airport', city: 'Manchester', fa: 'منچستر', ps: 'منچستر', country: 'UK' },
+  { code: 'CDG', name: 'Charles de Gaulle', city: 'Paris', fa: 'پاریس', ps: 'پاریس', country: 'France' },
+  { code: 'AMS', name: 'Schiphol', city: 'Amsterdam', fa: 'آمستردام', ps: 'امستردام', country: 'Netherlands' },
+  { code: 'FCO', name: 'Leonardo da Vinci', city: 'Rome', fa: 'رم', ps: 'روم', country: 'Italy' },
+  { code: 'MXP', name: 'Malpensa Airport', city: 'Milan', fa: 'میلان', ps: 'میلان', country: 'Italy' },
+  { code: 'MAD', name: 'Adolfo Suarez', city: 'Madrid', fa: 'مادرید', ps: 'مادرید', country: 'Spain' },
+  { code: 'BCN', name: 'El Prat', city: 'Barcelona', fa: 'بارسلونا', ps: 'بارسلونا', country: 'Spain' },
+  { code: 'VIE', name: 'Vienna International', city: 'Vienna', fa: 'وین', ps: 'وین', country: 'Austria' },
+  { code: 'ZRH', name: 'Zurich Airport', city: 'Zurich', fa: 'زوریخ', ps: 'زوریخ', country: 'Switzerland' },
+  { code: 'BRU', name: 'Brussels Airport', city: 'Brussels', fa: 'بروکسل', ps: 'بروکسل', country: 'Belgium' },
+  { code: 'CPH', name: 'Copenhagen Airport', city: 'Copenhagen', fa: 'کپنهاگ', ps: 'کوپنهاګ', country: 'Denmark' },
+  { code: 'ARN', name: 'Arlanda Airport', city: 'Stockholm', fa: 'استکهلم', ps: 'ستوکهولم', country: 'Sweden' },
+  { code: 'OSL', name: 'Gardermoen', city: 'Oslo', fa: 'اسلو', ps: 'اسلو', country: 'Norway' },
+  { code: 'SVO', name: 'Sheremetyevo', city: 'Moscow', fa: 'مسکو (شرمتیوو)', ps: 'مسکو', country: 'Russia' },
+  { code: 'VKO', name: 'Vnukovo', city: 'Moscow', fa: 'مسکو (ونوکوو)', ps: 'مسکو', country: 'Russia' },
+
+  // --- آمریکای شمالی (North America) ---
+  { code: 'JFK', name: 'John F. Kennedy', city: 'New York', fa: 'نیویورک', ps: 'نیویارک', country: 'USA' },
+  { code: 'IAD', name: 'Dulles International', city: 'Washington DC', fa: 'واشنگتن', ps: 'واشنګټن', country: 'USA' },
+  { code: 'LAX', name: 'Los Angeles Intl', city: 'Los Angeles', fa: 'لس‌آنجلس', ps: 'لاس انجلس', country: 'USA' },
+  { code: 'ORD', name: 'O\'Hare International', city: 'Chicago', fa: 'شیکاگو', ps: 'شیکاګو', country: 'USA' },
+  { code: 'SFO', name: 'San Francisco Intl', city: 'San Francisco', fa: 'سان‌فرانسیسکو', ps: 'سان فرانسیسکو', country: 'USA' },
+  { code: 'YYZ', name: 'Pearson International', city: 'Toronto', fa: 'تورنتو', ps: 'تورنتو', country: 'Canada' },
+  { code: 'YVR', name: 'Vancouver International', city: 'Vancouver', fa: 'ونکوور', ps: 'ونکوور', country: 'Canada' },
+  { code: 'YUL', name: 'Trudeau International', city: 'Montreal', fa: 'مونترال', ps: 'مونتریال', country: 'Canada' },
+
+  // --- شرق آسیا و اقیانوسیه (Asia Pacific) ---
+  { code: 'BKK', name: 'Suvarnabhumi', city: 'Bangkok', fa: 'بانکوک', ps: 'بانکوک', country: 'Thailand' },
+  { code: 'KUL', name: 'Kuala Lumpur Intl', city: 'Kuala Lumpur', fa: 'کوالالامپور', ps: 'کوالالمپور', country: 'Malaysia' },
+  { code: 'SIN', name: 'Changi Airport', city: 'Singapore', fa: 'سنگاپور', ps: 'سنګاپور', country: 'Singapore' },
+  { code: 'CAN', name: 'Baiyun International', city: 'Guangzhou', fa: 'گوانگجو', ps: 'ګوانګجو', country: 'China' },
+  { code: 'PEK', name: 'Capital International', city: 'Beijing', fa: 'پکن', ps: 'بیجینګ', country: 'China' },
+  { code: 'URC', name: 'Diwopu International', city: 'Urumqi', fa: 'ارومچی', ps: 'ارومچی', country: 'China' },
+  { code: 'ICN', name: 'Incheon International', city: 'Seoul', fa: 'سئول', ps: 'سیول', country: 'South Korea' },
+  { code: 'NRT', name: 'Narita International', city: 'Tokyo', fa: 'توکیو', ps: 'توکیو', country: 'Japan' },
+  { code: 'SYD', name: 'Kingsford Smith', city: 'Sydney', fa: 'سیدنی', ps: 'سیډني', country: 'Australia' },
+  { code: 'MEL', name: 'Tullamarine', city: 'Melbourne', fa: 'ملبورن', ps: 'ملبورن', country: 'Australia' }
 ];
 
 const translations = {
@@ -67,11 +186,13 @@ const translations = {
   }
 };
 
-// --- کامپوننت جستجوی فرودگاه ---
+// --- کامپوننت جستجوی فرودگاه (نسخه نهایی: انیمیشن نرم، بدون پرش، وسط‌چین) ---
 const AirportSearch = ({ value, onChange, placeholder, icon: Icon }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
   const wrapperRef = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     const found = AIRPORTS.find(a => a.code === value);
@@ -83,6 +204,7 @@ const AirportSearch = ({ value, onChange, placeholder, icon: Icon }) => {
     function handleClickOutside(event) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
         setIsOpen(false);
+        setIsFocused(false);
         const found = AIRPORTS.find(a => a.code === value);
         setSearch(found ? `${found.fa} (${found.code})` : '');
       }
@@ -98,23 +220,71 @@ const AirportSearch = ({ value, onChange, placeholder, icon: Icon }) => {
     a.ps.includes(search)
   );
 
+  // وضعیت وسط‌چین (غیرفعال)
+  const isCentered = !search && !isFocused;
+
   return (
-    <div className="relative w-full" ref={wrapperRef}>
-      <div className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 rounded-xl transition cursor-text group" onClick={() => setIsOpen(true)}>
-        <div className="text-gray-400 group-hover:text-[#058B8C] transition"><Icon size={20}/></div>
+    <div className="relative w-full h-full" ref={wrapperRef}>
+      <div 
+        className="relative w-full h-full hover:bg-gray-50 rounded-xl transition-colors duration-300 cursor-text group"
+        onClick={() => {
+            setIsOpen(true);
+            setIsFocused(true);
+            inputRef.current?.focus();
+        }}
+      >
+        {/* متن راهنما (Label) */}
+        <div className={`absolute left-1/2 -translate-x-1/2 transition-all duration-300 pointer-events-none whitespace-nowrap z-10 px-2 rounded-full
+            ${isCentered 
+               ? 'top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold bg-transparent' // حالت وسط
+               : 'top-0 -translate-y-1/2 text-[11px] text-[#058B8C] font-black bg-white shadow-sm' // حالت روی لبه
+            }`}
+        >
+             {placeholder}
+        </div>
+
+        {/* آیکون */}
+        <div className={`absolute top-1/2 -translate-y-1/2 transition-all duration-300 pointer-events-none z-10
+            ${isCentered 
+               ? 'left-1/2 translate-x-[85px] text-gray-400' // کنار متن (وسط)
+               : 'left-[calc(100%-25px)] -translate-x-1/2 text-[#058B8C]' // گوشه راست (فعال)
+            }`}
+        >
+            <Icon size={20}/>
+        </div>
+
+        {/* اینپوت */}
         <input 
+          ref={inputRef}
           value={search}
+          onFocus={() => setIsFocused(true)}
           onChange={(e) => { setSearch(e.target.value); setIsOpen(true); }}
-          placeholder={placeholder}
-          className="w-full text-sm font-black text-gray-800 bg-transparent outline-none placeholder:font-normal placeholder:text-gray-400"
+          className={`w-full h-full bg-transparent outline-none font-black text-gray-800 text-sm transition-all duration-300 px-10
+            ${isCentered ? 'opacity-0' : 'opacity-100 text-right'}`}
           autoComplete="off"
         />
-        {value && <button onClick={(e) => { e.stopPropagation(); onChange(''); setSearch(''); }} className="p-1 hover:bg-gray-200 rounded-full"><X size={14} className="text-gray-400"/></button>}
+
+        {/* دکمه حذف */}
+        {value && (
+            <button 
+                onClick={(e) => { 
+                    e.stopPropagation(); 
+                    onChange(''); 
+                    setSearch(''); 
+                    inputRef.current?.focus(); 
+                }} 
+                className="absolute left-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 rounded-full animate-in fade-in z-20"
+            >
+                <X size={14} className="text-gray-400"/>
+            </button>
+        )}
       </div>
       
+      {/* لیست نتایج */}
       {isOpen && (
         <div className="absolute top-full right-0 left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 max-h-60 overflow-y-auto z-50 animate-in fade-in zoom-in-95">
-          {filteredAirports.length > 0 ? filteredAirports.map(item => (
+          {filteredAirports.length > 0 ?
+          filteredAirports.map(item => (
             <div 
               key={item.code} 
               className="px-4 py-3 hover:bg-blue-50 cursor-pointer flex justify-between items-center border-b border-gray-50 last:border-0"
@@ -122,6 +292,7 @@ const AirportSearch = ({ value, onChange, placeholder, icon: Icon }) => {
                 onChange(item.code);
                 setSearch(`${item.fa} (${item.code})`);
                 setIsOpen(false);
+                setIsFocused(false);
               }}
             >
               <div>
@@ -139,7 +310,7 @@ const AirportSearch = ({ value, onChange, placeholder, icon: Icon }) => {
   );
 };
 
-// --- کامپوننت تقویم اصلاح شده ---
+// --- کامپوننت تقویم ---
 const GoogleCalendar = ({ onSelect, onClose, selectedDate, lang }) => {
   const [viewDate, setViewDate] = useState(new Date());
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -148,21 +319,17 @@ const GoogleCalendar = ({ onSelect, onClose, selectedDate, lang }) => {
     ? ["جنوری", "فبروری", "مارچ", "اپریل", "می", "جون", "جولای", "آگوست", "سپتامبر", "اکتوبر", "نوامبر", "دسامبر"] 
     : ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const weekDays = lang === 'dr' ? ["ش", "ی", "د", "س", "چ", "پ", "ج"] : ["S", "M", "T", "W", "T", "F", "S"];
-  
   const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
   const getFirstDay = (year, month) => new Date(year, month, 1).getDay();
   const changeMonth = (offset) => { const newDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + offset, 1); setViewDate(newDate); };
-  
   const renderMonth = (offset) => {
     const currentView = new Date(viewDate.getFullYear(), viewDate.getMonth() + offset, 1);
     const year = currentView.getFullYear();
     const month = currentView.getMonth();
     const daysInMonth = getDaysInMonth(year, month);
     const firstDay = getFirstDay(year, month);
-    
     const blanks = Array(firstDay).fill(null);
     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-
     return (
       <div className="flex-1 px-4">
         <div className="font-bold text-center mb-4 text-gray-700">{months[month]} {year}</div>
@@ -190,7 +357,6 @@ const GoogleCalendar = ({ onSelect, onClose, selectedDate, lang }) => {
       </div>
     );
   };
-
   return (
     <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-6 z-50 w-[650px] animate-in fade-in zoom-in-95 hidden md:block cursor-default" onClick={(e) => e.stopPropagation()}>
        <div className="flex justify-between items-center mb-4">
@@ -214,21 +380,19 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
   const [bookingLoading, setBookingLoading] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const dropdownRef = useRef(null);
-  
   // استیت‌های مودال
   const [selectedFlight, setSelectedFlight] = useState(null);
   const [customerInfo, setCustomerInfo] = useState({ name: '', phone: '' });
   const [bookedOrder, setBookedOrder] = useState(null);
 
-  const txt = translations[lang] || translations.dr; 
+  const txt = translations[lang] || translations.dr;
   const lt = { search: lang==='dr'?'جستجوی پرواز':'لټون', select_date: lang==='dr'?'تاریخ رفت':'نیټه', return_date: lang==='dr'?'تاریخ برگشت':'راستنیدو نیټه' };
   
-  // تغییر: مقادیر پیش‌فرض خالی شد و tripType شد one_way
   const [formData, setFormData] = useState({ origin: '', destination: '', date: '', returnDate: '', tripType: 'one_way', flightClass: 'economy', adults: 1, children: 0 });
   const [results, setResults] = useState([]);
 
   useEffect(() => {
-    // تغییر: فقط اگر initialData وجود داشت جستجو کن، در غیر این صورت هیچ کاری نکن
+    // اگر initialData وجود داشت جستجو کن
     if (initialData) {
       setFormData(initialData);
       performSearch(initialData);
@@ -248,7 +412,6 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
   const performSearch = async (data) => {
     setSearchState('loading');
     setResults([]);
-
     try {
         const { data: resData, error } = await supabase.functions.invoke('search-flights', {
             body: { 
@@ -256,7 +419,6 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
                 destination: data.destination.toUpperCase() 
             }
         });
-
         if (error) throw error;
         
         if (resData.flights && resData.flights.length > 0) {
@@ -294,7 +456,6 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
      }
      
      setBookingLoading(true);
-     
      const { data, error } = await supabase.from('bookings').insert([{ 
         customer_name: customerInfo.name,
         customer_phone: customerInfo.phone,
@@ -302,7 +463,6 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
         status: 'pending_payment',
         amount: selectedFlight.price * 70 
      }]).select();
-
      setBookingLoading(false);
 
      if (error) {
@@ -355,7 +515,7 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
 
        {bookedOrder && (
          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in zoom-in-95">
-            <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl relative">
+             <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl relative">
                 <button onClick={() => setBookedOrder(null)} className="absolute top-4 left-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200"><X size={20}/></button>
                 <div className="text-center mb-6">
                     <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce"><Check size={40}/></div>
@@ -368,11 +528,11 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
          </div>
        )}
 
-       {/* --- نوار جستجوی پیشرفته (اصلاح شده) --- */}
+       {/* --- نوار جستجوی پیشرفته (اصلاح شده: منطبق بر صفحه اصلی) --- */}
        <div className="bg-white p-6 rounded-[2rem] shadow-xl border border-gray-100 space-y-6 relative z-30" ref={dropdownRef}>
           <div className="flex flex-wrap items-center gap-3 relative z-50">
              
-             {/* 1. نوع سفر */}
+              {/* 1. نوع سفر */}
              <div className="relative">
                 <TopFilterBtn label={txt[formData.tripType]} icon={ArrowRightLeft} active={activeDropdown === 'type'} onClick={() => setActiveDropdown(activeDropdown === 'type' ? null : 'type')} />
                 {activeDropdown === 'type' && (
@@ -386,7 +546,7 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
                 )}
              </div>
 
-             {/* 2. تعداد مسافر (اضافه شده) */}
+             {/* 2. تعداد مسافر */}
              <div className="relative">
                   <TopFilterBtn label={`${formData.adults + formData.children} ${txt.passenger}`} icon={Users} active={activeDropdown === 'pax'} onClick={() => setActiveDropdown(activeDropdown === 'pax' ? null : 'pax')} />
                   {activeDropdown === 'pax' && (
@@ -395,7 +555,7 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
                          <div key={k} className="flex justify-between items-center mb-4 last:mb-0">
                            <span className="font-bold text-gray-700">{txt[k]}</span>
                            <div className="flex items-center gap-3 bg-gray-100 rounded-lg p-1">
-                             <button onClick={() => setFormData(p => ({...p, [k]: Math.max(0, p[k]-1)}))} className="w-8 h-8 flex items-center justify-center bg-white rounded shadow text-gray-600 hover:text-red-500"><Minus size={14}/></button>
+                               <button onClick={() => setFormData(p => ({...p, [k]: Math.max(0, p[k]-1)}))} className="w-8 h-8 flex items-center justify-center bg-white rounded shadow text-gray-600 hover:text-red-500"><Minus size={14}/></button>
                              <span className="w-4 text-center font-bold text-sm">{formData[k]}</span>
                              <button onClick={() => setFormData(p => ({...p, [k]: p[k]+1}))} className="w-8 h-8 flex items-center justify-center bg-[#058B8C] text-white rounded shadow"><Plus size={14}/></button>
                            </div>
@@ -406,9 +566,9 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
                   )}
              </div>
 
-             {/* 3. کلاس پرواز (اضافه شده) */}
+             {/* 3. کلاس پرواز */}
              <div className="relative">
-                  <TopFilterBtn label={txt[formData.flightClass]} icon={Plane} active={activeDropdown === 'class'} onClick={() => setActiveDropdown(activeDropdown === 'class' ? null : 'class')} />
+                 <TopFilterBtn label={txt[formData.flightClass]} icon={Plane} active={activeDropdown === 'class'} onClick={() => setActiveDropdown(activeDropdown === 'class' ? null : 'class')} />
                   {activeDropdown === 'class' && (
                     <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-xl py-2 overflow-hidden animate-in zoom-in-95 z-50">
                       {['economy', 'business', 'first'].map(k => (
@@ -419,38 +579,54 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
              </div>
           </div>
 
-          <div className="bg-white border border-gray-300 rounded-[1.5rem] p-2 flex flex-col lg:flex-row shadow-sm divide-y lg:divide-y-0 lg:divide-x lg:divide-x-reverse divide-gray-100 relative z-30">
+          <div className="bg-white rounded-[1.5rem] p-2 flex flex-col lg:flex-row items-stretch shadow-lg divide-y lg:divide-y-0 lg:divide-x lg:divide-x-reverse divide-gray-100 relative z-30 min-h-[80px]">
+             
              {/* مبدا (هوشمند) */}
-             <div className="flex-1">
+             <div className="flex-1 h-20 lg:h-auto">
                 <AirportSearch icon={Plane} value={formData.origin} onChange={(val)=>setFormData({...formData, origin: val})} placeholder={txt.originLabel} />
              </div>
              
-             {/* مقصد (هوشمند) */}
-             <div className="flex-1">
+             {/* مقصد (همراه با دکمه شناور) */}
+             <div className="flex-1 h-20 lg:h-auto relative">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 lg:top-1/2 lg:right-0 lg:left-auto lg:translate-x-1/2 lg:-translate-y-1/2 z-20">
+                      <button 
+                        type="button" 
+                        onClick={() => setFormData(p => ({...p, origin: p.destination, destination: p.origin}))} 
+                        className="bg-white p-2 rounded-full text-gray-500 hover:bg-[#058B8C] hover:text-white transition shadow-md border border-gray-100"
+                      >
+                        <ArrowRightLeft size={16} />
+                      </button>
+                   </div>
                 <AirportSearch icon={MapPin} value={formData.destination} onChange={(val)=>setFormData({...formData, destination: val})} placeholder={txt.destLabel} />
              </div>
 
              {/* تاریخ رفت */}
-             <div className="flex-1 relative border-r border-gray-100">
-                <div onClick={()=>setActiveDropdown(activeDropdown==='date'?null:'date')} className="flex items-center gap-3 px-4 py-3 cursor-pointer">
+             <div className="flex-1 relative border-r border-gray-100 h-20 lg:h-auto">
+                <div onClick={()=>setActiveDropdown(activeDropdown==='date'?null:'date')} className="flex items-center gap-3 px-4 py-3 cursor-pointer h-full hover:bg-gray-50 rounded-xl transition">
                    <Calendar size={20} className="text-gray-400"/>
-                   <span className={`text-sm font-black ${formData.date?'text-gray-800':'text-gray-300'}`}>{formData.date || lt.select_date}</span>
+                   <div className="flex flex-col">
+                        <span className="text-[10px] text-gray-400 font-bold">{lt.select_date}</span>
+                        <span className={`text-sm font-black ${formData.date?'text-gray-800':'text-gray-300'}`}>{formData.date || '---'}</span>
+                   </div>
                 </div>
                 {activeDropdown==='date' && <GoogleCalendar lang={lang} selectedDate={formData.date} onSelect={(d)=>{setFormData({...formData, date:d});setActiveDropdown(null)}} onClose={()=>setActiveDropdown(null)} />}
              </div>
 
              {/* تاریخ برگشت */}
-             <div className="flex-1 relative border-r border-gray-100">
-                <div onClick={()=>formData.tripType==='round_trip' && setActiveDropdown(activeDropdown==='date_ret'?null:'date_ret')} className={`flex items-center gap-3 px-4 py-3 cursor-pointer h-full ${formData.tripType==='round_trip'?'hover:bg-gray-50':'opacity-50 cursor-not-allowed bg-gray-50'}`}>
+             <div className="flex-1 relative border-r border-gray-100 h-20 lg:h-auto">
+                <div onClick={()=>formData.tripType==='round_trip' && setActiveDropdown(activeDropdown==='date_ret'?null:'date_ret')} className={`flex items-center gap-3 px-4 py-3 cursor-pointer h-full ${formData.tripType==='round_trip'?'hover:bg-gray-50 rounded-xl transition':'opacity-50 cursor-not-allowed bg-gray-50 rounded-xl'}`}>
                    <Calendar size={20} className="text-gray-400"/>
-                   <span className={`text-sm font-black ${formData.returnDate?'text-gray-800':'text-gray-300'}`}>{formData.returnDate || lt.return_date}</span>
+                   <div className="flex flex-col">
+                        <span className="text-[10px] text-gray-400 font-bold">{lt.return_date}</span>
+                        <span className={`text-sm font-black ${formData.returnDate?'text-gray-800':'text-gray-300'}`}>{formData.returnDate || (formData.tripType === 'round_trip' ? '---' : txt.one_way)}</span>
+                   </div>
                 </div>
                 {activeDropdown==='date_ret' && <GoogleCalendar lang={lang} selectedDate={formData.returnDate} onSelect={(d)=>{setFormData({...formData, returnDate:d});setActiveDropdown(null)}} onClose={()=>setActiveDropdown(null)} />}
              </div>
 
              {/* دکمه جستجو */}
-             <div className="p-2">
-                <button onClick={handleSearch} disabled={searchState==='loading'} className="w-full h-full bg-[#f97316] text-white rounded-xl font-bold px-8 py-3 flex items-center justify-center gap-2 transition disabled:opacity-70">
+             <div className="p-2 lg:w-auto w-full h-20 lg:h-auto">
+                <button onClick={handleSearch} disabled={searchState==='loading'} className="w-full lg:w-auto h-full min-w-[140px] bg-[#f97316] text-white rounded-xl font-bold px-8 py-3 flex items-center justify-center gap-2 transition disabled:opacity-70 shadow-lg shadow-orange-200 active:scale-95 transform">
                    {searchState==='loading' ? <Loader2 className="animate-spin"/> : <><Search size={20}/> {lt.search}</>}
                 </button>
              </div>
@@ -482,6 +658,79 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
        )}
        {searchState === 'empty' && <div className="text-center text-gray-400 py-10">{txt.noResult}</div>}
        {searchState === 'loading' && <div className="text-center text-gray-500 py-20 flex flex-col items-center gap-4"><Loader2 size={40} className="animate-spin text-[#058B8C]"/><span>{txt.searching}</span></div>}
+
+       {/* --- بخش تذکرات مهم قبل از پرواز --- */}
+       <div className="bg-orange-50 border border-orange-100 rounded-3xl p-6 md:p-8 relative overflow-hidden">
+          {/* آیکون پس‌زمینه تزئینی */}
+          <div className="absolute -top-6 -left-6 opacity-5 rotate-12">
+             <AlertTriangle size={150} className="text-[#f97316]"/>
+          </div>
+
+          <div className="relative z-10">
+             <h3 className="text-xl font-black text-gray-800 mb-6 flex items-center gap-3 border-b border-orange-200 pb-4">
+                <div className="bg-orange-100 p-2 rounded-lg text-[#f97316]">
+                   <AlertTriangle size={24}/>
+                </div>
+                <div>
+                   <div className="text-base">تذکرات مهم قبل از پرواز</div>
+                   <div className="text-xs text-gray-500 font-normal mt-1">د الوتنې دمخه مهم یادداشتونه</div>
+                </div>
+             </h3>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* ستون دری */}
+                <div className="space-y-4">
+                   <div className="flex gap-3 items-start">
+                      <div className="w-2 h-2 mt-2 rounded-full bg-[#058B8C] shrink-0"></div>
+                      <p className="text-sm text-gray-600 leading-relaxed">
+                         <span className="font-bold text-gray-800 block mb-1">اعتبار پاسپورت:</span>
+                         اطمینان حاصل کنید که پاسپورت شما حداقل <span className="text-red-500 font-bold">۶ ماه</span> اعتبار دارد.
+                      </p>
+                   </div>
+                   <div className="flex gap-3 items-start">
+                      <div className="w-2 h-2 mt-2 rounded-full bg-[#058B8C] shrink-0"></div>
+                      <p className="text-sm text-gray-600 leading-relaxed">
+                         <span className="font-bold text-gray-800 block mb-1">ویزا و مدارک:</span>
+                         مسئولیت کنترل ویزا و صحت مدارک به عهده مسافر می‌باشد.
+                      </p>
+                   </div>
+                   <div className="flex gap-3 items-start">
+                      <div className="w-2 h-2 mt-2 rounded-full bg-[#058B8C] shrink-0"></div>
+                      <p className="text-sm text-gray-600 leading-relaxed">
+                         <span className="font-bold text-gray-800 block mb-1">زمان حضور:</span>
+                         برای پروازهای خارجی ۳ ساعت و داخلی ۲ ساعت قبل از پرواز در فرودگاه حاضر باشید.
+                      </p>
+                   </div>
+                </div>
+
+                {/* ستون پشتو */}
+                <div className="space-y-4 text-right" dir="rtl">
+                   <div className="flex gap-3 items-start">
+                      <div className="w-2 h-2 mt-2 rounded-full bg-[#f97316] shrink-0"></div>
+                      <p className="text-sm text-gray-600 leading-relaxed">
+                         <span className="font-bold text-gray-800 block mb-1">د پاسپورټ اعتبار:</span>
+                         ډاډ ترلاسه کړئ چې ستاسو پاسپورټ لږترلږه <span className="text-red-500 font-bold">۶ میاشتې</span> اعتبار لري.
+                      </p>
+                   </div>
+                   <div className="flex gap-3 items-start">
+                      <div className="w-2 h-2 mt-2 rounded-full bg-[#f97316] shrink-0"></div>
+                      <p className="text-sm text-gray-600 leading-relaxed">
+                         <span className="font-bold text-gray-800 block mb-1">ویزه او اسناد:</span>
+                         د ویزې او اسنادو د سموالي مسؤلیت د مسافر په غاړه دی.
+                      </p>
+                   </div>
+                   <div className="flex gap-3 items-start">
+                      <div className="w-2 h-2 mt-2 rounded-full bg-[#f97316] shrink-0"></div>
+                      <p className="text-sm text-gray-600 leading-relaxed">
+                         <span className="font-bold text-gray-800 block mb-1">د شتون وخت:</span>
+                         د بهرنیو الوتنو لپاره ۳ ساعته او د کورنیو لپاره ۲ ساعته مخکې په هوایی ډګر کې حاضر اوسئ.
+                      </p>
+                   </div>
+                </div>
+             </div>
+          </div>
+       </div>
+
     </div>
   );
 }

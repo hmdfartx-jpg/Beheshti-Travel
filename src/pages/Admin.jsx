@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Plus, Trash, Megaphone, Ticket, User, Phone, CheckCircle, XCircle, Edit, Copy, X, Save, Settings, GripVertical, Check, CreditCard, Clock, Calendar, Lock, ArrowRight, RefreshCw, Eye, EyeOff, Image, LogOut } from 'lucide-react';
+import { Plus, Trash, Megaphone, Ticket, User, Phone, CheckCircle, XCircle, Edit, Copy, X, Save, Settings, GripVertical, Check, CreditCard, Clock, Calendar, Lock, ArrowRight, RefreshCw, Eye, EyeOff, Image, LogOut, Layout } from 'lucide-react';
 
 // لیست تایم‌زون‌ها
 const VALID_TIMEZONES = [
@@ -29,6 +29,9 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage }) {
   const [editingId, setEditingId] = useState(null);
   const [editingCityId, setEditingCityId] = useState(null);
   
+  // استیت موقت برای افزودن عکس به اسلایدر
+  const [tempSliderImage, setTempSliderImage] = useState('');
+
   const dragItem = useRef();
   const dragOverItem = useRef();
 
@@ -168,7 +171,8 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage }) {
         const { error } = await supabase.from('site_settings').update({ config: localSettings }).eq('id', data.id);
         if (!error) { alert('تنظیمات با موفقیت ذخیره شد!'); onUpdate(); } else { alert('خطا در ذخیره تنظیمات'); }
       } else {
-        await supabase.from('site_settings').insert([{ config: localSettings }]); onUpdate();
+        await supabase.from('site_settings').insert([{ config: localSettings }]);
+        onUpdate();
       }
     } catch (err) { console.error(err); }
   };
@@ -178,6 +182,20 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage }) {
       if (key === null) return { ...prev, [section]: value };
       return { ...prev, [section]: { ...prev[section], [key]: value } };
     });
+  };
+
+  // توابع مدیریت اسلایدر هیرو
+  const handleAddSliderImage = () => {
+      if (!tempSliderImage) return;
+      const currentImages = localSettings.hero?.images || [];
+      handleSettingChange('hero', 'images', [...currentImages, tempSliderImage]);
+      setTempSliderImage('');
+  };
+
+  const handleRemoveSliderImage = (index) => {
+      const currentImages = localSettings.hero?.images || [];
+      const updated = currentImages.filter((_, i) => i !== index);
+      handleSettingChange('hero', 'images', updated);
   };
 
   const handleServiceChange = (index, key, value) => {
@@ -225,12 +243,13 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage }) {
   const handleDeleteNews = async (id) => { if(window.confirm('حذف؟')) { await supabase.from('news').delete().eq('id', id); onUpdate(); }};
   const handleTogglePin = async (id, status) => { await supabase.from('news').update({ pinned: !status }).eq('id', id); onUpdate(); };
   const handleDuplicateNews = async (item) => { await supabase.from('news').insert([{ title: `${item.title} (کپی)`, description: item.description, image_url: item.image_url, pinned: false }]); onUpdate(); };
-  const handleEditNews = (item) => { setNewNews({ title: item.title, desc: item.description, img: item.image_url }); setEditingId(item.id); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const handleEditNews = (item) => { setNewNews({ title: item.title, desc: item.description, img: item.image_url }); setEditingId(item.id);
+  window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
   // توابع رزرو
-  const handleChangeStatus = async (id, s) => { if(window.confirm('تغییر وضعیت؟')) { await supabase.from('bookings').update({ status: s }).eq('id', id); onUpdate(); }};
+  const handleChangeStatus = async (id, s) => { if(window.confirm('تغییر وضعیت؟')) { await supabase.from('bookings').update({ status: s }).eq('id', id);
+  onUpdate(); }};
   const handleDeleteBooking = async (id) => { if(window.confirm('حذف؟')) { await supabase.from('bookings').delete().eq('id', id); onUpdate(); }};
-
   const getStatusBadge = (status) => {
     switch (status) {
       case 'confirmed': return <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold border border-green-200">تایید شده</span>;
@@ -264,10 +283,10 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage }) {
           {/* بخش تنظیمات */}
           {activeTab === 'settings' && (
             <div className="space-y-6 animate-in fade-in pb-20">
-               <div className="flex gap-2 overflow-x-auto pb-2 border-b">
-                {['general', 'hero', 'weather', 'services', 'footer'].map(tab => (
+              <div className="flex gap-2 overflow-x-auto pb-2 border-b">
+                {['general', 'navbar', 'hero', 'weather', 'services', 'footer'].map(tab => (
                   <button key={tab} onClick={() => setSettingsTab(tab)} className={`px-4 py-2 rounded-lg font-bold whitespace-nowrap ${settingsTab === tab ? 'bg-blue-100 text-blue-800' : 'text-gray-500 hover:bg-gray-100'}`}>
-                    {tab === 'general' ? 'عمومی' : tab === 'hero' ? 'هیرو و آمار' : tab === 'weather' ? 'آب و هوا' : tab === 'services' ? 'خدمات' : 'فوتر'}
+                    {tab === 'general' ? 'عمومی' : tab === 'navbar' ? 'ناوبار (منو)' : tab === 'hero' ? 'هیرو و آمار' : tab === 'weather' ? 'آب و هوا' : tab === 'services' ? 'خدمات' : 'فوتر'}
                   </button>
                 ))}
               </div>
@@ -282,14 +301,132 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage }) {
                 </div>
               )}
 
+              {/* تنظیمات جدید ناوبار */}
+              {settingsTab === 'navbar' && (
+                <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
+                  <h3 className="font-bold border-b pb-2 text-[#058B8C]">تنظیمات ناوبار (هدر سایت)</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* بخش دری */}
+                      <div className="space-y-3 bg-blue-50/50 p-4 rounded-xl">
+                          <h4 className="font-bold text-xs text-blue-600 mb-2">تنظیمات فارسی (دری)</h4>
+                          <div>
+                              <label className="block text-xs font-bold text-gray-500 mb-1">عنوان شرکت (دری)</label>
+                              <input value={localSettings.navbar?.title_dr || ''} onChange={e => handleSettingChange('navbar', 'title_dr', e.target.value)} className="w-full p-2 border rounded-lg" placeholder="مثال: بهشتی"/>
+                          </div>
+                          <div>
+                              <label className="block text-xs font-bold text-gray-500 mb-1">زیرعنوان (دری)</label>
+                              <input value={localSettings.navbar?.subtitle_dr || ''} onChange={e => handleSettingChange('navbar', 'subtitle_dr', e.target.value)} className="w-full p-2 border rounded-lg" placeholder="مثال: TRAVEL AGENCY"/>
+                          </div>
+                      </div>
+
+                      {/* بخش پشتو */}
+                      <div className="space-y-3 bg-green-50/50 p-4 rounded-xl">
+                          <h4 className="font-bold text-xs text-green-600 mb-2">تنظیمات پشتو</h4>
+                          <div>
+                              <label className="block text-xs font-bold text-gray-500 mb-1">عنوان شرکت (پشتو)</label>
+                              <input value={localSettings.navbar?.title_ps || ''} onChange={e => handleSettingChange('navbar', 'title_ps', e.target.value)} className="w-full p-2 border rounded-lg" placeholder="مثال: بهشتی"/>
+                          </div>
+                          <div>
+                              <label className="block text-xs font-bold text-gray-500 mb-1">زیرعنوان (پشتو)</label>
+                              <input value={localSettings.navbar?.subtitle_ps || ''} onChange={e => handleSettingChange('navbar', 'subtitle_ps', e.target.value)} className="w-full p-2 border rounded-lg" placeholder="مثال: د سفر آژانس"/>
+                          </div>
+                      </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-100">
+                      <label className="block text-xs font-bold text-gray-500 mb-1">متن داخل لوگو (انگلیسی/کوتاه)</label>
+                      <input value={localSettings.navbar?.logoText || ''} onChange={e => handleSettingChange('navbar', 'logoText', e.target.value)} className="w-full md:w-1/2 p-2 border rounded-lg font-mono text-center" placeholder="B"/>
+                  </div>
+                </div>
+              )}
+
               {settingsTab === 'hero' && (
                 <div className="space-y-6">
+                  {/* تنظیمات متن دوزبانه هیرو */}
                   <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                    <h3 className="font-bold border-b pb-2">بخش هیرو</h3>
-                    <div><label className="block text-xs font-bold text-gray-500 mb-1">تیتر اصلی</label><input value={localSettings.hero?.title || ''} onChange={e => handleSettingChange('hero', 'title', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
-                    <div><label className="block text-xs font-bold text-gray-500 mb-1">زیرعنوان</label><input value={localSettings.hero?.subtitle || ''} onChange={e => handleSettingChange('hero', 'subtitle', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
-                    <div><label className="block text-xs font-bold text-gray-500 mb-1">لینک عکس</label><input value={localSettings.hero?.image || ''} onChange={e => handleSettingChange('hero', 'image', e.target.value)} className="w-full p-2 border rounded-lg dir-ltr"/></div>
+                    <h3 className="font-bold border-b pb-2 text-[#058B8C]">متن‌های هیرو (دوزبانه)</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* بخش دری */}
+                        <div className="space-y-3 bg-blue-50/50 p-4 rounded-xl">
+                            <h4 className="font-bold text-xs text-blue-600 mb-2">نسخه دری</h4>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-1">تیتر اصلی (دری)</label>
+                                <input value={localSettings.hero?.title_dr || ''} onChange={e => handleSettingChange('hero', 'title_dr', e.target.value)} className="w-full p-2 border rounded-lg" placeholder="مثال: سفر به افغانستان"/>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-1">زیرعنوان (دری)</label>
+                                <input value={localSettings.hero?.subtitle_dr || ''} onChange={e => handleSettingChange('hero', 'subtitle_dr', e.target.value)} className="w-full p-2 border rounded-lg" placeholder="مثال: تجربه‌ای بی‌یادماندنی"/>
+                            </div>
+                        </div>
+
+                        {/* بخش پشتو */}
+                        <div className="space-y-3 bg-green-50/50 p-4 rounded-xl">
+                            <h4 className="font-bold text-xs text-green-600 mb-2">نسخه پشتو</h4>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-1">تیتر اصلی (پشتو)</label>
+                                <input value={localSettings.hero?.title_ps || ''} onChange={e => handleSettingChange('hero', 'title_ps', e.target.value)} className="w-full p-2 border rounded-lg" placeholder="مثال: افغانستان ته سفر"/>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 mb-1">زیرعنوان (پشتو)</label>
+                                <input value={localSettings.hero?.subtitle_ps || ''} onChange={e => handleSettingChange('hero', 'subtitle_ps', e.target.value)} className="w-full p-2 border rounded-lg" placeholder="مثال: یوه نه هیریدونکې تجربه"/>
+                            </div>
+                        </div>
+                    </div>
                   </div>
+
+                  {/* تنظیمات اسلایدر تصاویر */}
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
+                    <h3 className="font-bold border-b pb-2 flex justify-between items-center text-[#058B8C]">
+                        تصاویر اسلایدر هیرو
+                        <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded">تعداد: {localSettings.hero?.images?.length || 0}</span>
+                    </h3>
+                    
+                    {/* لیست تصاویر موجود */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {(localSettings.hero?.images || []).map((imgUrl, idx) => (
+                            <div key={idx} className="relative group rounded-xl overflow-hidden border border-gray-200 aspect-video">
+                                <img src={imgUrl} alt="Slide" className="w-full h-full object-cover"/>
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                                    <button 
+                                        onClick={() => handleRemoveSliderImage(idx)}
+                                        className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition shadow-lg"
+                                        title="حذف تصویر"
+                                    >
+                                        <Trash size={16}/>
+                                    </button>
+                                </div>
+                                <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded">
+                                    اسلاید {idx + 1}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* افزودن تصویر جدید */}
+                    <div className="flex gap-2 items-end pt-4 border-t border-gray-100">
+                        <div className="flex-1">
+                            <label className="block text-xs font-bold text-gray-500 mb-1">لینک تصویر جدید</label>
+                            <div className="flex items-center gap-2 bg-gray-50 border rounded-lg p-2">
+                                <Image size={16} className="text-gray-400"/>
+                                <input 
+                                    value={tempSliderImage} 
+                                    onChange={e => setTempSliderImage(e.target.value)}
+                                    className="bg-transparent w-full text-sm outline-none dir-ltr"
+                                    placeholder="https://example.com/image.jpg"
+                                />
+                            </div>
+                        </div>
+                        <button 
+                            onClick={handleAddSliderImage}
+                            disabled={!tempSliderImage}
+                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-4 py-2.5 rounded-lg font-bold flex items-center gap-2 transition"
+                        >
+                            <Plus size={18}/> افزودن
+                        </button>
+                    </div>
+                  </div>
+
                   <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                     <h3 className="font-bold border-b pb-2">آمار</h3>
                     <div className="grid grid-cols-4 gap-4">
@@ -303,7 +440,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage }) {
               )}
 
               {settingsTab === 'weather' && (
-                 <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-6">
+                <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-6">
                   <h3 className="font-bold border-b pb-2 flex justify-between items-center">
                     <span>لیست شهرها (جابجایی با درگ)</span>
                     <button onClick={() => {
@@ -327,7 +464,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage }) {
                       >
                         <div className="cursor-grab text-gray-300 hover:text-gray-600 active:cursor-grabbing p-1"><GripVertical size={20}/></div>
                         <div className="flex-1">
-                           {editingCityId === city.id ? (
+                          {editingCityId === city.id ? (
                              <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
                                <input value={city.name} onChange={e => { const updated = [...localSettings.weather_cities]; updated[index].name = e.target.value; handleSettingChange('weather_cities', null, updated); }} className="p-2 rounded border text-sm" placeholder="نام انگلیسی (London)"/>
                                <input value={city.faName} onChange={e => { const updated = [...localSettings.weather_cities]; updated[index].faName = e.target.value; handleSettingChange('weather_cities', null, updated); }} className="p-2 rounded border text-sm" placeholder="نام شهر (فارسی)"/>
@@ -394,7 +531,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage }) {
                     </div>
                   </div>
                   <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                     <h3 className="font-bold border-b pb-2">درباره ما</h3>
+                    <h3 className="font-bold border-b pb-2">درباره ما</h3>
                     <div><label className="block text-xs font-bold text-gray-500 mb-1">تیتر</label><input value={localSettings.about?.title || ''} onChange={e => handleSettingChange('about', 'title', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
                     <div><label className="block text-xs font-bold text-gray-500 mb-1">متن</label><textarea value={localSettings.about?.desc || ''} onChange={e => handleSettingChange('about', 'desc', e.target.value)} className="w-full p-2 border rounded-lg h-24"/></div>
                   </div>
@@ -415,7 +552,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage }) {
                 <div className="overflow-x-auto rounded-2xl border border-gray-200 shadow-sm bg-white">
                   <table className="w-full text-right text-sm">
                     <thead className="bg-gray-50 border-b border-gray-200 text-gray-500">
-                       <tr>
+                      <tr>
                         <th className="p-4 font-bold">زمان</th>
                         <th className="p-4 font-bold">مشتری</th>
                         <th className="p-4 font-bold">پرواز</th>
@@ -423,7 +560,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage }) {
                         <th className="p-4 font-bold">وضعیت</th>
                         <th className="p-4 font-bold text-center">عملیات</th>
                       </tr>
-                     </thead>
+                    </thead>
                     <tbody className="divide-y divide-gray-100">
                        {bookings && bookings.length > 0 ? bookings.map(b => (
                          <tr key={b.id} className="hover:bg-gray-50 transition">
@@ -432,7 +569,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage }) {
                                <div dir="ltr" className="opacity-70 mt-1">{new Date(b.created_at).toLocaleTimeString('fa-IR')}</div>
                             </td>
                             <td className="p-4">
-                               <div className="font-bold text-gray-800 flex items-center gap-1"><User size={14}/> {b.customer_name}</div>
+                                <div className="font-bold text-gray-800 flex items-center gap-1"><User size={14}/> {b.customer_name}</div>
                                 <div className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Phone size={14}/> {b.customer_phone}</div>
                             </td>
                             <td className="p-4">
@@ -446,7 +583,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage }) {
                             </td>
                             <td className="p-4">
                                <div className="flex flex-col gap-1">
-                                    <div className="font-black text-blue-600">{(b.amount || 0).toLocaleString()} <span className="text-[9px] text-gray-400">افغانی</span></div>
+                                  <div className="font-black text-blue-600">{(b.amount || 0).toLocaleString()} <span className="text-[9px] text-gray-400">افغانی</span></div>
                                    {b.transaction_id && <div className="text-[10px] font-mono text-gray-500 select-all bg-yellow-50 px-2 rounded border border-yellow-100 w-fit">ID: {b.transaction_id}</div>}
                                </div>
                             </td>
@@ -455,9 +592,9 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage }) {
                                <div className="flex justify-center gap-2">
                                    {b.status === 'pending_verification' && (
                                     <button onClick={() => handleChangeStatus(b.id, 'confirmed')} title="تایید" className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 border border-green-200 transition"><Check size={16}/></button>
-                                  )}
+                                   )}
                                   {b.status !== 'cancelled' && (
-                                     <button onClick={() => handleChangeStatus(b.id, 'cancelled')} title="لغو" className="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 border border-red-100 transition"><X size={16}/></button>
+                                      <button onClick={() => handleChangeStatus(b.id, 'cancelled')} title="لغو" className="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 border border-red-100 transition"><X size={16}/></button>
                                    )}
                                   <button onClick={() => handleDeleteBooking(b.id)} title="حذف" className="p-2 bg-gray-100 text-gray-500 rounded-lg hover:bg-gray-200 transition"><Trash size={16}/></button>
                                </div>

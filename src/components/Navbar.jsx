@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Home, Ticket, FileText, GraduationCap, Package, Search, Menu, X, Globe, Megaphone, User, ChevronDown, Check } from 'lucide-react';
 
-export default function Navbar({ lang, setLang, page, setPage, t }) {
+export default function Navbar({ lang, setLang, page, setPage, settings }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const langMenuRef = useRef(null);
@@ -29,7 +29,7 @@ export default function Navbar({ lang, setLang, page, setPage, t }) {
   ];
 
   return (
-    <nav className="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100">
+    <nav className="bg-[#058B8C] shadow-lg sticky top-0 z-50 border-b border-[#047070]">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center h-20">
           
@@ -38,28 +38,32 @@ export default function Navbar({ lang, setLang, page, setPage, t }) {
             onClick={() => setPage('home')} 
             className="flex items-center gap-3 cursor-pointer group"
           >
-            <div className="w-10 h-10 bg-[#1e3a8a] rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg group-hover:scale-105 transition-transform">
-              B
+            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[#058B8C] font-black text-xl shadow-lg group-hover:scale-105 transition-transform">
+              {settings?.navbar?.logoText || 'B'}
             </div>
             <div className="flex flex-col">
-              <span className="font-black text-gray-800 text-lg leading-tight">بهشتی</span>
-              <span className="text-[10px] text-gray-500 font-bold tracking-wider">TRAVEL AGENCY</span>
+              <span className="font-black text-white text-lg leading-tight">
+                  {lang === 'dr' ? (settings?.navbar?.title_dr || 'بهشتی') : (settings?.navbar?.title_ps || 'بهشتی')}
+              </span>
+              <span className="text-[10px] text-white/80 font-bold tracking-wider">
+                  {lang === 'dr' ? (settings?.navbar?.subtitle_dr || 'TRAVEL AGENCY') : (settings?.navbar?.subtitle_ps || 'TRAVEL AGENCY')}
+              </span>
             </div>
           </div>
 
           {/* منوی دسکتاپ */}
-          <div className="hidden lg:flex items-center gap-1 bg-gray-50 p-1 rounded-2xl">
+          <div className="hidden lg:flex items-center gap-1 bg-white/10 p-1 rounded-2xl backdrop-blur-sm">
             {navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setPage(item.id)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${
                   page === item.id 
-                    ? 'bg-white text-[#1e3a8a] shadow-sm' 
-                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+                    ? 'bg-white text-[#058B8C] shadow-sm' 
+                    : 'text-white hover:bg-white/10'
                 }`}
               >
-                <item.icon size={18} className={page === item.id ? 'text-[#f97316]' : ''} />
+                <item.icon size={18} className={page === item.id ? 'text-[#f97316]' : 'text-white/80'} />
                 {item.label}
               </button>
             ))}
@@ -72,7 +76,7 @@ export default function Navbar({ lang, setLang, page, setPage, t }) {
             <div className="relative" ref={langMenuRef}>
               <button 
                 onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-                className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold text-xs transition-colors border border-transparent hover:border-gray-200"
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors border border-transparent hover:border-white/30"
               >
                 <Globe size={18} />
                 <span>{lang === 'dr' ? 'دری' : 'پښتو'}</span>
@@ -87,14 +91,14 @@ export default function Navbar({ lang, setLang, page, setPage, t }) {
                     className="w-full text-right px-4 py-3 hover:bg-blue-50 text-sm font-bold text-gray-700 flex justify-between items-center border-b border-gray-50"
                   >
                       <span>دری</span>
-                      {lang === 'dr' && <Check size={14} className="text-[#1e3a8a]"/>}
+                      {lang === 'dr' && <Check size={14} className="text-[#058B8C]"/>}
                   </button>
                   <button 
                     onClick={() => {setLang('ps'); setIsLangMenuOpen(false)}} 
                     className="w-full text-right px-4 py-3 hover:bg-blue-50 text-sm font-bold text-gray-700 flex justify-between items-center"
                   >
                       <span>پښتو</span>
-                      {lang === 'ps' && <Check size={14} className="text-[#1e3a8a]"/>}
+                      {lang === 'ps' && <Check size={14} className="text-[#058B8C]"/>}
                   </button>
                 </div>
               )}
@@ -103,7 +107,7 @@ export default function Navbar({ lang, setLang, page, setPage, t }) {
             {/* دکمه ادمین/ورود (فقط آیکون) */}
             <button 
               onClick={() => setPage('admin')}
-              className="flex items-center justify-center p-3 rounded-xl bg-[#1e3a8a] hover:bg-[#172554] text-white font-bold shadow-lg shadow-blue-200 transition-all active:scale-95 group"
+              className="flex items-center justify-center p-3 rounded-xl bg-white text-[#058B8C] hover:bg-gray-100 font-bold shadow-lg shadow-black/10 transition-all active:scale-95 group"
               title={lang === 'dr' ? 'حساب کاربری' : 'خپل حساب'}
             >
               <User size={20} className="group-hover:scale-110 transition-transform"/>
@@ -114,13 +118,13 @@ export default function Navbar({ lang, setLang, page, setPage, t }) {
           <div className="lg:hidden flex items-center gap-3">
             <button 
               onClick={() => setLang(lang === 'dr' ? 'ps' : 'dr')}
-              className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-50 text-gray-600 font-black text-xs"
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/10 text-white font-black text-xs hover:bg-white/20"
             >
               {lang === 'dr' ? 'Fa' : 'Ps'}
             </button>
             <button 
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-50 text-gray-800"
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-white text-[#058B8C]"
             >
               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -141,7 +145,7 @@ export default function Navbar({ lang, setLang, page, setPage, t }) {
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${
                   page === item.id 
-                    ? 'bg-blue-50 text-[#1e3a8a]' 
+                    ? 'bg-blue-50 text-[#058B8C]' 
                     : 'text-gray-600 hover:bg-gray-50'
                 }`}
               >
