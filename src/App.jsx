@@ -21,15 +21,36 @@ import News from './pages/News';
 const DEFAULT_SETTINGS = {
   general: { brandName: "بهشتی تراول", logoText: "B" },
   hero: { 
-    title: "سفر رویایی خود را آغاز کنید", 
-    subtitle: "بهترین نرخ پرواز و خدمات ویزا در افغانستان", 
-    image: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074" 
+    // مقادیر قدیمی را خالی می‌گذاریم تا اگر دیتابیس پر بود، اولویت با آن باشد
+    title: "", 
+    subtitle: "", 
+    
+    // فیلدهای جدید دوزبانه (که در ادمین اضافه کردیم) را هم اینجا تعریف می‌کنیم
+    title_dr: "", 
+    title_ps: "",
+    subtitle_dr: "",
+    subtitle_ps: "",
+
+    // عکس پیش‌فرض (تک عکس)
+    image: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074",
+    
+    // آرایه تصاویر برای اسلایدر (خالی می‌گذاریم تا اگر در دیتابیس بود پر شود)
+    images: [] 
   },
   stats: { customers: 1500, flights: 3200, visas: 850, experience: 12 },
   services: [],
-  weather_cities: [], // آرایه خالی برای شهرها
+  weather_cities: [], 
   about: { title: "درباره ما", desc: "توضیحات پیش‌فرض..." },
-  contact: { phone: "+93 700 000 000", email: "info@example.com", address: "کابل", copyright: "حقوق محفوظ است" }
+  contact: { phone: "+93 700 000 000", email: "info@example.com", address: "کابل", copyright: "حقوق محفوظ است" },
+  
+  // تنظیمات جدید ناوبار (که در مرحله قبل اضافه کردیم)
+  navbar: {
+    logoText: "B",
+    title_dr: "بهشتی",
+    title_ps: "بهشتی",
+    subtitle_dr: "TRAVEL AGENCY",
+    subtitle_ps: "TRAVEL AGENCY"
+  }
 };
 
 export default function App() {
