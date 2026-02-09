@@ -1,14 +1,25 @@
-import React, { useState } from 'react';
-// تغییر ۱: اضافه کردن Ticket به لیست ایمپورت‌ها
-import { Home, Ticket, FileText, GraduationCap, Package, Search, Menu, X, Globe, Megaphone, User } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Home, Ticket, FileText, GraduationCap, Package, Search, Menu, X, Globe, Megaphone, User, ChevronDown, Check } from 'lucide-react';
 
 export default function Navbar({ lang, setLang, page, setPage, t }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+  const langMenuRef = useRef(null);
+
+  // بستن منوی زبان وقتی بیرون از آن کلیک شود
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (langMenuRef.current && !langMenuRef.current.contains(event.target)) {
+        setIsLangMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // لیست منوها
   const navItems = [
     { id: 'home', label: lang === 'dr' ? 'خانه' : 'کور', icon: Home },
-    // تغییر ۲: جایگزینی Plane با Ticket در اینجا
     { id: 'tickets', label: lang === 'dr' ? 'تکت' : 'ټکټ', icon: Ticket },
     { id: 'visa', label: lang === 'dr' ? 'ویزا' : 'ویزه', icon: FileText },
     { id: 'news', label: lang === 'dr' ? 'اخبار' : 'خبرونه', icon: Megaphone },
@@ -56,22 +67,46 @@ export default function Navbar({ lang, setLang, page, setPage, t }) {
 
           {/* دکمه‌های سمت چپ (زبان و ورود) */}
           <div className="hidden lg:flex items-center gap-3">
-            {/* تغییر زبان */}
-            <button 
-              onClick={() => setLang(lang === 'dr' ? 'ps' : 'dr')}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold text-xs transition-colors"
-            >
-              <Globe size={16} />
-              <span>{lang === 'dr' ? 'پښتو' : 'دری'}</span>
-            </button>
+            
+            {/* انتخاب زبان (دراپ‌داون) */}
+            <div className="relative" ref={langMenuRef}>
+              <button 
+                onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold text-xs transition-colors border border-transparent hover:border-gray-200"
+              >
+                <Globe size={18} />
+                <span>{lang === 'dr' ? 'دری' : 'پښتو'}</span>
+                <ChevronDown size={14} className={`transition-transform duration-200 ${isLangMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
 
-            {/* دکمه ادمین/ورود */}
+              {/* منوی بازشو زبان */}
+              {isLangMenuOpen && (
+                <div className="absolute top-full left-0 mt-2 w-32 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95">
+                  <button 
+                    onClick={() => {setLang('dr'); setIsLangMenuOpen(false)}} 
+                    className="w-full text-right px-4 py-3 hover:bg-blue-50 text-sm font-bold text-gray-700 flex justify-between items-center border-b border-gray-50"
+                  >
+                      <span>دری</span>
+                      {lang === 'dr' && <Check size={14} className="text-[#1e3a8a]"/>}
+                  </button>
+                  <button 
+                    onClick={() => {setLang('ps'); setIsLangMenuOpen(false)}} 
+                    className="w-full text-right px-4 py-3 hover:bg-blue-50 text-sm font-bold text-gray-700 flex justify-between items-center"
+                  >
+                      <span>پښتو</span>
+                      {lang === 'ps' && <Check size={14} className="text-[#1e3a8a]"/>}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* دکمه ادمین/ورود (فقط آیکون) */}
             <button 
               onClick={() => setPage('admin')}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1e3a8a] hover:bg-[#172554] text-white font-bold text-sm shadow-lg shadow-blue-200 transition-all active:scale-95"
+              className="flex items-center justify-center p-3 rounded-xl bg-[#1e3a8a] hover:bg-[#172554] text-white font-bold shadow-lg shadow-blue-200 transition-all active:scale-95 group"
+              title={lang === 'dr' ? 'حساب کاربری' : 'خپل حساب'}
             >
-              <User size={18} />
-              <span>{lang === 'dr' ? 'حساب کاربری' : 'خپل حساب'}</span>
+              <User size={20} className="group-hover:scale-110 transition-transform"/>
             </button>
           </div>
 

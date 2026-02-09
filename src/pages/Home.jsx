@@ -178,7 +178,7 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
   const [activeDropdown, setActiveDropdown] = useState(null);
   const dropdownRef = useRef(null);
   const [stats, setStats] = useState({ customers: 0, flights: 0, visas: 0, experience: 0 });
-  const [formData, setFormData] = useState({ origin: '', destination: '', date: '', returnDate: '', tripType: 'round_trip', flightClass: 'economy', adults: 1, children: 0 });
+  const [formData, setFormData] = useState({ origin: '', destination: '', date: '', returnDate: '', tripType: 'one_way', flightClass: 'economy', adults: 1, children: 0 });
   const st = searchT[lang] || searchT.dr;
   
   const lt = {
@@ -237,7 +237,7 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
   return (
     <div className="space-y-24 animate-in fade-in duration-700 pb-20 font-[Vazirmatn]">
       
-      {/* Hero Section */}
+      {/* 1. Hero Section + Search Bar (ثابت) */}
       <div className="relative">
         <div className="h-[400px] md:h-[500px] rounded-[3rem] overflow-hidden shadow-xl relative z-0">
           <div className="absolute inset-0 bg-gradient-to-t from-[#058B8C]/90 via-transparent to-transparent z-10" />
@@ -255,7 +255,7 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
             {/* دکمه‌های فیلتر بالای سرچ */}
             <div className="flex flex-wrap items-center gap-3 relative z-50">
                
-               {/* 1. نوع سفر */}
+               {/* نوع سفر */}
                <div className="relative">
                   <TopFilterBtn label={st[formData.tripType]} icon={ArrowRightLeft} active={activeDropdown === 'type'} onClick={() => setActiveDropdown(activeDropdown === 'type' ? null : 'type')} />
                   {activeDropdown === 'type' && (
@@ -269,7 +269,7 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
                   )}
                </div>
                
-               {/* 2. تعداد مسافر */}
+               {/* تعداد مسافر */}
                <div className="relative">
                   <TopFilterBtn label={`${formData.adults + formData.children} ${st.passenger}`} icon={Users} active={activeDropdown === 'pax'} onClick={() => setActiveDropdown(activeDropdown === 'pax' ? null : 'pax')} />
                   {activeDropdown === 'pax' && (
@@ -289,7 +289,7 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
                   )}
                </div>
 
-               {/* 3. کلاس پرواز */}
+               {/* کلاس پرواز */}
                <div className="relative">
                   <TopFilterBtn label={st[formData.flightClass]} icon={Plane} active={activeDropdown === 'class'} onClick={() => setActiveDropdown(activeDropdown === 'class' ? null : 'class')} />
                   {activeDropdown === 'class' && (
@@ -359,12 +359,7 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
         </div>
       </div>
 
-      {/* --- ویجت آب و هوا --- */}
-      <div className="max-w-7xl mx-auto px-4 mt-8">
-         <WeatherBlock cities={settings?.weather_cities} lang={lang} />
-      </div>
-
-      {/* --- اخبار --- */}
+      {/* 2. اخبار و اطلاعیه‌ها (جابجا شده به بالا) */}
       <div className="max-w-7xl mx-auto px-4 py-10">
          <h2 className="text-3xl font-black text-center text-[#058B8C] mb-12 relative">
             {lt.news_title}
@@ -390,7 +385,7 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
          </div>
       </div>
 
-      {/* --- خدمات ما --- */}
+      {/* 3. خدمات ما (جابجا شده) */}
       <div className="max-w-7xl mx-auto px-4 py-10">
          <h2 className="text-3xl font-black text-center text-[#058B8C] mb-12 relative">
             {lt.services_title}
@@ -421,7 +416,7 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
          </div>
       </div>
 
-      {/* --- آمار --- */}
+      {/* 4. آمار (جابجا شده) */}
       <div className="bg-[#058B8C] py-10 text-white relative overflow-hidden my-10 rounded-[2rem] mx-4 shadow-xl">
          <div className="absolute top-0 left-0 w-32 h-32 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl"></div>
          <div className="absolute bottom-0 right-0 w-64 h-64 bg-[#D4AF37]/20 rounded-full translate-x-1/3 translate-y-1/3 blur-3xl"></div>
@@ -467,6 +462,12 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
          </div>
       </div>
 
+      {/* 5. آب و هوا (جابجا شده به پایین آمار) */}
+      <div className="max-w-7xl mx-auto px-4 mt-8">
+         <WeatherBlock cities={settings?.weather_cities} lang={lang} />
+      </div>
+
+      {/* 6. ویژگی‌های شرکت (سه کارت) */}
       <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 text-center mt-10">
           <ServiceCard icon={ShieldCheck} title={lang === 'dr' ? "امنیت و اعتماد" : "امنیت او باور"} desc={t.home.why_desc} color='#058B8C' />
           <ServiceCard icon={Clock} title={lang === 'dr' ? "سرعت در اجرا" : "په کار کې چټکتیا"} desc={t.home.why_desc} color='#f97316' />

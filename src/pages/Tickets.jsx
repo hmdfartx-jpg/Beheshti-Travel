@@ -223,15 +223,15 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
   const txt = translations[lang] || translations.dr; 
   const lt = { search: lang==='dr'?'جستجوی پرواز':'لټون', select_date: lang==='dr'?'تاریخ رفت':'نیټه', return_date: lang==='dr'?'تاریخ برگشت':'راستنیدو نیټه' };
   
-  const [formData, setFormData] = useState({ origin: 'KBL', destination: 'DXB', date: '', returnDate: '', tripType: 'round_trip', flightClass: 'economy', adults: 1, children: 0 });
+  // تغییر: مقادیر پیش‌فرض خالی شد و tripType شد one_way
+  const [formData, setFormData] = useState({ origin: '', destination: '', date: '', returnDate: '', tripType: 'one_way', flightClass: 'economy', adults: 1, children: 0 });
   const [results, setResults] = useState([]);
 
   useEffect(() => {
+    // تغییر: فقط اگر initialData وجود داشت جستجو کن، در غیر این صورت هیچ کاری نکن
     if (initialData) {
       setFormData(initialData);
       performSearch(initialData);
-    } else {
-      performSearch({ origin: 'KBL', destination: 'DXB' });
     }
   }, [initialData]);
 

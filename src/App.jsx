@@ -116,7 +116,22 @@ export default function App() {
           />
         )}
         
-        {page === 'news' && <News newsList={news} />}
+{page === 'news' && (
+  <News 
+    newsList={news} 
+    lang={lang} 
+    setPage={setPage} 
+  />
+)}
+
+{page.startsWith('view-news-') && (
+  <News 
+    newsList={news} 
+    lang={lang} 
+    setPage={setPage} 
+    viewId={page.replace('view-news-', '')} 
+  />
+)}
         
         {page === 'admin' && (
           <Admin 
