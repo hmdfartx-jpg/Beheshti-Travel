@@ -22,10 +22,13 @@ const solarMonths = {
 
 // --- استایل‌های انیمیشن و فونت ---
 const customStyles = `
-  @import url('https://fonts.cdnfonts.com/css/ds-digital'); /* فونت دیجیتال جدید */
+  @import url('https://fonts.cdnfonts.com/css/ds-digital');
+  /* فونت دیجیتال جدید */
   @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700;900&display=swap');
 
   @keyframes typewriterRTL { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0 0 0 0); } }
+  @keyframes typewriterLTR { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+  
   @keyframes zoomBg { 0% { transform: scale(1); } 100% { transform: scale(1.4); } }
   @keyframes weatherFadeUp { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
   @keyframes cubeRotate { 
@@ -33,10 +36,10 @@ const customStyles = `
     100% { opacity: 1; transform: perspective(500px) rotateX(0deg) translateY(0); } 
   }
 
-  .typewriter-text {
-    overflow: hidden; white-space: nowrap; display: inline-block; direction: rtl;
-    animation: typewriterRTL 1.5s steps(40, end) forwards;
-  }
+  .typewriter-text { overflow: hidden; white-space: nowrap; display: inline-block; }
+  .typewriter-rtl { direction: rtl; animation: typewriterRTL 1.5s steps(40, end) forwards; }
+  .typewriter-ltr { direction: ltr; animation: typewriterLTR 1.5s steps(40, end) forwards; }
+  
   .anim-zoom { animation: zoomBg 20s linear infinite alternate; }
   .anim-weather-smooth { animation: weatherFadeUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
   .anim-cube { animation: cubeRotate 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; backface-visibility: hidden; }
@@ -67,6 +70,16 @@ const t = {
     humidity: "لندبل", wind: "باد",
     cold: "سرد", cool: "سوړ", warm: "تود", hot: "Garam", boneChilling: "یخنی",
     clear: "شنه آسمان", clouds: "وریش", rain: "باران", snow: "واوره", separator: "•"
+  },
+  en: {
+    title: "Weather & World Clock", subtitle: "Precise Time & Atmospheric Info",
+    today: "Today", tomorrow: "Tomorrow",
+    diffKabul: "Kabul", diffLondon: "London",
+    hour: "hr", minute: "min", and: "&", ahead: "ahead of", behind: "behind", same: "same time as",
+    weekDays: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    humidity: "Humidity", wind: "Wind",
+    cold: "Cold", cool: "Cool", warm: "Warm", hot: "Hot", boneChilling: "Freezing",
+    clear: "Clear", clouds: "Cloudy", rain: "Rainy", snow: "Snowy", separator: "•"
   }
 };
 
@@ -86,9 +99,16 @@ const getSolarDate = (date, lang) => {
 };
 
 const formatDate = (date, isAfghan, lang) => {
-  if (isAfghan) return getSolarDate(date, lang);
-  const d = new Intl.DateTimeFormat('en-US', { day: '2-digit', month: 'short', year: 'numeric', weekday: 'long' }).formatToParts(date);
-  return `${d.find(p=>p.type==='weekday').value} ${d.find(p=>p.type==='day').value} ${d.find(p=>p.type==='month').value.toUpperCase()} ${d.find(p=>p.type==='year').value}`;
+  if (isAfghan && lang !== 'en') return getSolarDate(date, lang);
+  
+  // برای انگلیسی یا شهرهای غیر افغانی
+  const d = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'fa-IR', { day: '2-digit', month: 'short', year: 'numeric', weekday: 'long' }).formatToParts(date);
+  const weekDay = lang === 'en' ? t.en.weekDays[date.getDay()] : d.find(p=>p.type==='weekday').value;
+  const day = d.find(p=>p.type==='day').value;
+  const month = d.find(p=>p.type==='month').value.toUpperCase();
+  const year = d.find(p=>p.type==='year').value;
+  
+  return `${weekDay} ${day} ${month} ${year}`;
 };
 
 const formatTimeDiff = (diffMinutes, targetName, langCode) => {
@@ -115,11 +135,9 @@ const getWeatherSentence = (temp, condition, langCode) => {
 const AnalogClock = ({ timeZone }) => {
   const [date, setDate] = useState(new Date());
   useEffect(() => { const i = setInterval(() => setDate(new Date()), 1000); return () => clearInterval(i); }, []);
-  
   const cityDate = new Date(date.toLocaleString("en-US", { timeZone: getSafeTimezone(timeZone) }));
   const [s, m, h] = [cityDate.getSeconds(), cityDate.getMinutes(), cityDate.getHours()];
   const sDeg = (s/60)*360; const mDeg = ((m + s/60)/60)*360; const hDeg = (((h%12) + m/60)/12)*360;
-
   return (
     <div className="relative w-24 h-24 rounded-full border-2 border-white/30 bg-white/10 backdrop-blur-sm shadow-xl flex items-center justify-center shrink-0">
       <div className="absolute w-2 h-2 bg-white rounded-full z-20 shadow-sm"></div>
@@ -131,8 +149,11 @@ const AnalogClock = ({ timeZone }) => {
   );
 };
 
-// --- متن تایپ‌رایتر ---
-const TypewriterText = ({ text }) => <div className="typewriter-text" key={text} dir="rtl">{text}</div>;
+// --- متن تایپ‌رایتر (اصلاح شده برای جهت) ---
+const TypewriterText = ({ text, lang }) => {
+    const isLtr = lang === 'en';
+    return <div className={`typewriter-text ${isLtr ? 'typewriter-ltr' : 'typewriter-rtl'}`} key={text}>{text}</div>;
+};
 
 // --- اسلایدر منطقه ---
 const RegionSlider = ({ cities, isAfghan, lang }) => {
@@ -141,6 +162,7 @@ const RegionSlider = ({ cities, isAfghan, lang }) => {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
   const txt = t[lang] || t.dr;
+  const isLtr = lang === 'en';
 
   useEffect(() => {
     if (!cities.length) return;
@@ -157,8 +179,6 @@ const RegionSlider = ({ cities, isAfghan, lang }) => {
       setErrorMsg(null);
       const queryName = cleanCityName(currentCity.name);
       
-      console.log(`%c[Weather Debug] Fetching for: ${queryName}`, 'color: cyan');
-
       if (!API_KEY) {
         console.error("API Key is missing!");
         setWeatherData(null);
@@ -180,7 +200,6 @@ const RegionSlider = ({ cities, isAfghan, lang }) => {
         const tomorrowDate = new Date();
         tomorrowDate.setDate(tomorrowDate.getDate() + 1);
         const tomorrowDay = tomorrowDate.getDate();
-        
         const tmItems = data.list.filter(i => new Date(i.dt * 1000).getDate() === tomorrowDay);
         
         let tmStats = null;
@@ -189,7 +208,6 @@ const RegionSlider = ({ cities, isAfghan, lang }) => {
             const tmMin = Math.min(...tmItems.map(i => i.main.temp_min));
             const midIndex = Math.floor(tmItems.length / 2);
             const midItem = tmItems[midIndex];
-            
             tmStats = {
                 max: Math.round(tmMax),
                 min: Math.round(tmMin),
@@ -253,7 +271,7 @@ const RegionSlider = ({ cities, isAfghan, lang }) => {
   }, [currentCity]);
 
   const [timeInfo, setTimeInfo] = useState({ digital: '', date: '', diff: '', sunrise: '', sunset: '', tmDayName: '' });
-  
+
   useEffect(() => {
     if (!currentCity) return;
     const safeTZ = getSafeTimezone(currentCity.timezone);
@@ -280,7 +298,6 @@ const RegionSlider = ({ cities, isAfghan, lang }) => {
       let sr = '--:--', ss = '--:--';
       if (weatherData?.sunrise) sr = new Intl.DateTimeFormat('en-US', { timeZone: safeTZ, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(weatherData.sunrise * 1000));
       if (weatherData?.sunset) ss = new Intl.DateTimeFormat('en-US', { timeZone: safeTZ, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(weatherData.sunset * 1000));
-
       setTimeInfo({ digital: dTime, date: dateStr, diff: diffStr, sunrise: sr, sunset: ss, tmDayName });
     };
 
@@ -308,18 +325,19 @@ const RegionSlider = ({ cities, isAfghan, lang }) => {
          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-[#1e3a8a]/50 to-black/70 mix-blend-multiply opacity-90"></div>
       </div>
 
-      <div className="absolute inset-0 p-5 flex flex-col justify-between z-10 text-white">
+      <div className={`absolute inset-0 p-5 flex flex-col justify-between z-10 text-white ${isLtr ? 'ltr' : 'rtl'}`}>
         
         {/* --- TOP ROW --- */}
-        <div className="flex items-center justify-between">
-           <div className="flex flex-col items-start min-w-[120px]">
+        <div className={`flex items-center justify-between ${isLtr ? 'flex-row' : 'flex-row'}`}>
+           <div className={`flex flex-col min-w-[120px] ${isLtr ? 'items-start' : 'items-start'}`}>
               {!isAfghan && (
-                 <span className="text-sm font-bold opacity-80 mb-[-4px] drop-shadow-md tracking-wider">
+                 <span className="text-sm font-bold opacity-80 mb-[-4px] drop-shadow-md tracking-wider uppercase">
                     {currentCity.countryName || weatherData?.countryCode || 'WORLD'}
                  </span>
               )}
+              {/* نام شهر - استفاده از نام انگلیسی در حالت انگلیسی */}
               <h2 className={`font-black drop-shadow-lg leading-tight text-left ${isAfghan ? 'text-4xl' : 'text-3xl'}`}>
-                 <TypewriterText text={currentCity.faName} />
+                 <TypewriterText text={lang === 'en' ? (currentCity.name || currentCity.faName) : currentCity.faName} lang={lang} />
               </h2>
               {errorMsg && <span className="text-[10px] text-red-200 bg-red-900/50 px-2 rounded mt-1 border border-red-500/30">{errorMsg}</span>}
            </div>
@@ -390,7 +408,7 @@ const RegionSlider = ({ cities, isAfghan, lang }) => {
            </div>
 
            {/* سمت راست (قبلا چپ): جزئیات + ساعتی (افقی/سطری) */}
-           <div className="flex flex-col justify-between gap-2 border-r border-white/5 pr-2">
+           <div className={`flex flex-col justify-between gap-2 ${isLtr ? 'border-l pl-2' : 'border-r pr-2'} border-white/5`}>
                <div className="flex items-center justify-between text-xs bg-black/20 p-2 rounded-xl border border-white/5 h-full max-h-[50px]">
                    <div className="flex items-center gap-1"><Wind size={16} className="opacity-70"/> <span className="dir-ltr font-bold text-sm">{weatherData?.wind ?? '-'} m/s</span></div>
                    <div className="w-[1px] h-4 bg-white/20"></div>
@@ -399,7 +417,7 @@ const RegionSlider = ({ cities, isAfghan, lang }) => {
                
                {/* نمودار ساعتی: سطری (Row) با اسکرول */}
                <div className="flex flex-col gap-1 mt-auto">
-                   <span className="text-[10px] opacity-50 px-1 font-bold">{txt.today} (ساعتی):</span>
+                   <span className="text-[10px] opacity-50 px-1 font-bold">{txt.today}:</span>
                    <div className="flex gap-2 overflow-x-auto no-scrollbar dir-ltr pb-1">
                        {weatherData?.hourlyForecast?.slice(0, 6).map((h, i) => (
                            <div key={i} className="flex flex-col items-center gap-0.5 bg-white/5 p-1.5 rounded-lg border border-white/5 min-w-[35px]">
@@ -422,14 +440,12 @@ const RegionSlider = ({ cities, isAfghan, lang }) => {
 export default function WeatherBlock({ cities, lang }) {
   const txt = t[lang] || t.dr;
   if (!cities || !Array.isArray(cities) || cities.length === 0) return null;
-
   const afghanCities = cities.filter(c => 
     c.timezone.toLowerCase().includes('kabul') || 
     c.timezone.toLowerCase().includes('afghanistan') || 
     c.name.toLowerCase() === 'kabul' ||
     (c.countryName && (c.countryName.includes('افغانستان') || c.countryName.toLowerCase().includes('afghanistan')))
   );
-  
   const worldCities = cities.filter(c => !afghanCities.includes(c));
 
   if (afghanCities.length === 0 && cities.length > 0) afghanCities.push(cities[0]);
@@ -437,13 +453,14 @@ export default function WeatherBlock({ cities, lang }) {
 
   return (
     <div className="py-10 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-      <div className="flex items-center gap-3 mb-6 px-4">
+      <div className={`flex items-center gap-3 mb-6 px-4 ${lang === 'en' ? 'flex-row' : 'flex-row'}`}>
         <div className="w-1.5 h-8 bg-[#f97316] rounded-full shadow-[0_0_15px_rgba(249,115,22,0.5)]"></div>
         <div>
             <h2 className="text-xl font-black text-[#1e3a8a]">{txt.title}</h2>
             <p className="text-[10px] text-gray-400 font-bold mt-0.5">{txt.subtitle}</p>
         </div>
       </div>
+    
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 px-2">
         <RegionSlider cities={afghanCities} isAfghan={true} lang={lang} />
         <RegionSlider cities={worldCities} isAfghan={false} lang={lang} />

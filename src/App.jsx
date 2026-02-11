@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { translations } from './constants/translations';
 import { supabase } from './lib/supabase';
-
 // Components
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -25,11 +24,14 @@ const DEFAULT_SETTINGS = {
     title: "", 
     subtitle: "", 
     
-    // فیلدهای جدید دوزبانه (که در ادمین اضافه کردیم) را هم اینجا تعریف می‌کنیم
+    // فیلدهای دوزبانه/سه‌زبانه
     title_dr: "", 
     title_ps: "",
+    title_en: "", // اضافه شد برای انگلیسی
+
     subtitle_dr: "",
     subtitle_ps: "",
+    subtitle_en: "", // اضافه شد برای انگلیسی
 
     // عکس پیش‌فرض (تک عکس)
     image: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074",
@@ -43,21 +45,22 @@ const DEFAULT_SETTINGS = {
   about: { title: "درباره ما", desc: "توضیحات پیش‌فرض..." },
   contact: { phone: "+93 700 000 000", email: "info@example.com", address: "کابل", copyright: "حقوق محفوظ است" },
   
-  // تنظیمات جدید ناوبار (که در مرحله قبل اضافه کردیم)
+  // تنظیمات جدید ناوبار
   navbar: {
     logoText: "B",
     title_dr: "بهشتی",
     title_ps: "بهشتی",
+    title_en: "Beheshti",
     subtitle_dr: "TRAVEL AGENCY",
-    subtitle_ps: "TRAVEL AGENCY"
+    subtitle_ps: "TRAVEL AGENCY",
+    subtitle_en: "TRAVEL AGENCY"
   }
 };
 
 export default function App() {
-  const [lang, setLang] = useState('dr');
+  const [lang, setLang] = useState('en'); // پیش‌فرض روی انگلیسی
   const [page, setPage] = useState('home');
   const [user, setUser] = useState({ uid: 'admin', email: 'admin@beheshti.com', isAdmin: true });
-  
   // استیت‌های دیتابیس
   const [news, setNews] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -65,6 +68,9 @@ export default function App() {
   const [ticketSearchData, setTicketSearchData] = useState(null);
 
   const t = translations[lang];
+
+  // تعیین جهت صفحه بر اساس زبان
+  const dir = lang === 'en' ? 'ltr' : 'rtl';
 
   // --- دریافت اطلاعات از Supabase ---
   const fetchData = async () => {
@@ -75,7 +81,6 @@ export default function App() {
         .select('config')
         .limit(1)
         .single();
-      
       if (settingsData && settingsData.config) {
         // ادغام با دیفالت برای اطمینان
         setSettings({ ...DEFAULT_SETTINGS, ...settingsData.config });
@@ -105,12 +110,13 @@ export default function App() {
   }, []);
 
   const handleHomeSearch = (data) => {
-    setTicketSearchData(data); 
+    setTicketSearchData(data);
     setPage('tickets'); 
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFB] text-right font-[Vazirmatn] selection:bg-[#058B8C]/20" dir="rtl">
+    <div className="min-h-screen bg-[#F8FAFB] font-[Vazirmatn] selection:bg-[#058B8C]/20" dir={dir}>
+      {/* کلاس‌های عمومی text-right یا text-left را حذف کردیم تا dir والد تصمیم بگیرد، مگر در موارد خاص */}
       <Navbar lang={lang} setLang={setLang} page={page} setPage={setPage} t={t} settings={settings} />
       <WhatsAppButton t={t} />
       
@@ -137,22 +143,22 @@ export default function App() {
           />
         )}
         
-{page === 'news' && (
-  <News 
-    newsList={news} 
-    lang={lang} 
-    setPage={setPage} 
-  />
-)}
+        {page === 'news' && (
+          <News 
+            newsList={news} 
+            lang={lang} 
+            setPage={setPage} 
+          />
+        )}
 
-{page.startsWith('view-news-') && (
-  <News 
-    newsList={news} 
-    lang={lang} 
-    setPage={setPage} 
-    viewId={page.replace('view-news-', '')} 
-  />
-)}
+        {page.startsWith('view-news-') && (
+          <News 
+            newsList={news} 
+            lang={lang} 
+            setPage={setPage} 
+            viewId={page.replace('view-news-', '')} 
+          />
+        )}
         
         {page === 'admin' && (
           <Admin 

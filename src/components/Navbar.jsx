@@ -17,15 +17,25 @@ export default function Navbar({ lang, setLang, page, setPage, settings }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // تابع کمکی برای دریافت متن بر اساس زبان (با اولویت و پیش‌فرض انگلیسی)
+  const getText = (dr, ps, en) => {
+    if (lang === 'dr') return dr;
+    if (lang === 'ps') return ps;
+    return en; // پیش‌فرض: انگلیسی
+  };
+
+  // تعیین جهت متن برای منوها (انگلیسی چپ‌چین، بقیه راست‌چین)
+  const alignClass = lang === 'en' ? 'text-left' : 'text-right';
+
   // لیست منوها
   const navItems = [
-    { id: 'home', label: lang === 'dr' ? 'خانه' : 'کور', icon: Home },
-    { id: 'tickets', label: lang === 'dr' ? 'تکت' : 'ټکټ', icon: Ticket },
-    { id: 'visa', label: lang === 'dr' ? 'ویزا' : 'ویزه', icon: FileText },
-    { id: 'news', label: lang === 'dr' ? 'اخبار' : 'خبرونه', icon: Megaphone },
-    { id: 'scholarship', label: lang === 'dr' ? 'بورسیه' : 'بورسونه', icon: GraduationCap },
-    { id: 'cargo', label: lang === 'dr' ? 'کارگو' : 'کارګو', icon: Package },
-    { id: 'tracking', label: lang === 'dr' ? 'پیگیری' : 'تعقیب', icon: Search },
+    { id: 'home', label: getText('خانه', 'کور', 'Home'), icon: Home },
+    { id: 'tickets', label: getText('تکت', 'ټکټ', 'Tickets'), icon: Ticket },
+    { id: 'visa', label: getText('ویزا', 'ویزه', 'Visa'), icon: FileText },
+    { id: 'news', label: getText('اخبار', 'خبرونه', 'News'), icon: Megaphone },
+    { id: 'scholarship', label: getText('بورسیه', 'بورسونه', 'Scholarship'), icon: GraduationCap },
+    { id: 'cargo', label: getText('کارگو', 'کارګو', 'Cargo'), icon: Package },
+    { id: 'tracking', label: getText('پیگیری', 'تعقیب', 'Tracking'), icon: Search },
   ];
 
   return (
@@ -43,10 +53,18 @@ export default function Navbar({ lang, setLang, page, setPage, settings }) {
             </div>
             <div className="flex flex-col">
               <span className="font-black text-white text-lg leading-tight">
-                  {lang === 'dr' ? (settings?.navbar?.title_dr || 'بهشتی') : (settings?.navbar?.title_ps || 'بهشتی')}
+                  {getText(
+                    settings?.navbar?.title_dr || 'بهشتی',
+                    settings?.navbar?.title_ps || 'بهشتی',
+                    settings?.navbar?.title_en || 'Beheshti'
+                  )}
               </span>
               <span className="text-[10px] text-white/80 font-bold tracking-wider">
-                  {lang === 'dr' ? (settings?.navbar?.subtitle_dr || 'TRAVEL AGENCY') : (settings?.navbar?.subtitle_ps || 'TRAVEL AGENCY')}
+                  {getText(
+                    settings?.navbar?.subtitle_dr || 'TRAVEL AGENCY',
+                    settings?.navbar?.subtitle_ps || 'TRAVEL AGENCY',
+                    settings?.navbar?.subtitle_en || 'TRAVEL AGENCY'
+                  )}
               </span>
             </div>
           </div>
@@ -79,7 +97,7 @@ export default function Navbar({ lang, setLang, page, setPage, settings }) {
                 className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors border border-transparent hover:border-white/30"
               >
                 <Globe size={18} />
-                <span>{lang === 'dr' ? 'دری' : 'پښتو'}</span>
+                <span>{getText('دری', 'پښتو', 'English')}</span>
                 <ChevronDown size={14} className={`transition-transform duration-200 ${isLangMenuOpen ? 'rotate-180' : ''}`} />
               </button>
 
@@ -88,17 +106,24 @@ export default function Navbar({ lang, setLang, page, setPage, settings }) {
                 <div className="absolute top-full left-0 mt-2 w-32 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95">
                   <button 
                     onClick={() => {setLang('dr'); setIsLangMenuOpen(false)}} 
-                    className="w-full text-right px-4 py-3 hover:bg-blue-50 text-sm font-bold text-gray-700 flex justify-between items-center border-b border-gray-50"
+                    className={`w-full px-4 py-3 hover:bg-blue-50 text-sm font-bold text-gray-700 flex justify-between items-center border-b border-gray-50 ${alignClass}`}
                   >
                       <span>دری</span>
                       {lang === 'dr' && <Check size={14} className="text-[#058B8C]"/>}
                   </button>
                   <button 
                     onClick={() => {setLang('ps'); setIsLangMenuOpen(false)}} 
-                    className="w-full text-right px-4 py-3 hover:bg-blue-50 text-sm font-bold text-gray-700 flex justify-between items-center"
+                    className={`w-full px-4 py-3 hover:bg-blue-50 text-sm font-bold text-gray-700 flex justify-between items-center border-b border-gray-50 ${alignClass}`}
                   >
                       <span>پښتو</span>
                       {lang === 'ps' && <Check size={14} className="text-[#058B8C]"/>}
+                  </button>
+                   <button 
+                    onClick={() => {setLang('en'); setIsLangMenuOpen(false)}} 
+                    className={`w-full px-4 py-3 hover:bg-blue-50 text-sm font-bold text-gray-700 flex justify-between items-center ${alignClass}`}
+                  >
+                      <span>English</span>
+                      {(lang === 'en' || !lang) && <Check size={14} className="text-[#058B8C]"/>}
                   </button>
                 </div>
               )}
@@ -108,7 +133,7 @@ export default function Navbar({ lang, setLang, page, setPage, settings }) {
             <button 
               onClick={() => setPage('admin')}
               className="flex items-center justify-center p-3 rounded-xl bg-white text-[#058B8C] hover:bg-gray-100 font-bold shadow-lg shadow-black/10 transition-all active:scale-95 group"
-              title={lang === 'dr' ? 'حساب کاربری' : 'خپل حساب'}
+              title={getText('ورود ادمین', 'د اډمین ننوتل', 'Admin Login')}
             >
               <User size={20} className="group-hover:scale-110 transition-transform"/>
             </button>
@@ -117,10 +142,15 @@ export default function Navbar({ lang, setLang, page, setPage, settings }) {
           {/* دکمه همبرگری موبایل */}
           <div className="lg:hidden flex items-center gap-3">
             <button 
-              onClick={() => setLang(lang === 'dr' ? 'ps' : 'dr')}
+              onClick={() => {
+                // چرخش بین سه زبان
+                if (lang === 'en' || !lang) setLang('dr');
+                else if (lang === 'dr') setLang('ps');
+                else setLang('en');
+              }}
               className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/10 text-white font-black text-xs hover:bg-white/20"
             >
-              {lang === 'dr' ? 'Fa' : 'Ps'}
+               {getText('Fa', 'Ps', 'En')}
             </button>
             <button 
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -162,7 +192,7 @@ export default function Navbar({ lang, setLang, page, setPage, settings }) {
               className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50"
             >
               <User size={20} />
-              {lang === 'dr' ? 'حساب کاربری' : 'خپل حساب'}
+              {getText('ورود ادمین', 'د اډمین ننوتل', 'Admin Login')}
             </button>
           </div>
         </div>

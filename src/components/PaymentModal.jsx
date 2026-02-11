@@ -54,6 +54,32 @@ const translations = {
     errorLink: 'د تادیې لینک ترلاسه کولو کې ستونزه',
     sarafiDetails: 'د شهزاده سرای صرافي',
     sarafiNote: 'مهرباني وکړئ د حوالې رسید وساتئ.'
+  },
+  en: {
+    selectMethod: 'Select Payment Method',
+    payAmount: 'Payable Amount',
+    afn: 'AFN',
+    back: 'Back to List',
+    hesabPayTitle: 'HesabPay (Online)',
+    bankTitle: 'Bank Transfer',
+    sarafiTitle: 'Sarafi Hawala',
+    mpaisaTitle: 'M-Paisa (Roshan)',
+    mhawalaTitle: 'M-Hawala (Etisalat)',
+    momoTitle: 'MoMo (MTN)',
+    pulemaTitle: 'My Money (AWCC)',
+    manualDesc: 'Please transfer the amount and enter the tracking code below:',
+    trxLabel: 'Transaction ID / Reference Code',
+    trxPlaceholder: 'Ex: 192830...',
+    btnSubmit: 'Submit Payment',
+    btnLoading: 'Submitting...',
+    hesabPayDesc: 'You will be redirected to the secure HesabPay gateway.',
+    btnHesabPay: 'Go to Payment Gateway',
+    copy: 'Copy',
+    errorTrx: 'Please enter the transaction ID.',
+    successMsg: 'Payment submitted! Ticket will be issued after verification.',
+    errorLink: 'Error getting payment link',
+    sarafiDetails: 'Sarai Shahzada Exchange',
+    sarafiNote: 'Please keep the transfer receipt image.'
   }
 };
 
@@ -77,7 +103,13 @@ export default function PaymentModal({ amount, orderId, onClose, onSuccess, lang
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [loading, setLoading] = useState(false);
   const [trxId, setTrxId] = useState('');
+  
+  // انتخاب زبان (فال‌بک به فارسی)
   const txt = translations[lang] || translations.dr;
+  // تعیین جهت
+  const isLtr = lang === 'en';
+  const dirClass = isLtr ? 'ltr' : 'rtl';
+  const textClass = isLtr ? 'text-left' : 'text-right';
 
   const handleHesabPay = async () => {
     setLoading(true);
@@ -91,7 +123,6 @@ export default function PaymentModal({ amount, orderId, onClose, onSuccess, lang
           failureUrl: `${currentURL}/payment/failed`
         }
       });
-
       if (error) throw error;
       if (data.paymentUrl) {
         window.location.href = data.paymentUrl;
@@ -109,13 +140,12 @@ export default function PaymentModal({ amount, orderId, onClose, onSuccess, lang
   const handleManualSubmit = async () => {
     if (!trxId) return alert(txt.errorTrx);
     setLoading(true);
-    
     try {
       const { error } = await supabase
         .from('bookings')
         .update({ 
             status: 'pending_verification',
-            payment_method: selectedMethod.key, // ذخیره کلید متد
+            payment_method: selectedMethod.key, 
             transaction_id: trxId,
             payment_date: new Date()
         })
@@ -134,7 +164,7 @@ export default function PaymentModal({ amount, orderId, onClose, onSuccess, lang
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in font-[Vazirmatn]">
+    <div className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in font-[Vazirmatn]`} dir={dirClass}>
       <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
         <div className="bg-gray-50 p-4 border-b flex justify-between items-center shrink-0">
@@ -158,21 +188,22 @@ export default function PaymentModal({ amount, orderId, onClose, onSuccess, lang
                 <button 
                   key={method.id}
                   onClick={() => setSelectedMethod(method)}
-                  className="w-full flex items-center gap-4 p-4 border border-gray-100 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all group text-right shadow-sm"
+                  className={`w-full flex items-center gap-4 p-4 border border-gray-100 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all group shadow-sm ${textClass}`}
                 >
                   <div className="bg-gray-100 p-2 rounded-lg group-hover:bg-white transition-colors">
                     {method.icon}
                   </div>
                   <span className="font-bold text-gray-700 group-hover:text-blue-700 flex-1">{txt[method.key]}</span>
-                  <ArrowLeft size={16} className="text-gray-300 group-hover:text-blue-500 flip-rtl"/>
+                  {/* فلش متناسب با جهت زبان: در انگلیسی (LTR) باید به راست باشد، در فارسی (RTL) به چپ */}
+                  <ArrowLeft size={16} className={`text-gray-300 group-hover:text-blue-500 ${isLtr ? 'rotate-180' : ''}`}/>
                 </button>
               ))}
             </div>
           ) : (
-            <div className="space-y-6 animate-in slide-in-from-right-10">
+            <div className={`space-y-6 animate-in ${isLtr ? 'slide-in-from-left-10' : 'slide-in-from-right-10'}`}>
               
               <button onClick={() => setSelectedMethod(null)} className="text-xs text-gray-500 hover:text-black flex items-center gap-1 mb-2">
-                 <ArrowLeft size={12} className="rotate-180"/> {txt.back}
+                 <ArrowLeft size={12} className={!isLtr ? 'rotate-0' : 'rotate-180'}/> {txt.back}
               </button>
 
               {selectedMethod.type === 'manual' ? (
@@ -196,7 +227,7 @@ export default function PaymentModal({ amount, orderId, onClose, onSuccess, lang
                       )}
                       
                       <p className="text-xs text-gray-500 leading-relaxed mt-2">
-                        {txt.manualDesc.replace('{amount}', amount.toLocaleString())}
+                        {txt.manualDesc}
                         <br/>
                         <b className="text-black text-sm">{amount.toLocaleString()} {txt.afn}</b>
                       </p>
@@ -204,7 +235,7 @@ export default function PaymentModal({ amount, orderId, onClose, onSuccess, lang
 
                     <div className="space-y-3">
                         <div>
-                            <label className="block text-xs font-bold text-gray-500 mb-1 mr-1">{txt.trxLabel}</label>
+                            <label className={`block text-xs font-bold text-gray-500 mb-1 ${isLtr ? 'ml-1' : 'mr-1'}`}>{txt.trxLabel}</label>
                             <input 
                             type="text" 
                             placeholder={txt.trxPlaceholder} 
