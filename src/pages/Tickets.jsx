@@ -183,22 +183,52 @@ const translations = {
     noResult: "هیڅ الوتنه ونه موندل شوه.",
     originLabel: "مبدا (ښار یا هوايي ډګر)",
     destLabel: "مقصد (ښار یا هوايي ډګر)"
+  },
+  en: {
+    one_way: "One Way", round_trip: "Round Trip",
+    economy: "Economy", business: "Business", first: "First Class",
+    adults: "Adults", children: "Children", passenger: "Passenger", confirm: "Confirm",
+    modalInfoTitle: "Passenger Info",
+    modalInfoDesc: "Please enter your details to book the flight.",
+    labelName: "Full Name",
+    labelPhone: "Phone Number",
+    placeName: "Ex: John Doe",
+    placePhone: "+93...",
+    btnSubmit: "Register & Pay",
+    btnLoading: "Registering...",
+    modalSuccessTitle: "Booking Initiated!",
+    labelOrderId: "Order ID",
+    modalPayDesc: "Please proceed with payment to finalize your ticket.",
+    paySuccessMsg: "Payment successful! Ticket has been issued.",
+    errorEmpty: "Please enter your name and phone number.",
+    errorBooking: "Booking failed. Please try again.",
+    searching: "Searching airlines...",
+    noResult: "No flights found. Please try another route.",
+    originLabel: "Origin (City or Airport)",
+    destLabel: "Destination (City or Airport)"
   }
 };
 
 // --- کامپوننت جستجوی فرودگاه (نسخه نهایی: انیمیشن نرم، بدون پرش، وسط‌چین) ---
-const AirportSearch = ({ value, onChange, placeholder, icon: Icon }) => {
+const AirportSearch = ({ value, onChange, placeholder, icon: Icon, lang = 'dr' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const wrapperRef = useRef(null);
   const inputRef = useRef(null);
+  const isLtr = lang === 'en';
+
+  const getDisplayName = (a) => {
+      if (lang === 'en') return `${a.name} (${a.code})`;
+      if (lang === 'ps') return `${a.ps} (${a.code})`;
+      return `${a.fa} (${a.code})`;
+  };
 
   useEffect(() => {
     const found = AIRPORTS.find(a => a.code === value);
-    if (found) setSearch(`${found.fa} (${found.code})`);
+    if (found) setSearch(getDisplayName(found));
     else if (!value) setSearch('');
-  }, [value]);
+  }, [value, lang]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -206,18 +236,19 @@ const AirportSearch = ({ value, onChange, placeholder, icon: Icon }) => {
         setIsOpen(false);
         setIsFocused(false);
         const found = AIRPORTS.find(a => a.code === value);
-        setSearch(found ? `${found.fa} (${found.code})` : '');
+        setSearch(found ? getDisplayName(found) : '');
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [value]);
+  }, [value, lang]);
 
   const filteredAirports = AIRPORTS.filter(a => 
     a.city.toLowerCase().includes(search.toLowerCase()) || 
     a.code.toLowerCase().includes(search.toLowerCase()) ||
     a.fa.includes(search) ||
-    a.ps.includes(search)
+    a.ps.includes(search) ||
+    (lang === 'en' && a.name.toLowerCase().includes(search.toLowerCase()))
   );
 
   // وضعیت وسط‌چین (غیرفعال)
@@ -233,6 +264,7 @@ const AirportSearch = ({ value, onChange, placeholder, icon: Icon }) => {
             inputRef.current?.focus();
         }}
       >
+        
         {/* متن راهنما (Label) */}
         <div className={`absolute left-1/2 -translate-x-1/2 transition-all duration-300 pointer-events-none whitespace-nowrap z-10 px-2 rounded-full
             ${isCentered 
@@ -246,8 +278,8 @@ const AirportSearch = ({ value, onChange, placeholder, icon: Icon }) => {
         {/* آیکون */}
         <div className={`absolute top-1/2 -translate-y-1/2 transition-all duration-300 pointer-events-none z-10
             ${isCentered 
-               ? 'left-1/2 translate-x-[85px] text-gray-400' // کنار متن (وسط)
-               : 'left-[calc(100%-25px)] -translate-x-1/2 text-[#058B8C]' // گوشه راست (فعال)
+               ? (isLtr ? 'left-1/2 -translate-x-[110px] text-gray-400' : 'left-1/2 translate-x-[85px] text-gray-400')
+               : (isLtr ? 'left-4 text-[#058B8C]' : 'left-[calc(100%-25px)] -translate-x-1/2 text-[#058B8C]')
             }`}
         >
             <Icon size={20}/>
@@ -260,8 +292,9 @@ const AirportSearch = ({ value, onChange, placeholder, icon: Icon }) => {
           onFocus={() => setIsFocused(true)}
           onChange={(e) => { setSearch(e.target.value); setIsOpen(true); }}
           className={`w-full h-full bg-transparent outline-none font-black text-gray-800 text-sm transition-all duration-300 px-10
-            ${isCentered ? 'opacity-0' : 'opacity-100 text-right'}`}
+            ${isCentered ? 'opacity-0' : 'opacity-100'} ${isLtr ? 'text-left' : 'text-right'}`}
           autoComplete="off"
+          dir={isLtr ? 'ltr' : 'rtl'}
         />
 
         {/* دکمه حذف */}
@@ -273,7 +306,7 @@ const AirportSearch = ({ value, onChange, placeholder, icon: Icon }) => {
                     setSearch(''); 
                     inputRef.current?.focus(); 
                 }} 
-                className="absolute left-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 rounded-full animate-in fade-in z-20"
+                className={`absolute top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 rounded-full animate-in fade-in z-20 ${isLtr ? 'right-3' : 'left-3'}`}
             >
                 <X size={14} className="text-gray-400"/>
             </button>
@@ -282,27 +315,32 @@ const AirportSearch = ({ value, onChange, placeholder, icon: Icon }) => {
       
       {/* لیست نتایج */}
       {isOpen && (
-        <div className="absolute top-full right-0 left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 max-h-60 overflow-y-auto z-50 animate-in fade-in zoom-in-95">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 max-h-60 overflow-y-auto z-50 animate-in fade-in zoom-in-95">
           {filteredAirports.length > 0 ?
           filteredAirports.map(item => (
             <div 
               key={item.code} 
-              className="px-4 py-3 hover:bg-blue-50 cursor-pointer flex justify-between items-center border-b border-gray-50 last:border-0"
+              className={`px-4 py-3 hover:bg-blue-50 cursor-pointer flex items-center border-b border-gray-50 last:border-0 ${isLtr ? 'flex-row text-left justify-between' : 'flex-row-reverse text-right justify-between'}`}
               onClick={() => {
                 onChange(item.code);
-                setSearch(`${item.fa} (${item.code})`);
+                setSearch(getDisplayName(item));
                 setIsOpen(false);
                 setIsFocused(false);
               }}
             >
               <div>
-                <div className="font-bold text-gray-800 text-sm">{item.fa} <span className="text-xs text-gray-500 font-normal">({item.city})</span></div>
+                <div className="font-bold text-gray-800 text-sm">
+                   {lang === 'en' ? item.name : (lang === 'ps' ? item.ps : item.fa)} 
+                   <span className="text-xs text-gray-500 font-normal mx-1">({item.city})</span>
+                </div>
                 <div className="text-[10px] text-gray-400">{item.country}</div>
               </div>
               <span className="font-mono font-black text-[#058B8C] bg-blue-50 px-2 py-1 rounded text-xs">{item.code}</span>
             </div>
           )) : (
-            <div className="p-4 text-center text-gray-400 text-xs">موردی یافت نشد</div>
+            <div className="p-4 text-center text-gray-400 text-xs">
+                {lang === 'en' ? "No results found" : "موردی یافت نشد"}
+            </div>
           )}
         </div>
       )}
@@ -315,10 +353,20 @@ const GoogleCalendar = ({ onSelect, onClose, selectedDate, lang }) => {
   const [viewDate, setViewDate] = useState(new Date());
   const today = new Date(); today.setHours(0, 0, 0, 0);
   
-  const months = lang === 'dr' 
-    ? ["جنوری", "فبروری", "مارچ", "اپریل", "می", "جون", "جولای", "آگوست", "سپتامبر", "اکتوبر", "نوامبر", "دسامبر"] 
-    : ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const weekDays = lang === 'dr' ? ["ش", "ی", "د", "س", "چ", "پ", "ج"] : ["S", "M", "T", "W", "T", "F", "S"];
+  const getMonths = () => {
+      if (lang === 'en') return ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      if (lang === 'ps') return ["جنوری", "فبروری", "مارچ", "اپریل", "می", "جون", "جولای", "آگوست", "سپتامبر", "اکتوبر", "نوامبر", "دسامبر"];
+      return ["جنوری", "فبروری", "مارچ", "اپریل", "می", "جون", "جولای", "آگوست", "سپتامبر", "اکتوبر", "نوامبر", "دسامبر"];
+  };
+
+  const getWeekDays = () => {
+      if (lang === 'en') return ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+      return ["ش", "ی", "د", "س", "چ", "پ", "ج"];
+  };
+
+  const months = getMonths();
+  const weekDays = getWeekDays();
+
   const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
   const getFirstDay = (year, month) => new Date(year, month, 1).getDay();
   const changeMonth = (offset) => { const newDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + offset, 1); setViewDate(newDate); };
@@ -347,9 +395,12 @@ const GoogleCalendar = ({ onSelect, onClose, selectedDate, lang }) => {
               <button 
                 key={d} type="button" disabled={isPast}
                 onClick={(e) => { e.stopPropagation(); if (!isPast) onSelect(dateStr); }}
-                className={`h-8 w-8 mx-auto rounded-full flex items-center justify-center text-xs transition-all ${isSelected ? 'bg-[#058B8C] text-white shadow-md' : ''} ${!isSelected && !isPast ? 'hover:bg-blue-50 text-gray-700' : ''} ${isPast ? 'text-gray-300' : ''}`}
+                className={`h-8 w-8 mx-auto rounded-full flex items-center justify-center text-xs transition-all ${isSelected ?
+                'bg-[#058B8C] text-white shadow-md' : ''} ${!isSelected && !isPast ? 'hover:bg-blue-50 text-gray-700' : ''} ${isPast ?
+                'text-gray-300' : ''}`}
               >
-                <span className={`font-bold ${isPast ? 'line-through decoration-gray-300' : ''}`}>{d}</span>
+                <span className={`font-bold ${isPast ?
+                'line-through decoration-gray-300' : ''}`}>{d}</span>
               </button>
             );
           })}
@@ -358,14 +409,16 @@ const GoogleCalendar = ({ onSelect, onClose, selectedDate, lang }) => {
     );
   };
   return (
-    <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-6 z-50 w-[650px] animate-in fade-in zoom-in-95 hidden md:block cursor-default" onClick={(e) => e.stopPropagation()}>
+    <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-6 z-50 w-[650px] animate-in fade-in zoom-in-95 hidden md:block cursor-default" onClick={(e) => e.stopPropagation()} dir="ltr">
        <div className="flex justify-between items-center mb-4">
           <button type="button" onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 rounded-full"><ChevronLeft size={20}/></button>
           <button type="button" onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 rounded-full"><ChevronRight size={20}/></button>
        </div>
        <div className="flex divide-x divide-gray-100 divide-x-reverse">{renderMonth(0)}{renderMonth(1)}</div>
        <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-          <button type="button" onClick={onClose} className="px-4 py-2 text-gray-500 font-bold text-sm hover:bg-gray-50 rounded-lg">انصراف</button>
+          <button type="button" onClick={onClose} className="px-4 py-2 text-gray-500 font-bold text-sm hover:bg-gray-50 rounded-lg">
+             {lang === 'en' ? 'Cancel' : (lang === 'ps' ? 'لغوه' : 'انصراف')}
+          </button>
        </div>
     </div>
   );
@@ -384,10 +437,14 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
   const [selectedFlight, setSelectedFlight] = useState(null);
   const [customerInfo, setCustomerInfo] = useState({ name: '', phone: '' });
   const [bookedOrder, setBookedOrder] = useState(null);
+  const isLtr = lang === 'en';
 
   const txt = translations[lang] || translations.dr;
-  const lt = { search: lang==='dr'?'جستجوی پرواز':'لټون', select_date: lang==='dr'?'تاریخ رفت':'نیټه', return_date: lang==='dr'?'تاریخ برگشت':'راستنیدو نیټه' };
-  
+  const lt = { 
+      search: lang==='en'?'Search':(lang==='dr'?'جستجوی پرواز':'لټون'), 
+      select_date: lang==='en'?'Depart Date':(lang==='dr'?'تاریخ رفت':'نیټه'), 
+      return_date: lang==='en'?'Return Date':(lang==='dr'?'تاریخ برگشت':'راستنیدو نیټه') 
+  };
   const [formData, setFormData] = useState({ origin: '', destination: '', date: '', returnDate: '', tripType: 'one_way', flightClass: 'economy', adults: 1, children: 0 });
   const [results, setResults] = useState([]);
 
@@ -437,7 +494,7 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
   const handleSearch = (e) => {
     e.preventDefault();
     if(!formData.origin || !formData.destination) {
-        alert(lang === 'dr' ? "لطفا مبدا و مقصد را انتخاب کنید" : "مهربانی وکړئ مبدا او مقصد وټاکئ");
+        alert(txt.errorEmpty);
         return;
     }
     performSearch(formData);
@@ -481,13 +538,14 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in font-[Vazirmatn]">
+    <div className="space-y-8 animate-in fade-in font-[Vazirmatn]" dir={isLtr ? 'ltr' : 'rtl'}>
        
        {/* --- مودال‌ها (بدون تغییر) --- */}
        {selectedFlight && (
          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-            <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl relative">
-                <button onClick={() => setSelectedFlight(null)} className="absolute top-4 left-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200"><X size={20}/></button>
+            <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl relative" dir={isLtr ? 'ltr' : 'rtl'}>
+              
+                <button onClick={() => setSelectedFlight(null)} className={`absolute top-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200 ${isLtr ? 'right-4' : 'left-4'}`}><X size={20}/></button>
                 <h3 className="text-xl font-black text-gray-800 mb-1">{txt.modalInfoTitle}</h3>
                 <p className="text-sm text-gray-500 mb-6">{txt.modalInfoDesc}</p>
                 <form onSubmit={handleSubmitBooking} className="space-y-4">
@@ -515,8 +573,8 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
 
        {bookedOrder && (
          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in zoom-in-95">
-             <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl relative">
-                <button onClick={() => setBookedOrder(null)} className="absolute top-4 left-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200"><X size={20}/></button>
+             <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl relative" dir={isLtr ? 'ltr' : 'rtl'}>
+                <button onClick={() => setBookedOrder(null)} className={`absolute top-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200 ${isLtr ? 'right-4' : 'left-4'}`}><X size={20}/></button>
                 <div className="text-center mb-6">
                     <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce"><Check size={40}/></div>
                     <h3 className="text-2xl font-black text-gray-800">{txt.modalSuccessTitle}</h3>
@@ -532,13 +590,13 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
        <div className="bg-white p-6 rounded-[2rem] shadow-xl border border-gray-100 space-y-6 relative z-30" ref={dropdownRef}>
           <div className="flex flex-wrap items-center gap-3 relative z-50">
              
-              {/* 1. نوع سفر */}
+             {/* 1. نوع سفر */}
              <div className="relative">
                 <TopFilterBtn label={txt[formData.tripType]} icon={ArrowRightLeft} active={activeDropdown === 'type'} onClick={() => setActiveDropdown(activeDropdown === 'type' ? null : 'type')} />
                 {activeDropdown === 'type' && (
-                  <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-xl py-2 overflow-hidden animate-in zoom-in-95 z-50">
+                  <div className={`absolute top-full mt-2 w-48 bg-white rounded-xl shadow-xl py-2 overflow-hidden animate-in zoom-in-95 z-50 ${isLtr ? 'left-0' : 'right-0'}`}>
                     {['round_trip', 'one_way'].map(k => (
-                      <button key={k} onClick={() => {setFormData({...formData, tripType: k}); setActiveDropdown(null)}} className="w-full text-right px-4 py-3 hover:bg-gray-50 text-sm font-bold text-gray-700 flex justify-between">
+                      <button key={k} onClick={() => {setFormData({...formData, tripType: k}); setActiveDropdown(null)}} className={`w-full px-4 py-3 hover:bg-gray-50 text-sm font-bold text-gray-700 flex justify-between ${isLtr ? 'text-left' : 'text-right'}`}>
                         {txt[k]} {formData.tripType === k && <Check size={16} className="text-[#1e3a8a]"/>}
                       </button>
                     ))}
@@ -550,7 +608,7 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
              <div className="relative">
                   <TopFilterBtn label={`${formData.adults + formData.children} ${txt.passenger}`} icon={Users} active={activeDropdown === 'pax'} onClick={() => setActiveDropdown(activeDropdown === 'pax' ? null : 'pax')} />
                   {activeDropdown === 'pax' && (
-                    <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-xl shadow-xl p-4 animate-in zoom-in-95 cursor-default z-50">
+                    <div className={`absolute top-full mt-2 w-72 bg-white rounded-xl shadow-xl p-4 animate-in zoom-in-95 cursor-default z-50 ${isLtr ? 'left-0' : 'right-0'}`}>
                        {['adults', 'children'].map(k => (
                          <div key={k} className="flex justify-between items-center mb-4 last:mb-0">
                            <span className="font-bold text-gray-700">{txt[k]}</span>
@@ -568,22 +626,22 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
 
              {/* 3. کلاس پرواز */}
              <div className="relative">
-                 <TopFilterBtn label={txt[formData.flightClass]} icon={Plane} active={activeDropdown === 'class'} onClick={() => setActiveDropdown(activeDropdown === 'class' ? null : 'class')} />
+                  <TopFilterBtn label={txt[formData.flightClass]} icon={Plane} active={activeDropdown === 'class'} onClick={() => setActiveDropdown(activeDropdown === 'class' ? null : 'class')} />
                   {activeDropdown === 'class' && (
-                    <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-xl py-2 overflow-hidden animate-in zoom-in-95 z-50">
+                    <div className={`absolute top-full mt-2 w-48 bg-white rounded-xl shadow-xl py-2 overflow-hidden animate-in zoom-in-95 z-50 ${isLtr ? 'left-0' : 'right-0'}`}>
                       {['economy', 'business', 'first'].map(k => (
-                         <button key={k} onClick={() => {setFormData({...formData, flightClass: k}); setActiveDropdown(null)}} className="w-full text-right px-4 py-3 hover:bg-gray-50 text-sm font-bold text-gray-700 flex justify-between">{txt[k]}</button>
+                          <button key={k} onClick={() => {setFormData({...formData, flightClass: k}); setActiveDropdown(null)}} className={`w-full px-4 py-3 hover:bg-gray-50 text-sm font-bold text-gray-700 flex justify-between ${isLtr ? 'text-left' : 'text-right'}`}>{txt[k]}</button>
                       ))}
                     </div>
                   )}
              </div>
           </div>
 
-          <div className="bg-white rounded-[1.5rem] p-2 flex flex-col lg:flex-row items-stretch shadow-lg divide-y lg:divide-y-0 lg:divide-x lg:divide-x-reverse divide-gray-100 relative z-30 min-h-[80px]">
+          <div className={`bg-white rounded-[1.5rem] p-2 flex flex-col lg:flex-row items-stretch shadow-lg relative z-30 min-h-[80px] ${isLtr ? 'divide-y lg:divide-y-0 lg:divide-x divide-gray-100' : 'divide-y lg:divide-y-0 lg:divide-x lg:divide-x-reverse divide-gray-100'}`}>
              
              {/* مبدا (هوشمند) */}
              <div className="flex-1 h-20 lg:h-auto">
-                <AirportSearch icon={Plane} value={formData.origin} onChange={(val)=>setFormData({...formData, origin: val})} placeholder={txt.originLabel} />
+                <AirportSearch lang={lang} icon={Plane} value={formData.origin} onChange={(val)=>setFormData({...formData, origin: val})} placeholder={txt.originLabel} />
              </div>
              
              {/* مقصد (همراه با دکمه شناور) */}
@@ -597,11 +655,11 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
                         <ArrowRightLeft size={16} />
                       </button>
                    </div>
-                <AirportSearch icon={MapPin} value={formData.destination} onChange={(val)=>setFormData({...formData, destination: val})} placeholder={txt.destLabel} />
+                 <AirportSearch lang={lang} icon={MapPin} value={formData.destination} onChange={(val)=>setFormData({...formData, destination: val})} placeholder={txt.destLabel} />
              </div>
 
              {/* تاریخ رفت */}
-             <div className="flex-1 relative border-r border-gray-100 h-20 lg:h-auto">
+             <div className={`flex-1 relative h-20 lg:h-auto ${isLtr ? 'border-l border-gray-100' : 'border-r border-gray-100'}`}>
                 <div onClick={()=>setActiveDropdown(activeDropdown==='date'?null:'date')} className="flex items-center gap-3 px-4 py-3 cursor-pointer h-full hover:bg-gray-50 rounded-xl transition">
                    <Calendar size={20} className="text-gray-400"/>
                    <div className="flex flex-col">
@@ -613,7 +671,7 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
              </div>
 
              {/* تاریخ برگشت */}
-             <div className="flex-1 relative border-r border-gray-100 h-20 lg:h-auto">
+             <div className={`flex-1 relative h-20 lg:h-auto ${isLtr ? 'border-l border-gray-100' : 'border-r border-gray-100'}`}>
                 <div onClick={()=>formData.tripType==='round_trip' && setActiveDropdown(activeDropdown==='date_ret'?null:'date_ret')} className={`flex items-center gap-3 px-4 py-3 cursor-pointer h-full ${formData.tripType==='round_trip'?'hover:bg-gray-50 rounded-xl transition':'opacity-50 cursor-not-allowed bg-gray-50 rounded-xl'}`}>
                    <Calendar size={20} className="text-gray-400"/>
                    <div className="flex flex-col">
@@ -640,7 +698,7 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
                 <div key={flight.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:border-[#1e3a8a] transition-all flex flex-col md:flex-row items-center justify-between gap-6 hover:shadow-lg">
                    <div className="flex items-center gap-4 min-w-[200px]">
                       <div className="w-16 h-16 flex items-center justify-center bg-gray-50 rounded-lg p-2">
-                          <img src={`https://pics.avs.io/200/200/${flight.logo}.png`} alt={flight.airline} className="max-w-full max-h-full object-contain" onError={(e) => e.target.src = 'https://cdn-icons-png.flaticon.com/512/7893/7893979.png'}/>
+                           <img src={`https://pics.avs.io/200/200/${flight.logo}.png`} alt={flight.airline} className="max-w-full max-h-full object-contain" onError={(e) => e.target.src = 'https://cdn-icons-png.flaticon.com/512/7893/7893979.png'}/>
                       </div>
                       <div>
                          <div className="font-black text-xl" dir="ltr">{flight.dep} - {flight.arr}</div>
@@ -669,64 +727,97 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
           <div className="relative z-10">
              <h3 className="text-xl font-black text-gray-800 mb-6 flex items-center gap-3 border-b border-orange-200 pb-4">
                 <div className="bg-orange-100 p-2 rounded-lg text-[#f97316]">
-                   <AlertTriangle size={24}/>
+                    <AlertTriangle size={24}/>
                 </div>
                 <div>
-                   <div className="text-base">تذکرات مهم قبل از پرواز</div>
-                   <div className="text-xs text-gray-500 font-normal mt-1">د الوتنې دمخه مهم یادداشتونه</div>
+                   <div className="text-base">{lang === 'en' ? "Important Pre-Flight Notes" : "تذکرات مهم قبل از پرواز"}</div>
+                   <div className="text-xs text-gray-500 font-normal mt-1">{lang === 'en' ? "Essential information for your journey" : "د الوتنې دمخه مهم یادداشتونه"}</div>
                 </div>
              </h3>
 
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* ستون دری */}
-                <div className="space-y-4">
-                   <div className="flex gap-3 items-start">
-                      <div className="w-2 h-2 mt-2 rounded-full bg-[#058B8C] shrink-0"></div>
-                      <p className="text-sm text-gray-600 leading-relaxed">
-                         <span className="font-bold text-gray-800 block mb-1">اعتبار پاسپورت:</span>
-                         اطمینان حاصل کنید که پاسپورت شما حداقل <span className="text-red-500 font-bold">۶ ماه</span> اعتبار دارد.
-                      </p>
-                   </div>
-                   <div className="flex gap-3 items-start">
-                      <div className="w-2 h-2 mt-2 rounded-full bg-[#058B8C] shrink-0"></div>
-                      <p className="text-sm text-gray-600 leading-relaxed">
-                         <span className="font-bold text-gray-800 block mb-1">ویزا و مدارک:</span>
-                         مسئولیت کنترل ویزا و صحت مدارک به عهده مسافر می‌باشد.
-                      </p>
-                   </div>
-                   <div className="flex gap-3 items-start">
-                      <div className="w-2 h-2 mt-2 rounded-full bg-[#058B8C] shrink-0"></div>
-                      <p className="text-sm text-gray-600 leading-relaxed">
-                         <span className="font-bold text-gray-800 block mb-1">زمان حضور:</span>
-                         برای پروازهای خارجی ۳ ساعت و داخلی ۲ ساعت قبل از پرواز در فرودگاه حاضر باشید.
-                      </p>
-                   </div>
-                </div>
+                {/* اگر زبان انگلیسی است، توضیحات انگلیسی نمایش بده، در غیر اینصورت دری و پشتو */}
+                {lang === 'en' ? (
+                   <>
+                    <div className="space-y-4">
+                        <div className="flex gap-3 items-start">
+                           <div className="w-2 h-2 mt-2 rounded-full bg-[#058B8C] shrink-0"></div>
+                           <p className="text-sm text-gray-600 leading-relaxed text-left">
+                              <span className="font-bold text-gray-800 block mb-1">Passport Validity:</span>
+                              Ensure your passport is valid for at least <span className="text-red-500 font-bold">6 months</span>.
+                           </p>
+                        </div>
+                        <div className="flex gap-3 items-start">
+                           <div className="w-2 h-2 mt-2 rounded-full bg-[#058B8C] shrink-0"></div>
+                           <p className="text-sm text-gray-600 leading-relaxed text-left">
+                               <span className="font-bold text-gray-800 block mb-1">Visa & Documents:</span>
+                               The passenger is responsible for verifying visa validity and travel documents.
+                           </p>
+                        </div>
+                    </div>
+                    <div className="space-y-4">
+                        <div className="flex gap-3 items-start">
+                           <div className="w-2 h-2 mt-2 rounded-full bg-[#f97316] shrink-0"></div>
+                           <p className="text-sm text-gray-600 leading-relaxed text-left">
+                               <span className="font-bold text-gray-800 block mb-1">Check-in Time:</span>
+                               Please arrive at the airport 3 hours before international flights and 2 hours before domestic flights.
+                           </p>
+                        </div>
+                    </div>
+                   </>
+                ) : (
+                   <>
+                    {/* ستون دری */}
+                    <div className="space-y-4">
+                       <div className="flex gap-3 items-start">
+                          <div className="w-2 h-2 mt-2 rounded-full bg-[#058B8C] shrink-0"></div>
+                          <p className="text-sm text-gray-600 leading-relaxed">
+                             <span className="font-bold text-gray-800 block mb-1">اعتبار پاسپورت:</span>
+                             اطمینان حاصل کنید که پاسپورت شما حداقل <span className="text-red-500 font-bold">۶ ماه</span> اعتبار دارد.
+                          </p>
+                       </div>
+                       <div className="flex gap-3 items-start">
+                          <div className="w-2 h-2 mt-2 rounded-full bg-[#058B8C] shrink-0"></div>
+                          <p className="text-sm text-gray-600 leading-relaxed">
+                              <span className="font-bold text-gray-800 block mb-1">ویزا و مدارک:</span>
+                             مسئولیت کنترل ویزا و صحت مدارک به عهده مسافر می‌باشد.
+                          </p>
+                       </div>
+                       <div className="flex gap-3 items-start">
+                          <div className="w-2 h-2 mt-2 rounded-full bg-[#058B8C] shrink-0"></div>
+                          <p className="text-sm text-gray-600 leading-relaxed">
+                              <span className="font-bold text-gray-800 block mb-1">زمان حضور:</span>
+                             برای پروازهای خارجی ۳ ساعت و داخلی ۲ ساعت قبل از پرواز در فرودگاه حاضر باشید.
+                          </p>
+                       </div>
+                    </div>
 
-                {/* ستون پشتو */}
-                <div className="space-y-4 text-right" dir="rtl">
-                   <div className="flex gap-3 items-start">
-                      <div className="w-2 h-2 mt-2 rounded-full bg-[#f97316] shrink-0"></div>
-                      <p className="text-sm text-gray-600 leading-relaxed">
-                         <span className="font-bold text-gray-800 block mb-1">د پاسپورټ اعتبار:</span>
-                         ډاډ ترلاسه کړئ چې ستاسو پاسپورټ لږترلږه <span className="text-red-500 font-bold">۶ میاشتې</span> اعتبار لري.
-                      </p>
-                   </div>
-                   <div className="flex gap-3 items-start">
-                      <div className="w-2 h-2 mt-2 rounded-full bg-[#f97316] shrink-0"></div>
-                      <p className="text-sm text-gray-600 leading-relaxed">
-                         <span className="font-bold text-gray-800 block mb-1">ویزه او اسناد:</span>
-                         د ویزې او اسنادو د سموالي مسؤلیت د مسافر په غاړه دی.
-                      </p>
-                   </div>
-                   <div className="flex gap-3 items-start">
-                      <div className="w-2 h-2 mt-2 rounded-full bg-[#f97316] shrink-0"></div>
-                      <p className="text-sm text-gray-600 leading-relaxed">
-                         <span className="font-bold text-gray-800 block mb-1">د شتون وخت:</span>
-                         د بهرنیو الوتنو لپاره ۳ ساعته او د کورنیو لپاره ۲ ساعته مخکې په هوایی ډګر کې حاضر اوسئ.
-                      </p>
-                   </div>
-                </div>
+                    {/* ستون پشتو */}
+                    <div className="space-y-4 text-right" dir="rtl">
+                       <div className="flex gap-3 items-start">
+                           <div className="w-2 h-2 mt-2 rounded-full bg-[#f97316] shrink-0"></div>
+                          <p className="text-sm text-gray-600 leading-relaxed">
+                             <span className="font-bold text-gray-800 block mb-1">د پاسپورټ اعتبار:</span>
+                             ډاډ ترلاسه کړئ چې ستاسو پاسپورټ لږترلږه <span className="text-red-500 font-bold">۶ میاشتې</span> اعتبار لري.
+                          </p>
+                       </div>
+                       <div className="flex gap-3 items-start">
+                          <div className="w-2 h-2 mt-2 rounded-full bg-[#f97316] shrink-0"></div>
+                          <p className="text-sm text-gray-600 leading-relaxed">
+                              <span className="font-bold text-gray-800 block mb-1">ویزه او اسناد:</span>
+                             د ویزې او اسنادو د سموالي مسؤلیت د مسافر په غاړه دی.
+                          </p>
+                       </div>
+                       <div className="flex gap-3 items-start">
+                          <div className="w-2 h-2 mt-2 rounded-full bg-[#f97316] shrink-0"></div>
+                          <p className="text-sm text-gray-600 leading-relaxed">
+                              <span className="font-bold text-gray-800 block mb-1">د شتون وخت:</span>
+                             د بهرنیو الوتنو لپاره ۳ ساعته او د کورنیو لپاره ۲ ساعته مخکې په هوایی ډګر کې حاضر اوسئ.
+                          </p>
+                       </div>
+                    </div>
+                   </>
+                )}
              </div>
           </div>
        </div>

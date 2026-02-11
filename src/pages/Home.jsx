@@ -3,7 +3,7 @@ import { Search, MapPin, ArrowRightLeft, ChevronDown, User, Calendar, Plus, Minu
 import ServiceCard from '../components/ServiceCard';
 import WeatherBlock from '../components/WeatherBlock';
 
-// لیست جامع فرودگاه‌ها (بیش از ۱۰۰ فرودگاه مرتبط)
+// لیست جامع فرودگاه‌ها (بیش از ۱۰۰ فرودگاه مرتبط) - کامل بدون حذفیات
 const AIRPORTS = [
   // --- افغانستان (Afghanistan) ---
   { code: 'KBL', name: 'Kabul International', city: 'Kabul', fa: 'کابل', ps: 'کابل', country: 'Afghanistan' },
@@ -144,22 +144,30 @@ const ICON_MAP = {
 
 const searchT = {
   dr: { one_way: "یک طرفه", round_trip: "رفت و برگشت", economy: "اکونومی", business: "بیزنس", first: "فرست کلاس", adults: "بزرگسال", children: "کودک", passenger: "مسافر", confirm: "تایید" },
-  ps: { one_way: "یو طرفه", round_trip: "تګ راتګ", economy: "اکونومي", business: "بیزنس", first: "لومړۍ درجه", adults: "لویان", children: "ماشومان", passenger: "مسافر", confirm: "تایید" }
+  ps: { one_way: "یو طرفه", round_trip: "تګ راتګ", economy: "اکونومي", business: "بیزنس", first: "لومړۍ درجه", adults: "لویان", children: "ماشومان", passenger: "مسافر", confirm: "تایید" },
+  en: { one_way: "One Way", round_trip: "Round Trip", economy: "Economy", business: "Business", first: "First Class", adults: "Adults", children: "Children", passenger: "Passenger", confirm: "Confirm" }
 };
 
 // --- کامپوننت جستجوی فرودگاه (اصلاح نهایی: تنظیم دقیق لبه و آیکون) ---
-const AirportSearch = ({ value, onChange, placeholder, icon: Icon }) => {
+const AirportSearch = ({ value, onChange, placeholder, icon: Icon, lang = 'dr' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const wrapperRef = useRef(null);
   const inputRef = useRef(null);
+  
+  // تابع کمکی برای دریافت نام نمایش
+  const getDisplayName = (a) => {
+      if (lang === 'en') return `${a.name} (${a.code})`;
+      if (lang === 'ps') return `${a.ps} (${a.code})`;
+      return `${a.fa} (${a.code})`;
+  };
 
   useEffect(() => {
     const found = AIRPORTS.find(a => a.code === value);
-    if (found) setSearch(`${found.fa} (${found.code})`);
+    if (found) setSearch(getDisplayName(found));
     else if (!value) setSearch('');
-  }, [value]);
+  }, [value, lang]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -167,22 +175,24 @@ const AirportSearch = ({ value, onChange, placeholder, icon: Icon }) => {
         setIsOpen(false);
         setIsFocused(false);
         const found = AIRPORTS.find(a => a.code === value);
-        setSearch(found ? `${found.fa} (${found.code})` : '');
+        setSearch(found ? getDisplayName(found) : '');
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [value]);
+  }, [value, lang]);
 
   const filteredAirports = AIRPORTS.filter(a => 
     a.city.toLowerCase().includes(search.toLowerCase()) || 
     a.code.toLowerCase().includes(search.toLowerCase()) ||
     a.fa.includes(search) ||
-    a.ps.includes(search)
+    a.ps.includes(search) ||
+    (lang === 'en' && a.name.toLowerCase().includes(search.toLowerCase()))
   );
 
   // وضعیت وسط‌چین (غیرفعال)
   const isCentered = !search && !isFocused;
+  const isLtr = lang === 'en';
 
   return (
     <div className="relative w-full h-full" ref={wrapperRef}>
@@ -194,29 +204,22 @@ const AirportSearch = ({ value, onChange, placeholder, icon: Icon }) => {
             inputRef.current?.focus();
         }}
       >
-        {/* متن راهنما (Label):
-           - left-1/2 و -translate-x-1/2: همیشه وسط افقی ثابت است (جلوگیری از پرش به چپ/راست).
-           - top-0 و -translate-y-1/2: در حالت فعال، مرکز متن دقیقاً روی خط لبه قرار می‌گیرد (نصف داخل، نصف بیرون).
-           - bg-white: خط بوردر زیر نوشته را می‌پوشاند.
-        */}
+        
+        {/* متن راهنما (Label) */}
         <div className={`absolute left-1/2 -translate-x-1/2 transition-all duration-300 pointer-events-none whitespace-nowrap z-10 px-2 rounded-full
             ${isCentered 
                ? 'top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold bg-transparent' // حالت وسط
                : 'top-0 -translate-y-1/2 text-[11px] text-[#058B8C] font-black bg-white shadow-sm' // حالت روی لبه
-            }`}
+             }`}
         >
              {placeholder}
         </div>
 
-        {/* آیکون:
-           - left-1/2: مبدا حرکت همیشه مرکز است.
-           - translate-x-[85px]: در حالت وسط، آیکون را ۸۵ پیکسل به راست هل می‌دهد تا کنار متن باشد و زیر آن نرود.
-           - left-[calc(100%-30px)]: در حالت فعال به انتهای سمت راست می‌رود.
-        */}
+        {/* آیکون */}
         <div className={`absolute top-1/2 -translate-y-1/2 transition-all duration-300 pointer-events-none z-10
             ${isCentered 
-               ? 'left-1/2 translate-x-[85px] text-gray-400' // کنار متن (وسط)
-               : 'left-[calc(100%-25px)] -translate-x-1/2 text-[#058B8C]' // گوشه راست (فعال)
+               ? (isLtr ? 'left-1/2 -translate-x-[110px] text-gray-400' : 'left-1/2 translate-x-[85px] text-gray-400') // کنار متن (وسط)
+               : (isLtr ? 'left-4 text-[#058B8C]' : 'left-[calc(100%-25px)] -translate-x-1/2 text-[#058B8C]') // گوشه (فعال)
             }`}
         >
             <Icon size={20}/>
@@ -229,8 +232,9 @@ const AirportSearch = ({ value, onChange, placeholder, icon: Icon }) => {
           onFocus={() => setIsFocused(true)}
           onChange={(e) => { setSearch(e.target.value); setIsOpen(true); }}
           className={`w-full h-full bg-transparent outline-none font-black text-gray-800 text-sm transition-all duration-300 px-10
-            ${isCentered ? 'opacity-0' : 'opacity-100 text-right'}`}
+            ${isCentered ? 'opacity-0' : 'opacity-100'} ${isLtr ? 'text-left' : 'text-right'}`}
           autoComplete="off"
+          dir={isLtr ? 'ltr' : 'rtl'}
         />
 
         {/* دکمه حذف */}
@@ -242,8 +246,8 @@ const AirportSearch = ({ value, onChange, placeholder, icon: Icon }) => {
                     setSearch(''); 
                     inputRef.current?.focus(); 
                 }} 
-                className="absolute left-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 rounded-full animate-in fade-in z-20"
-            >
+                className={`absolute top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 rounded-full animate-in fade-in z-20 ${isLtr ? 'right-3' : 'left-3'}`}
+             >
                 <X size={14} className="text-gray-400"/>
             </button>
         )}
@@ -251,27 +255,32 @@ const AirportSearch = ({ value, onChange, placeholder, icon: Icon }) => {
       
       {/* لیست نتایج */}
       {isOpen && (
-        <div className="absolute top-full right-0 left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 max-h-60 overflow-y-auto z-50 animate-in fade-in zoom-in-95">
+        <div className={`absolute top-full mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 max-h-60 overflow-y-auto z-50 animate-in fade-in zoom-in-95 left-0 right-0`}>
           {filteredAirports.length > 0 ?
           filteredAirports.map(item => (
             <div 
               key={item.code} 
-              className="px-4 py-3 hover:bg-blue-50 cursor-pointer flex justify-between items-center border-b border-gray-50 last:border-0"
+              className={`px-4 py-3 hover:bg-blue-50 cursor-pointer flex items-center border-b border-gray-50 last:border-0 ${isLtr ? 'flex-row text-left justify-between' : 'flex-row-reverse text-right justify-between'}`}
               onClick={() => {
                 onChange(item.code);
-                setSearch(`${item.fa} (${item.code})`);
+                setSearch(getDisplayName(item));
                 setIsOpen(false);
                 setIsFocused(false);
               }}
             >
               <div>
-                <div className="font-bold text-gray-800 text-sm">{item.fa} <span className="text-xs text-gray-500 font-normal">({item.city})</span></div>
+                <div className="font-bold text-gray-800 text-sm">
+                    {lang === 'en' ? item.name : (lang === 'ps' ? item.ps : item.fa)} 
+                    <span className="text-xs text-gray-500 font-normal mx-1">({item.city})</span>
+                </div>
                 <div className="text-[10px] text-gray-400">{item.country}</div>
               </div>
               <span className="font-mono font-black text-[#058B8C] bg-blue-50 px-2 py-1 rounded text-xs">{item.code}</span>
             </div>
           )) : (
-            <div className="p-4 text-center text-gray-400 text-xs">موردی یافت نشد</div>
+            <div className="p-4 text-center text-gray-400 text-xs">
+                {lang === 'en' ? "No results found" : "موردی یافت نشد"}
+            </div>
           )}
         </div>
       )}
@@ -283,26 +292,30 @@ const GoogleCalendar = ({ onSelect, onClose, selectedDate, lang }) => {
   const [viewDate, setViewDate] = useState(new Date());
   const today = new Date(); today.setHours(0, 0, 0, 0);
   
-  const months = lang === 'dr' 
-    ? ["جنوری", "فبروری", "مارچ", "اپریل", "می", "جون", "جولای", "آگوست", "سپتامبر", "اکتوبر", "نوامبر", "دسامبر"] 
-    : ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  
-  const weekDays = lang === 'dr' ? ["ش", "ی", "د", "س", "چ", "پ", "ج"] : ["S", "M", "T", "W", "T", "F", "S"];
+  const getMonths = () => {
+      if (lang === 'en') return ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      if (lang === 'ps') return ["جنوری", "فبروری", "مارچ", "اپریل", "می", "جون", "جولای", "آگوست", "سپتامبر", "اکتوبر", "نوامبر", "دسامبر"];
+      return ["جنوری", "فبروری", "مارچ", "اپریل", "می", "جون", "جولای", "آگوست", "سپتامبر", "اکتوبر", "نوامبر", "دسامبر"];
+  };
+  const getWeekDays = () => {
+      if (lang === 'en') return ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+      return ["ش", "ی", "د", "س", "چ", "پ", "ج"];
+  };
+
+  const months = getMonths();
+  const weekDays = getWeekDays();
   const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
   const getFirstDay = (year, month) => new Date(year, month, 1).getDay();
   const changeMonth = (offset) => { const newDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + offset, 1); setViewDate(newDate); };
-  
   const renderMonth = (offset) => {
     const currentView = new Date(viewDate.getFullYear(), viewDate.getMonth() + offset, 1);
     const year = currentView.getFullYear();
     const month = currentView.getMonth();
     const daysInMonth = getDaysInMonth(year, month);
     const firstDay = getFirstDay(year, month);
-    
     // تنظیم بلنک‌ها برای شروع هفته
     const blanks = Array(firstDay).fill(null);
     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-
     return (
       <div className="flex-1 px-4">
         <div className="font-bold text-center mb-4 text-gray-700">{months[month]} {year}</div>
@@ -318,7 +331,7 @@ const GoogleCalendar = ({ onSelect, onClose, selectedDate, lang }) => {
             const isPast = thisDayDate < today;
             return (
               <button 
-                key={d} type="button" disabled={isPast}
+               key={d} type="button" disabled={isPast}
                 onClick={(e) => { e.stopPropagation(); if (!isPast) onSelect(dateStr); }}
                 className={`h-8 w-8 mx-auto rounded-full flex items-center justify-center text-xs transition-all ${isSelected ? 'bg-[#058B8C] text-white shadow-md' : ''} ${!isSelected && !isPast ? 'hover:bg-blue-50 text-gray-700' : ''} ${isPast ? 'text-gray-300' : ''}`}
               >
@@ -330,16 +343,17 @@ const GoogleCalendar = ({ onSelect, onClose, selectedDate, lang }) => {
       </div>
     );
   };
-
   return (
-    <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-6 z-50 w-[650px] animate-in fade-in zoom-in-95 hidden md:block cursor-default" onClick={(e) => e.stopPropagation()}>
+    <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-6 z-50 w-[650px] animate-in fade-in zoom-in-95 hidden md:block cursor-default" onClick={(e) => e.stopPropagation()} dir="ltr">
        <div className="flex justify-between items-center mb-4">
           <button type="button" onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 rounded-full"><ChevronLeft size={20}/></button>
           <button type="button" onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 rounded-full"><ChevronRight size={20}/></button>
        </div>
        <div className="flex divide-x divide-gray-100 divide-x-reverse">{renderMonth(0)}{renderMonth(1)}</div>
        <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-          <button type="button" onClick={onClose} className="px-4 py-2 text-gray-500 font-bold text-sm hover:bg-gray-50 rounded-lg">انصراف</button>
+          <button type="button" onClick={onClose} className="px-4 py-2 text-gray-500 font-bold text-sm hover:bg-gray-50 rounded-lg">
+            {lang === 'en' ? 'Cancel' : (lang === 'ps' ? 'لغوه' : 'انصراف')}
+          </button>
        </div>
     </div>
   );
@@ -356,27 +370,57 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
   const dropdownRef = useRef(null);
   const [stats, setStats] = useState({ customers: 0, flights: 0, visas: 0, experience: 0 });
   const [formData, setFormData] = useState({ origin: '', destination: '', date: '', returnDate: '', tripType: 'one_way', flightClass: 'economy', adults: 1, children: 0 });
-  
   // اسلایدشو
   const [currentSlide, setCurrentSlide] = useState(0);
-  
+  const isLtr = lang === 'en';
   // اطمینان از اینکه تصاویر به صورت آرایه هستند
-  const heroImages = settings?.hero?.images && settings.hero.images.length > 0 
-    ? settings.hero.images 
-    : [settings.hero.image];
+  const heroImages = settings?.hero?.images && settings.hero.images.length > 0 ? settings.hero.images : [settings.hero.image];
 
   const st = searchT[lang] || searchT.dr;
-  
-  const lt = {
-    search: lang === 'dr' ? 'جستجوی پرواز' : 'د الوتنې لټون',
-    select_date: lang === 'dr' ? "تاریخ رفت" : "نیټه وټاکئ",
-    return_date: lang === 'dr' ? "تاریخ برگشت" : "راستنیدو نیټه",
-    services_title: lang === 'dr' ? "خدمات ما" : "زموږ خدمتونه",
-    news_title: lang === 'dr' ? "اخبار و اعلامیه‌ها" : "خبرونه او خبرتیاوې",
-    stat_customers: lang === 'dr' ? "مشتریان راضی" : "راضی پیرودونکي",
-    stat_flights: lang === 'dr' ? "پرواز موفق" : "بریالۍ الوتنې",
-    stat_visas: lang === 'dr' ? "ویزای صادر شده" : "صادر شوي ویزې",
-    stat_experience: lang === 'dr' ? "سال تجربه" : "کال تجربه"
+  const getLt = () => {
+    if (lang === 'en') return {
+        search: 'Search Flights',
+        select_date: 'Depart Date',
+        return_date: 'Return Date',
+        services_title: 'Our Services',
+        news_title: 'News & Announcements',
+        stat_customers: 'Happy Customers',
+        stat_flights: 'Successful Flights',
+        stat_visas: 'Visas Issued',
+        stat_experience: 'Years Experience'
+    };
+    if (lang === 'ps') return {
+        search: 'د الوتنې لټون',
+        select_date: "نیټه وټاکئ",
+        return_date: "راستنیدو نیټه",
+        services_title: "زموږ خدمتونه",
+        news_title: "خبرونه او خبرتیاوې",
+        stat_customers: "راضی پیرودونکي",
+        stat_flights: "بریالۍ الوتنې",
+        stat_visas: "صادر شوي ویزې",
+        stat_experience: "کال تجربه"
+    };
+    return {
+        search: 'جستجوی پرواز',
+        select_date: "تاریخ رفت",
+        return_date: "تاریخ برگشت",
+        services_title: "خدمات ما",
+        news_title: "اخبار و اعلامیه‌ها",
+        stat_customers: "مشتریان راضی",
+        stat_flights: "پرواز موفق",
+        stat_visas: "ویزای صادر شده",
+        stat_experience: "سال تجربه"
+    };
+  };
+
+  const lt = getLt();
+
+  // تابع کمکی برای دریافت متن چندزبانه از آبجکت
+  const getLangContent = (obj, field) => {
+      if (!obj) return '';
+      if (lang === 'en') return obj[`${field}_en`] || obj[field];
+      if (lang === 'ps') return obj[`${field}_ps`] || obj[`${field}_dr`] || obj[field];
+      return obj[`${field}_dr`] || obj[field];
   };
 
   // تایمر اسلایدشو
@@ -384,7 +428,7 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
     if (heroImages.length <= 1) return;
     const interval = setInterval(() => {
         setCurrentSlide((prev) => (prev + 1) % heroImages.length);
-    }, 6000); // هر 6 ثانیه عوض شود
+    }, 6000); 
     return () => clearInterval(interval);
   }, [heroImages]);
 
@@ -423,33 +467,32 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
   const handleSearch = (e) => {
     e.preventDefault();
     if (!formData.origin || !formData.destination) {
-       alert(lang === 'dr' ? "لطفا مبدا و مقصد را وارد کنید" : "مهربانی وکړئ مبدا او مقصد دننه کړئ");
+       const msg = lang === 'en' ? "Please select origin and destination" : (lang === 'dr' ? "لطفا مبدا و مقصد را وارد کنید" : "مهربانی وکړئ مبدا او مقصد دننه کړئ");
+       alert(msg);
        return;
     }
     if (onSearch) onSearch(formData);
   };
 
+  const getServiceTitle = (srv) => getLangContent(srv, 'title');
+  const getServiceDesc = (srv) => getLangContent(srv, 'desc');
+
+  const sortedNews = newsData ? [...newsData].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)) : [];
+
   return (
-    // مارجین منفی بالا برای چسبیدن هیرو به زیر ناوبار (-mt-24)
-    <div className="space-y-10 animate-in fade-in duration-700 pb-20 font-[Vazirmatn] -mt-24">
+    <div className="space-y-10 animate-in fade-in duration-700 pb-20 font-[Vazirmatn] -mt-24" dir={isLtr ? 'ltr' : 'rtl'}>
       
      {/* 1. Hero Section + Search Bar */}
-      {/* تغییرات:
-          1. h-[90vh]: ارتفاع تقریبا دو برابر شد (90 درصد ارتفاع صفحه).
-          2. min-h-[600px]: حداقل ارتفاع هم زیاد شد تا در مانیتورهای کوچک خیلی کوتاه نشود.
-          3. حفظ mx-[calc(50%-50vw)] برای تمام‌عرض ماندن.
-      */}
       <div className="relative w-screen mx-[calc(50%-50vw)] h-[90vh] min-h-[600px] -mt-32">
         
         {/* لایه پس‌زمینه (عکس‌ها و گرادیانت) */}
         <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
-            {/* Background Slideshow */}
             {heroImages.map((img, index) => (
                 <div 
                     key={index}
                     className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentSlide ? 'opacity-100' : 'opacity-0'}`}
                 >
-                    <img 
+                     <img 
                         src={img} 
                         className={`w-full h-full object-cover transform transition-transform duration-[10000ms] ease-out ${index === currentSlide ? 'scale-110' : 'scale-100'}`} 
                         alt={`Slide ${index}`} 
@@ -468,26 +511,18 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
         {/* pt-20 برای فاصله گرفتن از ناوبار */}
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center text-center px-4 pb-12 pt-20">
              <div className="space-y-6">
+                 {/* متن هیرو که از دیتابیس خوانده می‌شود و کاملا وابسته به زبان است */}
                  <div className="flex flex-col items-center gap-2">
                     <h2 className="text-4xl md:text-7xl font-black text-white drop-shadow-lg leading-tight">
-                        {settings.hero?.title_dr || settings.hero?.title}
+                        {getLangContent(settings.hero, 'title')}
                     </h2>
                     <p className="text-lg md:text-3xl font-medium text-white/90 drop-shadow-md">
-                        {settings.hero?.subtitle_dr || settings.hero?.subtitle}
+                        {getLangContent(settings.hero, 'subtitle')}
                     </p>
                  </div>
                  
                  {/* خط جداکننده */}
                  <div className="w-20 h-1.5 bg-white/40 rounded-full mx-auto"></div>
-
-                 <div className="flex flex-col items-center gap-1 opacity-90">
-                    <h2 className="text-2xl md:text-5xl font-black text-white drop-shadow-lg leading-tight">
-                        {settings.hero?.title_ps}
-                    </h2>
-                    <p className="text-base md:text-2xl font-medium text-white/90 drop-shadow-md">
-                        {settings.hero?.subtitle_ps}
-                    </p>
-                 </div>
              </div>
         </div>
 
@@ -503,9 +538,9 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
                <div className="relative">
                   <TopFilterBtn label={st[formData.tripType]} icon={ArrowRightLeft} active={activeDropdown === 'type'} onClick={() => setActiveDropdown(activeDropdown === 'type' ? null : 'type')} />
                   {activeDropdown === 'type' && (
-                    <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-xl py-2 overflow-hidden animate-in zoom-in-95">
+                    <div className={`absolute top-full mt-2 w-48 bg-white rounded-xl shadow-xl py-2 overflow-hidden animate-in zoom-in-95 ${isLtr ? 'left-0' : 'right-0'}`}>
                       {['round_trip', 'one_way'].map(k => (
-                        <button key={k} onClick={() => {setFormData({...formData, tripType: k}); setActiveDropdown(null)}} className="w-full text-right px-4 py-3 hover:bg-gray-50 text-sm font-bold text-gray-700 flex justify-between">
+                         <button key={k} onClick={() => {setFormData({...formData, tripType: k}); setActiveDropdown(null)}} className={`w-full px-4 py-3 hover:bg-gray-50 text-sm font-bold text-gray-700 flex justify-between ${isLtr ? 'text-left' : 'text-right'}`}>
                             {st[k]} {formData.tripType === k && <Check size={16} className="text-[#058B8C]"/>}
                         </button>
                       ))}
@@ -517,9 +552,9 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
                <div className="relative">
                   <TopFilterBtn label={`${formData.adults + formData.children} ${st.passenger}`} icon={Users} active={activeDropdown === 'pax'} onClick={() => setActiveDropdown(activeDropdown === 'pax' ? null : 'pax')} />
                   {activeDropdown === 'pax' && (
-                    <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-xl shadow-xl p-4 animate-in zoom-in-95 cursor-default">
+                    <div className={`absolute top-full mt-2 w-72 bg-white rounded-xl shadow-xl p-4 animate-in zoom-in-95 cursor-default ${isLtr ? 'left-0' : 'right-0'}`}>
                        {['adults', 'children'].map(k => (
-                         <div key={k} className="flex justify-between items-center mb-4 last:mb-0">
+                          <div key={k} className="flex justify-between items-center mb-4 last:mb-0">
                            <span className="font-bold text-gray-700">{st[k]}</span>
                            <div className="flex items-center gap-3 bg-gray-100 rounded-lg p-1">
                                <button onClick={() => setFormData(p => ({...p, [k]: Math.max(0, p[k]-1)}))} className="w-8 h-8 flex items-center justify-center bg-white rounded shadow text-gray-600 hover:text-red-500"><Minus size={14}/></button>
@@ -537,26 +572,26 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
                <div className="relative">
                   <TopFilterBtn label={st[formData.flightClass]} icon={Plane} active={activeDropdown === 'class'} onClick={() => setActiveDropdown(activeDropdown === 'class' ? null : 'class')} />
                   {activeDropdown === 'class' && (
-                    <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-xl py-2 overflow-hidden animate-in zoom-in-95">
+                    <div className={`absolute top-full mt-2 w-48 bg-white rounded-xl shadow-xl py-2 overflow-hidden animate-in zoom-in-95 ${isLtr ? 'left-0' : 'right-0'}`}>
                       {['economy', 'business', 'first'].map(k => (
-                         <button key={k} onClick={() => {setFormData({...formData, flightClass: k}); setActiveDropdown(null)}} className="w-full text-right px-4 py-3 hover:bg-gray-50 text-sm font-bold text-gray-700 flex justify-between">{st[k]}</button>
+                           <button key={k} onClick={() => {setFormData({...formData, flightClass: k}); setActiveDropdown(null)}} className={`w-full px-4 py-3 hover:bg-gray-50 text-sm font-bold text-gray-700 flex justify-between ${isLtr ? 'text-left' : 'text-right'}`}>{st[k]}</button>
                       ))}
                     </div>
                   )}
                </div>
             </div>
 
-            {/* فرم اصلی جستجو - اصلاح شده با دکمه شناور */}
-            <div className="bg-white rounded-[1.5rem] p-2 flex flex-col lg:flex-row items-stretch shadow-lg divide-y lg:divide-y-0 lg:divide-x lg:divide-x-reverse divide-gray-100 relative z-30 min-h-[80px]">
+            {/* فرم اصلی جستجو */}
+            <div className={`bg-white rounded-[1.5rem] p-2 flex flex-col lg:flex-row items-stretch shadow-lg relative z-30 min-h-[80px] ${isLtr ? 'divide-y lg:divide-y-0 lg:divide-x divide-gray-100' : 'divide-y lg:divide-y-0 lg:divide-x lg:divide-x-reverse divide-gray-100'}`}>
                
                {/* مبدا */}
                <div className="flex-1 h-20 lg:h-auto">
-                   <AirportSearch icon={Plane} value={formData.origin} onChange={(val)=>setFormData({...formData, origin: val})} placeholder={lang==='dr'?"مبدا (شهر یا فرودگاه)":"له کوم ځای؟"} />
+                   <AirportSearch lang={lang} icon={Plane} value={formData.origin} onChange={(val)=>setFormData({...formData, origin: val})} placeholder={lang==='dr'?"مبدا (شهر یا فرودگاه)":(lang==='en'?"Origin (City or Airport)":"له کوم ځای؟")} />
                </div>
                
                {/* مقصد (همراه با دکمه سویچ شناور) */}
                <div className="flex-1 h-20 lg:h-auto relative">
-                   {/* دکمه سویچ - دقیقاً وسط خط جداکننده */}
+                   {/* دکمه سویچ */}
                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 lg:top-1/2 lg:right-0 lg:left-auto lg:translate-x-1/2 lg:-translate-y-1/2 z-20">
                       <button 
                         type="button" 
@@ -566,16 +601,15 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
                         <ArrowRightLeft size={16} />
                       </button>
                    </div>
-
-                   <AirportSearch icon={MapPin} value={formData.destination} onChange={(val)=>setFormData({...formData, destination: val})} placeholder={lang==='dr'?"مقصد (شهر یا فرودگاه)":"چیرته؟"} />
+                   <AirportSearch lang={lang} icon={MapPin} value={formData.destination} onChange={(val)=>setFormData({...formData, destination: val})} placeholder={lang==='dr'?"مقصد (شهر یا فرودگاه)":(lang==='en'?"Destination (City or Airport)":"چیرته؟")} />
                </div>
                
                {/* تاریخ رفت */}
-               <div className="flex-1 relative border-r border-gray-100 h-20 lg:h-auto">
+               <div className={`flex-1 relative h-20 lg:h-auto ${isLtr ? 'border-l border-gray-100' : 'border-r border-gray-100'}`}>
                   <div onClick={() => setActiveDropdown(activeDropdown === 'date_dep' ? null : 'date_dep')} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 rounded-xl transition cursor-pointer group h-full">
                      <Calendar size={20} className="text-gray-400 group-hover:text-[#058B8C]"/>
                      <div className="flex flex-col">
-                        <span className="text-[10px] text-gray-400 font-bold">{lt.select_date}</span>
+                         <span className="text-[10px] text-gray-400 font-bold">{lt.select_date}</span>
                         <span className={`text-sm font-black ${formData.date ? 'text-gray-800' : 'text-gray-300'}`}>{formData.date || '---'}</span>
                      </div>
                   </div>
@@ -583,15 +617,15 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
                </div>
                
                {/* تاریخ برگشت */}
-               <div className="flex-1 relative border-r border-gray-100 h-20 lg:h-auto">
+               <div className={`flex-1 relative h-20 lg:h-auto ${isLtr ? 'border-l border-gray-100' : 'border-r border-gray-100'}`}>
                   <div 
-                    onClick={() => formData.tripType === 'round_trip' && setActiveDropdown(activeDropdown === 'date_ret' ? null : 'date_ret')} 
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl transition h-full ${formData.tripType === 'round_trip' ? 'hover:bg-gray-50 cursor-pointer group' : 'bg-gray-50 opacity-50 cursor-not-allowed'}`}
+                     onClick={() => formData.tripType === 'round_trip' && setActiveDropdown(activeDropdown === 'date_ret' ? null : 'date_ret')} 
+                     className={`flex items-center gap-3 px-4 py-3 rounded-xl transition h-full ${formData.tripType === 'round_trip' ? 'hover:bg-gray-50 cursor-pointer group' : 'bg-gray-50 opacity-50 cursor-not-allowed'}`}
                   >
                      <Calendar size={20} className="text-gray-400 group-hover:text-[#058B8C]"/>
                      <div className="flex flex-col">
                         <span className="text-[10px] text-gray-400 font-bold">{lt.return_date}</span>
-                        <span className={`text-sm font-black ${formData.returnDate ? 'text-gray-800' : 'text-gray-300'}`}>
+                          <span className={`text-sm font-black ${formData.returnDate ? 'text-gray-800' : 'text-gray-300'}`}>
                           {formData.tripType === 'round_trip' ? (formData.returnDate || '---') : st.one_way}
                         </span>
                      </div>
@@ -608,10 +642,10 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
             </div>
           </div>
           </div>
-        </div>
+       </div>
       </div>
 
-      {/* فاصله اضافه برای اینکه باکس جستجو روی محتوا نیفتد (بخاطر پوزیشن ابسولوت) */}
+      {/* فاصله اضافه */}
       <div className="h-20 md:h-24"></div>
 
       {/* 2. اخبار و اطلاعیه‌ها */}
@@ -621,22 +655,22 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
             <span className="absolute bottom-[-10px] left-1/2 transform -translate-x-1/2 w-16 h-1 bg-[#D4AF37] rounded-full"></span>
          </h2>
          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-             {newsData && newsData.filter(n => n.pinned).concat(newsData.filter(n => !n.pinned)).slice(0, 5).map((news) => (
+             {sortedNews.slice(0, 5).map((news) => (
                <div key={news.id} onClick={() => setPage('news')} className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group relative">
-                  {news.pinned && <div className="absolute top-2 right-2 bg-yellow-400 text-white p-1 rounded-full shadow-sm z-10"><Pin size={12} fill="white"/></div>}
+                  {news.pinned && <div className={`absolute top-2 bg-yellow-400 text-white p-1 rounded-full shadow-sm z-10 ${isLtr ? 'right-2' : 'left-2'}`}><Pin size={12} fill="white"/></div>}
                   <div className="h-32 overflow-hidden">
-                      <img src={news.image_url} alt={news.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                      <img src={news.image_url} alt={getLangContent(news, 'title')} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                   </div>
                   <div className="p-4">
-                     <div className="flex items-center gap-2 mb-2 text-[#D4AF37]">
+                      <div className="flex items-center gap-2 mb-2 text-[#D4AF37]">
                          <Megaphone size={14} />
-                        <span className="text-[10px] font-bold bg-yellow-50 px-2 py-0.5 rounded-full">اطلاعیه</span>
+                        <span className="text-[10px] font-bold bg-yellow-50 px-2 py-0.5 rounded-full">{lang === 'en' ? "Notice" : "اطلاعیه"}</span>
                      </div>
-                     <h3 className="font-black text-gray-800 text-sm mb-2 line-clamp-1">{news.title}</h3>
-                      <p className="text-gray-500 text-[11px] leading-relaxed line-clamp-2">{news.description}</p>
+                     <h3 className="font-black text-gray-800 text-sm mb-2 line-clamp-1">{getLangContent(news, 'title')}</h3>
+                      <p className="text-gray-500 text-[11px] leading-relaxed line-clamp-2">{getLangContent(news, 'description')}</p>
                   </div>
                </div>
-            ))}
+             ))}
          </div>
       </div>
 
@@ -657,14 +691,13 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
                   teal: 'bg-teal-50 text-teal-600 group-hover:bg-teal-600 group-hover:text-white',
                };
                const activeColor = colorClasses[srv.color] || colorClasses.blue;
-
                return (
                   <div key={index} className="w-full sm:w-[calc(50%-1.5rem)] lg:w-[calc(33.33%-1.5rem)] xl:w-[calc(20%-1.5rem)] bg-white p-6 rounded-[2rem] shadow-lg border border-gray-100 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group cursor-pointer text-center">
                      <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors duration-300 ${activeColor.split(' group')[0]} ${activeColor.split(' ').slice(2).join(' ')}`}>
                         <IconComponent size={32} />
                      </div>
-                     <h3 className="text-lg font-black text-gray-800 mb-2">{srv.title}</h3>
-                     <p className="text-gray-500 text-xs leading-relaxed">{srv.desc}</p>
+                     <h3 className="text-lg font-black text-gray-800 mb-2">{getServiceTitle(srv)}</h3>
+                     <p className="text-gray-500 text-xs leading-relaxed">{getServiceDesc(srv)}</p>
                   </div>
                );
             })}
@@ -676,7 +709,7 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
          <div className="absolute top-0 left-0 w-32 h-32 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl"></div>
          <div className="absolute bottom-0 right-0 w-64 h-64 bg-[#D4AF37]/20 rounded-full translate-x-1/3 translate-y-1/3 blur-3xl"></div>
          <div className="max-w-7xl mx-auto px-4 relative z-10">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x divide-x-reverse divide-white/10">
+             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x divide-x-reverse divide-white/10">
                <div className="space-y-2 group">
                   <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mx-auto">
                      <Users size={24} className="text-[#D4AF37]"/>
@@ -710,7 +743,7 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
                   </div>
                   <div>
                      <div className="text-3xl font-black text-white" dir="ltr">+{Math.floor(stats.experience)}</div>
-                     <div className="text-xs font-bold text-gray-200">{lt.stat_experience}</div>
+                      <div className="text-xs font-bold text-gray-200">{lt.stat_experience}</div>
                   </div>
                </div>
             </div>
@@ -724,9 +757,9 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
 
       {/* 6. ویژگی‌های شرکت */}
       <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 text-center mt-6">
-          <ServiceCard icon={ShieldCheck} title={lang === 'dr' ? "امنیت و اعتماد" : "امنیت او باور"} desc={t.home.why_desc} color='#058B8C' />
-          <ServiceCard icon={Clock} title={lang === 'dr' ? "سرعت در اجرا" : "په کار کې چټکتیا"} desc={t.home.why_desc} color='#f97316' />
-          <ServiceCard icon={Globe} title={lang === 'dr' ? "پوشش جهانی" : "نړیوال پوښښ"} desc={t.home.why_desc} color='#058B8C' />
+          <ServiceCard icon={ShieldCheck} title={lang === 'en' ? "Security & Trust" : (lang === 'dr' ? "امنیت و اعتماد" : "امنیت او باور")} desc={t.home.why_desc} color='#058B8C' />
+          <ServiceCard icon={Clock} title={lang === 'en' ? "Speed of Execution" : (lang === 'dr' ? "سرعت در اجرا" : "په کار کې چټکتیا")} desc={t.home.why_desc} color='#f97316' />
+          <ServiceCard icon={Globe} title={lang === 'en' ? "Global Coverage" : (lang === 'dr' ? "پوشش جهانی" : "نړیوال پوښښ")} desc={t.home.why_desc} color='#058B8C' />
       </div>
     </div>
   );

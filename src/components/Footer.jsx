@@ -14,6 +14,14 @@ export default function Footer({ t, lang, settings }) {
     return dr;
   };
 
+  // تابع کمکی جدید برای خواندن فیلدهای تنظیمات بر اساس زبان (مطابق ساختار Admin)
+  const getSettingText = (obj, field) => {
+      if (!obj) return '';
+      if (lang === 'en') return obj[`${field}_en`] || obj[field]; // مثلا about.desc_en
+      if (lang === 'ps') return obj[`${field}_ps`] || obj[`${field}_dr`] || obj[field];
+      return obj[`${field}_dr`] || obj[field]; // پیش فرض: about.desc_dr یا about.desc
+  };
+
   return (
     // تغییر رنگ پس‌زمینه به رنگ سازمانی (#058B8C)
     // جهت صفحه (ltr/rtl) به صورت خودکار از کامپوننت والد (App) به ارث برده می‌شود
@@ -41,13 +49,13 @@ export default function Footer({ t, lang, settings }) {
                  <span className="text-[10px] text-white/80 font-bold tracking-widest opacity-90">TRAVEL AGENCY</span>
                </div>
             </div>
-            {/* عنوان "درباره ما" را اگر در ترجمه موجود بود از آنجا بردار، وگرنه از settings */}
+            {/* عنوان "درباره ما" - استفاده از تابع هوشمند برای خواندن از تنظیمات */}
             <h4 className="font-bold text-white text-sm">
-                {about.title || getText("درباره ما", "زموږ په اړه", "About Us")}
+                {getSettingText(about, 'title') || getText("درباره ما", "زموږ په اړه", "About Us")}
             </h4>
             <p className="text-white/90 text-xs leading-6 text-justify">
-              {/* استفاده از ترجمه موجود در t.footer یا فال‌بک به تنظیمات */}
-              {t.footer?.about_desc || about.desc || "..."}
+              {/* استفاده از متن تنظیمات بر اساس زبان */}
+              {getSettingText(about, 'desc') || "..."}
             </p>
             <div className="flex gap-4">
                <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#D4AF37] transition-colors"><Instagram size={18}/></a>
@@ -60,7 +68,7 @@ export default function Footer({ t, lang, settings }) {
           <div>
             <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
                <span className="w-8 h-1 bg-[#D4AF37] rounded-full"></span>
-               {t.footer?.quick_links || getText("دسترسی سریع", "چټک لاسرسی", "Quick Links")}
+                {t.footer?.quick_links || getText("دسترسی سریع", "چټک لاسرسی", "Quick Links")}
             </h3>
             <ul className="space-y-4 text-sm text-white/90">
               <li><a href="#" className="hover:text-[#D4AF37] transition-colors flex items-center gap-2"><span className="w-1 h-1 bg-current rounded-full"></span> {t.nav?.home}</a></li>
@@ -80,7 +88,7 @@ export default function Footer({ t, lang, settings }) {
               <li className="flex items-start gap-4 group">
                 <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-[#D4AF37] transition-colors shrink-0">
                    <Phone size={18}/>
-                </div>
+                 </div>
                 <div className="flex flex-col">
                    <span className="text-[10px] text-white/70 mb-1">{t.common?.phone}</span>
                    {/* شماره تلفن معمولاً چپ به راست است */}
@@ -90,7 +98,7 @@ export default function Footer({ t, lang, settings }) {
                 </div>
               </li>
               <li className="flex items-start gap-4 group">
-                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-[#D4AF37] transition-colors shrink-0">
+                 <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-[#D4AF37] transition-colors shrink-0">
                    <Mail size={18}/>
                  </div>
                 <div className="flex flex-col">
@@ -108,9 +116,10 @@ export default function Footer({ t, lang, settings }) {
                    <span className="text-[10px] text-white/70 mb-1">
                        {getText("آدرس", "پته", "Address")}
                    </span>
-                   <span className="font-bold leading-relaxed">{contact.address}</span>
+                   {/* استفاده از آدرس چند زبانه */}
+                   <span className="font-bold leading-relaxed">{getSettingText(contact, 'address')}</span>
                 </div>
-              </li>
+               </li>
             </ul>
           </div>
 
@@ -127,12 +136,13 @@ export default function Footer({ t, lang, settings }) {
                      "We guarantee the best rates for tickets and visa services."
                  )}
              </p>
-           </div>
+            </div>
         </div>
 
         {/* کپی رایت */}
         <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-white/60">
-          <p>{contact.copyright}</p>
+          {/* کپی رایت چند زبانه */}
+          <p>{getSettingText(contact, 'copyright')}</p>
           <div className="flex gap-6">
              <a href="#" className="hover:text-white">
                  {getText("قوانین و مقررات", "قوانین او مقررات", "Terms & Conditions")}

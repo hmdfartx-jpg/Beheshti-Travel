@@ -161,15 +161,17 @@ export default function App() {
         )}
         
         {page === 'admin' && (
-          <Admin 
-            t={t} 
-            user={user} 
-            news={news} 
-            bookings={bookings} 
-            settings={settings} 
-            onUpdate={fetchData} 
-          />
-        )}
+  <Admin 
+    t={t} 
+    user={user} 
+    news={news} 
+    bookings={bookings} 
+    settings={settings} 
+    onUpdate={fetchData}
+    lang={lang}  // <--- این خط حتما اضافه شود
+    setPage={setPage} // این هم برای دکمه بازگشت لازم است
+  />
+)}
         
         {page.startsWith('visa') && <Visa t={t} lang={lang} setPage={setPage} />}
         {page === 'scholarship' && <Scholarship t={t} lang={lang} setPage={setPage} />}

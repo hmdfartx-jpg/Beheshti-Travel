@@ -92,18 +92,28 @@ const getSolarDate = (date, lang) => {
   const day = parts.find(p => p.type === 'day').value;
   const monthIndex = parseInt(parts.find(p => p.type === 'month').value) - 1;
   const year = parts.find(p => p.type === 'year').value;
-  const txt = t[lang] || t.dr;
+  
+  // اگر زبان 'en' باشد اما وارد این تابع شویم (برای کارت افغانستان)، باید از 'dr' استفاده کنیم
+  const effectiveLang = (lang === 'en') ? 'dr' : lang;
+  
+  const txt = t[effectiveLang] || t.dr;
   const weekDay = txt.weekDays[date.getDay()];
-  const months = lang === 'dr' ? solarMonths.dr : solarMonths.ps;
+  const months = effectiveLang === 'dr' ? solarMonths.dr : solarMonths.ps;
+  
   return `${weekDay} ${day} ${months[monthIndex] || months[0]} ${year}`;
 };
 
 const formatDate = (date, isAfghan, lang) => {
-  if (isAfghan && lang !== 'en') return getSolarDate(date, lang);
+  // تغییر مهم: اگر کارت افغانستان است، همیشه تاریخ شمسی و دری برگردان (حتی در حالت انگلیسی)
+  if (isAfghan) {
+      return getSolarDate(date, lang); // getSolarDate خودش زبان en را به dr تبدیل می‌کند
+  }
   
-  // برای انگلیسی یا شهرهای غیر افغانی
-  const d = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'fa-IR', { day: '2-digit', month: 'short', year: 'numeric', weekday: 'long' }).formatToParts(date);
-  const weekDay = lang === 'en' ? t.en.weekDays[date.getDay()] : d.find(p=>p.type==='weekday').value;
+  // برای شهرهای غیر افغانی در حالت انگلیسی یا سایر حالات
+  if (lang !== 'en') return getSolarDate(date, lang);
+  
+  const d = new Intl.DateTimeFormat('en-US', { day: '2-digit', month: 'short', year: 'numeric', weekday: 'long' }).formatToParts(date);
+  const weekDay = t.en.weekDays[date.getDay()];
   const day = d.find(p=>p.type==='day').value;
   const month = d.find(p=>p.type==='month').value.toUpperCase();
   const year = d.find(p=>p.type==='year').value;
@@ -283,6 +293,7 @@ const RegionSlider = ({ cities, isAfghan, lang }) => {
         timeZone: safeTZ, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
       }).format(now);
 
+      // استفاده از تابع اصلاح شده formatDate
       const dateStr = formatDate(now, isAfghan, lang);
       
       const targetTZ = isAfghan ? "Europe/London" : "Asia/Kabul";
@@ -313,6 +324,20 @@ const RegionSlider = ({ cities, isAfghan, lang }) => {
     return <Sun size={size} className="text-yellow-400 drop-shadow-md animate-pulse"/>;
   };
 
+  // تابع دریافت نام هوشمند کشور
+  const getCountryName = () => {
+      if (!isAfghan && lang === 'en' && weatherData?.countryCode) {
+          try {
+              // استفاده از Intl.DisplayNames برای تبدیل کد کشور (مثلا TR) به نام انگلیسی (Turkey)
+              const enName = new Intl.DisplayNames(['en'], { type: 'region' }).of(weatherData.countryCode);
+              return enName || currentCity.countryName;
+          } catch (e) {
+              return currentCity.countryName;
+          }
+      }
+      return currentCity.countryName || weatherData?.countryCode || 'WORLD';
+  };
+
   if (!currentCity) return null;
 
   return (
@@ -332,7 +357,8 @@ const RegionSlider = ({ cities, isAfghan, lang }) => {
            <div className={`flex flex-col min-w-[120px] ${isLtr ? 'items-start' : 'items-start'}`}>
               {!isAfghan && (
                  <span className="text-sm font-bold opacity-80 mb-[-4px] drop-shadow-md tracking-wider uppercase">
-                    {currentCity.countryName || weatherData?.countryCode || 'WORLD'}
+                    {/* فراخوانی تابع نام هوشمند کشور */}
+                    {getCountryName()}
                  </span>
               )}
               {/* نام شهر - استفاده از نام انگلیسی در حالت انگلیسی */}
@@ -351,6 +377,7 @@ const RegionSlider = ({ cities, isAfghan, lang }) => {
                  <ArrowLeftRight size={10} className="text-orange-400"/>
                  <span>{timeInfo.diff}</span>
               </div>
+              {/* تاریخ - برای افغانستان فارسی/شمسی، برای بقیه انگلیسی/میلادی در حالت en */}
               <div className="bg-black/30 backdrop-blur-md px-3 py-0.5 rounded-full text-[11px] font-bold text-white/90 border border-white/10 whitespace-nowrap">
                  {timeInfo.date}
               </div>
@@ -390,6 +417,7 @@ const RegionSlider = ({ cities, isAfghan, lang }) => {
                </div>
 
                <div className="bg-white/5 border border-white/10 rounded-xl p-1.5 px-3 flex items-center justify-between mt-2">
+                   {/* اینجا txt.tomorrow استفاده می‌شود که اگر lang=en باشد انگلیسی است، عالی */}
                    <span className="text-[10px] font-bold opacity-80">{txt.tomorrow} {timeInfo.tmDayName}</span>
                    <div className="flex items-center gap-2">
                        {weatherData?.tomorrow ? (
