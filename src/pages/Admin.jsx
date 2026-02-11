@@ -63,7 +63,10 @@ const loginTranslations = {
 export default function Admin({ news, bookings, settings, onUpdate, setPage, lang }) {
   // 1. ابتدا تعریف تمام Stateها و هوک‌ها
   // --- مدیریت لاگین ---
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // تغییر: بررسی LocalStorage برای وضعیت لاگین اولیه
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('admin_auth_token') === 'true';
+  });
   const [loginData, setLoginData] = useState({ username: '', password: '', captcha: '' });
   const [generatedCaptcha, setGeneratedCaptcha] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -80,9 +83,9 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
     title_en: '', desc_en: '',
     img: '' 
   });
-  
   const [editingId, setEditingId] = useState(null);
   const [editingCityId, setEditingCityId] = useState(null);
+  const [editingLinkId, setEditingLinkId] = useState(null); // اضافه شده برای لینک‌های فوتر
   const [tempSliderImage, setTempSliderImage] = useState('');
   const [translatingField, setTranslatingField] = useState(null);
   const dragItem = useRef();
@@ -117,7 +120,6 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
     try {
         const transTitle = await fetchTranslation(newNews.title, targetLang);
         const transDesc = newNews.desc ? await fetchTranslation(newNews.desc, targetLang) : "";
-
         // استفاده از callback برای اطمینان از اینکه آخرین state را داریم
         setNewNews(prev => ({
             ...prev,
@@ -174,13 +176,13 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
       setTranslatingField(null);
   };
 
-  // هندلر ترجمه برای فوتر
+  // هندلر ترجمه برای فوتر (درباره ما و آدرس)
   const handleSmartFillFooter = async (targetLang) => {
       const aboutTitle = localSettings.about?.title || localSettings.about?.title_dr;
       const aboutDesc = localSettings.about?.desc || localSettings.about?.desc_dr;
       const address = localSettings.contact?.address || localSettings.contact?.address_dr;
       const copyright = localSettings.contact?.copyright || localSettings.contact?.copyright_dr;
-      
+
       if (!aboutTitle && !address) return alert("لطفا اطلاعات فارسی را وارد کنید.");
       
       setTranslatingField(`footer_${targetLang}`);
@@ -189,7 +191,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
       const tAboutDesc = aboutDesc ? await fetchTranslation(aboutDesc, targetLang) : "";
       const tAddress = address ? await fetchTranslation(address, targetLang) : "";
       const tCopyright = copyright ? await fetchTranslation(copyright, targetLang) : "";
-
+      
       setLocalSettings(prev => ({
           ...prev,
           about: {
@@ -205,6 +207,57 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
       }));
       setTranslatingField(null);
   };
+
+  // --- هندلرهای جدید برای لینک‌های مفید (فوتر) ---
+  const handleSmartFillLink = async (index, targetLang) => {
+      const link = (localSettings.useful_links || [])[index];
+      if (!link.title_dr) return alert("عنوان فارسی خالی است.");
+      setTranslatingField(`link_${index}_${targetLang}`);
+      
+      const tTitle = await fetchTranslation(link.title_dr, targetLang);
+      
+      setLocalSettings(prev => {
+          const updatedLinks = [...(prev.useful_links || [])];
+          updatedLinks[index] = { ...updatedLinks[index], [`title_${targetLang}`]: tTitle };
+          return { ...prev, useful_links: updatedLinks };
+      });
+      setTranslatingField(null);
+  };
+
+  const handleLinkChange = (index, key, value) => {
+    setLocalSettings(prev => {
+        const updatedLinks = [...(prev.useful_links || [])];
+        updatedLinks[index] = { ...updatedLinks[index], [key]: value };
+        return { ...prev, useful_links: updatedLinks };
+    });
+  };
+
+  const handleAddLink = () => {
+      setLocalSettings(prev => ({ ...prev, useful_links: [...(prev.useful_links || []), { title_dr: '', title_ps: '', title_en: '', url: '' }] }));
+  };
+
+  const handleDeleteLink = (index) => {
+      if(window.confirm('حذف شود؟')) {
+        const updatedLinks = (localSettings.useful_links || []).filter((_, i) => i !== index);
+        setLocalSettings(prev => ({ ...prev, useful_links: updatedLinks }));
+      }
+  };
+
+  const handleSortLinks = () => {
+    const _links = [...(localSettings.useful_links || [])];
+    const item = _links[dragItem.current];
+    _links.splice(dragItem.current, 1);
+    _links.splice(dragOverItem.current, 0, item);
+    dragItem.current = null; dragOverItem.current = null;
+    handleSettingChange('useful_links', null, _links);
+  };
+
+  const handleDuplicateLink = (link) => {
+    const newLink = { ...link, title_dr: (link.title_dr || '') + ' (کپی)' };
+    const updated = [...(localSettings.useful_links || []), newLink];
+    handleSettingChange('useful_links', null, updated);
+  };
+  // ---------------------------------------------
 
   const generateCaptcha = () => {
     const chars = "0123456789";
@@ -224,6 +277,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
   const handleLogin = (e) => {
     e.preventDefault();
     const t = loginTranslations[lang || 'dr'];
+
     if (loginData.captcha !== generatedCaptcha) {
       alert(t.error_captcha);
       generateCaptcha();
@@ -232,11 +286,20 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
     }
     
     if (loginData.username === 'admin' && loginData.password === '123456') {
+      // تغییر: ذخیره لاگین در LocalStorage
+      localStorage.setItem('admin_auth_token', 'true');
       setIsAuthenticated(true);
     } else {
       alert(t.error_auth);
       generateCaptcha();
       setLoginData({ ...loginData, password: '', captcha: '' });
+    }
+  };
+
+  const handleLogout = () => {
+    if(window.confirm('آیا مطمئن هستید؟')) {
+        localStorage.removeItem('admin_auth_token');
+        setIsAuthenticated(false);
     }
   };
 
@@ -311,19 +374,16 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
     const currentDate = new Date().toISOString();
     
     // استفاده از مقادیر موجود در state
-    // توجه: کلیدهای آبجکت باید دقیقا با نام ستون‌های دیتابیس که در مرحله اول ساختید یکی باشند
     const newsData = {
         title: newNews.title, 
         description: newNews.desc,
         title_ps: newNews.title_ps,
-        description_ps: newNews.desc_ps, // نگاشت state به نام ستون دیتابیس
+        description_ps: newNews.desc_ps,
         title_en: newNews.title_en,
-        description_en: newNews.desc_en, // نگاشت state به نام ستون دیتابیس
+        description_en: newNews.desc_en,
         image_url: newNews.img
     };
-
     if (editingId) {
-      // هنگام ویرایش، تاریخ را تغییر نمی‌دهیم
       const { error } = await supabase.from('news').update(newsData).eq('id', editingId);
       if (!error) { alert('ویرایش شد'); setEditingId(null); onUpdate(); } else { alert('خطا در ویرایش: ' + error.message); }
     } else {
@@ -382,19 +442,20 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
       <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4 font-[Vazirmatn]" dir={dir}>
         <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-200 animate-in zoom-in-95 duration-300 relative">
           
-          <div className="bg-[#1e3a8a] p-8 text-center relative overflow-hidden">
+          {/* تغییر: رنگ پس‌زمینه هدر لاگین به رنگ سازمانی تغییر کرد */}
+          <div className="bg-[#058B8C] p-8 text-center relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-full bg-white/5"></div>
             <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-sm shadow-inner">
                <Lock className="text-white" size={32}/>
             </div>
             <h2 className="text-2xl font-black text-white">{t.title}</h2>
-            <p className="text-blue-200 text-sm mt-2">{t.subtitle}</p>
+            <p className="text-blue-100 text-sm mt-2">{t.subtitle}</p>
           </div>
 
           <form onSubmit={handleLogin} className="p-8 space-y-5">
             <div>
               <label className={`block text-xs font-bold text-gray-500 mb-1 ${alignClass}`}>{t.user}</label>
-              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl p-3 focus-within:border-blue-500 focus-within:bg-white transition-all">
+              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl p-3 focus-within:border-[#058B8C] focus-within:bg-white transition-all">
                 <User size={18} className="text-gray-400"/>
                 <input 
                   type="text" 
@@ -409,15 +470,15 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
 
             <div>
               <label className={`block text-xs font-bold text-gray-500 mb-1 ${alignClass}`}>{t.pass}</label>
-              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl p-3 focus-within:border-blue-500 focus-within:bg-white transition-all">
-                 <Lock size={18} className="text-gray-400"/>
+              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl p-3 focus-within:border-[#058B8C] focus-within:bg-white transition-all">
+                <Lock size={18} className="text-gray-400"/>
                 <input 
                   type={showPassword ? "text" : "password"} 
                   value={loginData.password}
                   onChange={e => setLoginData({...loginData, password: e.target.value})}
                   className={`bg-transparent outline-none w-full text-sm font-bold text-gray-800 ${alignClass}`}
                   placeholder={t.ph_pass}
-               />
+                />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-gray-400 hover:text-gray-600">
                   {showPassword ? <EyeOff size={16}/> : <Eye size={16}/>}
                 </button>
@@ -427,7 +488,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
             <div>
               <label className={`block text-xs font-bold text-gray-500 mb-1 ${alignClass}`}>{t.captcha}</label>
               <div className="flex gap-3">
-                  <div className="flex-1 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl p-3 focus-within:border-blue-500 focus-within:bg-white transition-all">
+                 <div className="flex-1 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl p-3 focus-within:border-[#058B8C] focus-within:bg-white transition-all">
                     <CheckCircle size={18} className="text-gray-400"/>
                     <input 
                       type="tel" 
@@ -449,7 +510,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
               </div>
             </div>
 
-            <button type="submit" className="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white py-3.5 rounded-xl font-bold transition shadow-lg shadow-blue-200 flex items-center justify-center gap-2 mt-4">
+            <button type="submit" className="w-full bg-[#058B8C] hover:bg-[#047070] text-white py-3.5 rounded-xl font-bold transition shadow-lg shadow-[#058B8C]/20 flex items-center justify-center gap-2 mt-4">
                {t.btn} <ArrowRight size={18} className={currentLoginLang === 'en' ? "" : "rotate-180"}/>
             </button>
 
@@ -471,7 +532,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
     <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden min-h-[600px] font-[Vazirmatn]" dir="rtl">
       <div className="bg-[#058B8C] p-6 text-white flex justify-between items-center">
         <h1 className="text-2xl font-black">پنل مدیریت (فارسی)</h1>
-        <button onClick={() => setIsAuthenticated(false)} className="text-sm bg-white/20 hover:bg-white/30 px-4 py-2 rounded-xl transition font-bold flex items-center gap-2">
+        <button onClick={handleLogout} className="text-sm bg-white/20 hover:bg-white/30 px-4 py-2 rounded-xl transition font-bold flex items-center gap-2">
            <LogOut size={16}/> خروج
         </button>
       </div>
@@ -490,73 +551,92 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
           {/* بخش تنظیمات */}
           {activeTab === 'settings' && (
             <div className="space-y-6 animate-in fade-in pb-20">
-               <div className="flex gap-2 overflow-x-auto pb-2 border-b">
+                <div className="flex gap-2 overflow-x-auto pb-2 border-b">
                 {['general', 'navbar', 'hero', 'weather', 'services', 'footer'].map(tab => (
                   <button key={tab} onClick={() => setSettingsTab(tab)} className={`px-4 py-2 rounded-lg font-bold whitespace-nowrap ${settingsTab === tab ? 'bg-blue-100 text-blue-800' : 'text-gray-500 hover:bg-gray-100'}`}>
-                    {tab === 'general' ? 'عمومی' : tab === 'navbar' ? 'ناوبار (منو)' : tab === 'hero' ? 'هیرو و آمار' : tab === 'weather' ? 'آب و هوا' : tab === 'services' ? 'خدمات' : 'فوتر'}
+                    {tab === 'general' ? 'عمومی' : tab === 'navbar' ? 'ناوبار (لوگو)' : tab === 'hero' ? 'هیرو و آمار' : tab === 'weather' ? 'آب و هوا' : tab === 'services' ? 'خدمات' : 'فوتر'}
                   </button>
                 ))}
               </div>
 
               {settingsTab === 'general' && (
-                 <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                   <h3 className="font-bold border-b pb-2">تنظیمات اصلی</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div><label className="block text-xs font-bold text-gray-500 mb-1">نام برند</label><input value={localSettings.general?.brandName || ''} onChange={e => handleSettingChange('general', 'brandName', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
-                    <div><label className="block text-xs font-bold text-gray-500 mb-1">متن لوگو</label><input value={localSettings.general?.logoText || ''} onChange={e => handleSettingChange('general', 'logoText', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
                   </div>
                 </div>
               )}
 
-              {/* تنظیمات ناوبار */}
+              {/* تنظیمات ناوبار - تغییر: حذف فیلدهای متنی و افزودن آپلود لوگو */}
               {settingsTab === 'navbar' && (
                   <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                  <h3 className="font-bold border-b pb-2 text-[#058B8C]">تنظیمات ناوبار (سه زبانه)</h3>
+                  <h3 className="font-bold border-b pb-2 text-[#058B8C]">تنظیمات لوگو و ناوبار</h3>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    
-                      {/* دری */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      
+                      {/* لوگوی دری/پشتو */}
                       <div className="space-y-3 bg-blue-50/50 p-4 rounded-xl">
-                          <h4 className="font-bold text-xs text-blue-600 mb-2">نسخه دری</h4>
-                          <div><label className="block text-xs font-bold text-gray-500 mb-1">عنوان (دری)</label><input value={localSettings.navbar?.title_dr || ''} onChange={e => handleSettingChange('navbar', 'title_dr', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
-                          <div><label className="block text-xs font-bold text-gray-500 mb-1">زیرعنوان (دری)</label><input value={localSettings.navbar?.subtitle_dr || ''} onChange={e => handleSettingChange('navbar', 'subtitle_dr', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
+                          <h4 className="font-bold text-xs text-blue-600 mb-2">لوگوی پیش‌فرض (دری و پشتو)</h4>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-500 mb-1">لینک لوگو (Dr/Ps)</label>
+                            <div className="flex gap-2 items-center">
+                              <Image size={18} className="text-gray-400" />
+                              <input 
+                                value={localSettings.navbar?.logo_dr || ''} 
+                                onChange={e => handleSettingChange('navbar', 'logo_dr', e.target.value)} 
+                                className="w-full p-2 border rounded-lg dir-ltr text-left"
+                                placeholder="https://..."
+                              />
+                            </div>
+                          </div>
+                          {localSettings.navbar?.logo_dr && (
+                            <div className="mt-2 p-2 bg-white rounded border border-blue-100 flex justify-center">
+                              <img src={localSettings.navbar?.logo_dr} alt="Preview" className="h-10 object-contain"/>
+                            </div>
+                          )}
                       </div>
-                      {/* پشتو */}
-                      <div className="space-y-3 bg-green-50/50 p-4 rounded-xl">
-                           <h4 className="font-bold text-xs text-green-600 mb-2">نسخه پشتو</h4>
-                          <div><label className="block text-xs font-bold text-gray-500 mb-1">عنوان (پشتو)</label><input value={localSettings.navbar?.title_ps || ''} onChange={e => handleSettingChange('navbar', 'title_ps', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
-                          <div><label className="block text-xs font-bold text-gray-500 mb-1">زیرعنوان (پشتو)</label><input value={localSettings.navbar?.subtitle_ps || ''} onChange={e => handleSettingChange('navbar', 'subtitle_ps', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
-                      </div>
-                      {/* انگلیسی */}
+
+                      {/* لوگوی انگلیسی */}
                       <div className="space-y-3 bg-orange-50/50 p-4 rounded-xl" dir="ltr">
-                          <h4 className="font-bold text-xs text-orange-600 mb-2">English Version</h4>
-                          <div><label className="block text-xs font-bold text-gray-500 mb-1">Title (En)</label><input value={localSettings.navbar?.title_en || ''} onChange={e => handleSettingChange('navbar', 'title_en', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
-                          <div><label className="block text-xs font-bold text-gray-500 mb-1">Subtitle (En)</label><input value={localSettings.navbar?.subtitle_en || ''} onChange={e => handleSettingChange('navbar', 'subtitle_en', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
+                          <h4 className="font-bold text-xs text-orange-600 mb-2">English Logo</h4>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-500 mb-1">Logo Link (En)</label>
+                            <div className="flex gap-2 items-center">
+                              <Image size={18} className="text-gray-400" />
+                              <input 
+                                value={localSettings.navbar?.logo_en || ''} 
+                                onChange={e => handleSettingChange('navbar', 'logo_en', e.target.value)} 
+                                className="w-full p-2 border rounded-lg"
+                                placeholder="https://..."
+                              />
+                            </div>
+                          </div>
+                          {localSettings.navbar?.logo_en && (
+                            <div className="mt-2 p-2 bg-white rounded border border-orange-100 flex justify-center">
+                              <img src={localSettings.navbar?.logo_en} alt="Preview" className="h-10 object-contain"/>
+                            </div>
+                          )}
                       </div>
-                  </div>
-                  
-                  <div className="pt-4 border-t border-gray-100">
-                      <label className="block text-xs font-bold text-gray-500 mb-1">متن داخل لوگو (مشترک)</label>
-                      <input value={localSettings.navbar?.logoText || ''} onChange={e => handleSettingChange('navbar', 'logoText', e.target.value)} className="w-full md:w-1/2 p-2 border rounded-lg font-mono text-center"/>
                   </div>
                 </div>
               )}
 
               {settingsTab === 'hero' && (
                 <div className="space-y-6">
-                   {/* تنظیمات متن سه زبانه هیرو */}
+                  {/* تنظیمات متن سه زبانه هیرو */}
                   <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                     <h3 className="font-bold border-b pb-2 text-[#058B8C]">متن‌های هیرو (سه زبانه)</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {/* دری */}
                         <div className="space-y-3 bg-blue-50/50 p-4 rounded-xl">
                             <h4 className="font-bold text-xs text-blue-600 mb-2">نسخه دری</h4>
-                             <div><label className="block text-xs font-bold text-gray-500 mb-1">تیتر اصلی</label><input value={localSettings.hero?.title_dr || ''} onChange={e => handleSettingChange('hero', 'title_dr', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
+                            <div><label className="block text-xs font-bold text-gray-500 mb-1">تیتر اصلی</label><input value={localSettings.hero?.title_dr || ''} onChange={e => handleSettingChange('hero', 'title_dr', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
                             <div><label className="block text-xs font-bold text-gray-500 mb-1">زیرعنوان</label><input value={localSettings.hero?.subtitle_dr || ''} onChange={e => handleSettingChange('hero', 'subtitle_dr', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
                         </div>
                         {/* پشتو */}
                         <div className="space-y-3 bg-green-50/50 p-4 rounded-xl">
-                             <div className="flex justify-between mb-2">
+                            <div className="flex justify-between mb-2">
                                 <h4 className="font-bold text-xs text-green-600">نسخه پشتو</h4>
                                 <button type="button" onClick={() => handleSmartFillHero('ps')} className="text-[9px] flex items-center gap-1 bg-green-200 text-green-800 px-2 py-0.5 rounded hover:bg-green-300">
                                     {translatingField === 'hero_ps' ? <Loader2 size={10} className="animate-spin"/> : <Sparkles size={10}/>} ترجمه
@@ -580,14 +660,14 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                   </div>
 
                   {/* تنظیمات اسلایدر تصاویر */}
-                   <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                     <h3 className="font-bold border-b pb-2 flex justify-between items-center text-[#058B8C]">
                         تصاویر اسلایدر هیرو
                         <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded">تعداد: {localSettings.hero?.images?.length || 0}</span>
                     </h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                          {(localSettings.hero?.images || []).map((imgUrl, idx) => (
-                             <div key={idx} className="relative group rounded-xl overflow-hidden border border-gray-200 aspect-video">
+                              <div key={idx} className="relative group rounded-xl overflow-hidden border border-gray-200 aspect-video">
                                 <img src={imgUrl} alt="Slide" className="w-full h-full object-cover"/>
                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
                                      <button onClick={() => handleRemoveSliderImage(idx)} className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition shadow-lg" title="حذف تصویر">
@@ -595,17 +675,17 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                                      </button>
                                 </div>
                                 <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded">اسلاید {idx + 1}</div>
-                             </div>
+                              </div>
                           ))}
                     </div>
                     <div className="flex gap-2 items-end pt-4 border-t border-gray-100">
-                         <div className="flex-1">
+                        <div className="flex-1">
                             <label className="block text-xs font-bold text-gray-500 mb-1">لینک تصویر جدید</label>
                             <div className="flex items-center gap-2 bg-gray-50 border rounded-lg p-2">
                                  <Image size={16} className="text-gray-400"/>
                                 <input value={tempSliderImage} onChange={e => setTempSliderImage(e.target.value)} className="bg-transparent w-full text-sm outline-none dir-ltr" placeholder="https://example.com/image.jpg"/>
                             </div>
-                         </div>
+                        </div>
                         <button onClick={handleAddSliderImage} disabled={!tempSliderImage} className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-4 py-2.5 rounded-lg font-bold flex items-center gap-2 transition">
                             <Plus size={18}/> افزودن
                         </button>
@@ -625,31 +705,31 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
               )}
 
               {settingsTab === 'weather' && (
-                 <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-6">
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-6">
                   <h3 className="font-bold border-b pb-2 flex justify-between items-center">
                     <span>لیست شهرها (جابجایی با درگ)</span>
                     <button onClick={() => {
-                         const newCity = { id: Date.now(), name: "London", faName: "لندن", countryName: "انگلستان", timezone: "Europe/London", image: "" };
+                       const newCity = { id: Date.now(), name: "London", faName: "لندن", countryName: "انگلستان", timezone: "Europe/London", image: "" };
                        const updated = [...(localSettings.weather_cities || []), newCity];
                        handleSettingChange('weather_cities', null, updated); 
-                   }} className="text-xs bg-green-50 text-green-600 px-3 py-1 rounded-lg flex items-center gap-1 hover:bg-green-100 transition">
+                    }} className="text-xs bg-green-50 text-green-600 px-3 py-1 rounded-lg flex items-center gap-1 hover:bg-green-100 transition">
                       <Plus size={14}/> افزودن شهر
                     </button>
                   </h3>
                   <div className="space-y-3">
-                      {(localSettings.weather_cities || []).map((city, index) => (
+                     {(localSettings.weather_cities || []).map((city, index) => (
                       <div 
                         key={city.id || index}
                         className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all group"
-                         draggable
+                        draggable
                         onDragStart={(e) => handleDragStart(e, index)}
                         onDragEnter={(e) => handleDragEnter(e, index)}
                         onDragEnd={handleSort}
-                         onDragOver={(e) => e.preventDefault()}
+                        onDragOver={(e) => e.preventDefault()}
                       >
                         <div className="cursor-grab text-gray-300 hover:text-gray-600 active:cursor-grabbing p-1"><GripVertical size={20}/></div>
                         <div className="flex-1">
-                            {editingCityId === city.id ? (
+                             {editingCityId === city.id ? (
                              <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
                                <input value={city.name} onChange={e => { const updated = [...localSettings.weather_cities]; updated[index].name = e.target.value; handleSettingChange('weather_cities', null, updated); }} className="p-2 rounded border text-sm" placeholder="نام انگلیسی"/>
                                <input value={city.faName} onChange={e => { const updated = [...localSettings.weather_cities]; updated[index].faName = e.target.value; handleSettingChange('weather_cities', null, updated); }} className="p-2 rounded border text-sm" placeholder="نام شهر (فارسی)"/>
@@ -657,7 +737,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                                <select value={city.timezone} onChange={e => { const updated = [...localSettings.weather_cities]; updated[index].timezone = e.target.value; handleSettingChange('weather_cities', null, updated); }} className="p-2 rounded border text-sm dir-ltr bg-white">
                                 {VALID_TIMEZONES.map(tz => (<option key={tz.value} value={tz.value}>{tz.label}</option>))}
                                </select>
-                                <input value={city.image} onChange={e => { const updated = [...localSettings.weather_cities]; updated[index].image = e.target.value; handleSettingChange('weather_cities', null, updated); }} className="p-2 rounded border text-sm dir-ltr" placeholder="لینک عکس"/>
+                               <input value={city.image} onChange={e => { const updated = [...localSettings.weather_cities]; updated[index].image = e.target.value; handleSettingChange('weather_cities', null, updated); }} className="p-2 rounded border text-sm dir-ltr" placeholder="لینک عکس"/>
                              </div>
                           ) : (
                             <div className="flex items-center gap-4">
@@ -666,10 +746,10 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                                  </div>
                                <div>
                                 <h4 className="font-bold text-gray-800 text-sm">{city.faName} <span className="text-xs text-gray-500 mr-1">({city.countryName || city.name})</span></h4>
-                                  <div className="text-[10px] text-gray-400 font-mono mt-0.5 dir-ltr">{city.timezone}</div>
+                                 <div className="text-[10px] text-gray-400 font-mono mt-0.5 dir-ltr">{city.timezone}</div>
                               </div>
                             </div>
-                           )}
+                            )}
                         </div>
                         <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                            {editingCityId === city.id ? (
@@ -678,11 +758,11 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                             <>
                                 <button onClick={() => handleDuplicateCity(city)} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition"><Copy size={16}/></button>
                               <button onClick={() => setEditingCityId(city.id)} className="p-2 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-100 transition"><Edit size={16}/></button>
-                               <button onClick={() => handleDeleteCity(index)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition"><Trash size={16}/></button>
+                              <button onClick={() => handleDeleteCity(index)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition"><Trash size={16}/></button>
                             </>
                           )}
                         </div>
-                        </div>
+                      </div>
                     ))}
                  </div>
                 </div>
@@ -693,22 +773,22 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                   <h3 className="font-bold border-b pb-2">ویرایش خدمات (سه زبانه)</h3>
                    <div className="space-y-6">
                     {localSettings.services?.map((srv, index) => (
-                       <div key={index} className="bg-gray-50 p-4 rounded-xl border">
+                      <div key={index} className="bg-gray-50 p-4 rounded-xl border">
                         <div className="flex justify-between mb-2">
                             <div className="font-bold text-gray-400">سرویس #{index+1}</div>
-                         </div>
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {/* دری */}
                             <div className="space-y-2 border-l pl-2">
-                                 <label className="text-[10px] font-bold text-blue-600 block">دری</label>
+                                <label className="text-[10px] font-bold text-blue-600 block">دری</label>
                                 <input value={srv.title} onChange={e => handleServiceChange(index, 'title', e.target.value)} className="w-full p-2 border rounded bg-white font-bold text-xs" placeholder="عنوان"/>
                                 <input value={srv.desc} onChange={e => handleServiceChange(index, 'desc', e.target.value)} className="w-full p-2 border rounded bg-white text-xs" placeholder="توضیحات"/>
                             </div>
                             {/* پشتو */}
-                             <div className="space-y-2 border-l pl-2">
+                            <div className="space-y-2 border-l pl-2">
                                 <div className="flex justify-between items-center mb-1">
                                     <label className="text-[10px] font-bold text-green-600 block">پشتو</label>
-                                     <button onClick={() => handleSmartFillService(index, 'ps')} className="text-[9px] flex items-center gap-1 bg-green-100 text-green-700 px-1.5 py-0.5 rounded hover:bg-green-200">
+                                    <button onClick={() => handleSmartFillService(index, 'ps')} className="text-[9px] flex items-center gap-1 bg-green-100 text-green-700 px-1.5 py-0.5 rounded hover:bg-green-200">
                                         {translatingField === `service_${index}_ps` ? <Loader2 size={8} className="animate-spin"/> : <Sparkles size={8}/>} ترجمه
                                     </button>
                                 </div>
@@ -735,11 +815,11 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
 
               {settingsTab === 'footer' && (
                 <div className="space-y-6">
-                   {/* تنظیمات درباره ما (فوتر) */}
+                  {/* تنظیمات درباره ما (فوتر) */}
                   <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                     <h3 className="font-bold border-b pb-2 text-[#058B8C]">متن «درباره ما» در فوتر (سه زبانه)</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                         
+                      
                         {/* دری */}
                         <div className="space-y-3 bg-blue-50/50 p-4 rounded-xl">
                             <h4 className="font-bold text-xs text-blue-600 mb-2">نسخه دری</h4>
@@ -774,11 +854,11 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                   </div>
 
                   {/* تنظیمات تماس و کپی‌رایت */}
-                   <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                     <h3 className="font-bold border-b pb-2 text-[#058B8C]">اطلاعات تماس و کپی‌رایت</h3>
                      
                      {/* فیلدهای مشترک */}
-                      <div className="grid grid-cols-2 gap-4">
+                     <div className="grid grid-cols-2 gap-4">
                         <div><label className="block text-xs font-bold text-gray-500 mb-1">شماره تماس (مشترک)</label><input value={localSettings.contact?.phone || ''} onChange={e => handleSettingChange('contact', 'phone', e.target.value)} className="w-full p-2 border rounded-lg" dir="ltr"/></div>
                         <div><label className="block text-xs font-bold text-gray-500 mb-1">ایمیل (مشترک)</label><input value={localSettings.contact?.email || ''} onChange={e => handleSettingChange('contact', 'email', e.target.value)} className="w-full p-2 border rounded-lg" dir="ltr"/></div>
                      </div>
@@ -799,20 +879,121 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                         </div>
                         {/* انگلیسی */}
                         <div className="space-y-3" dir="ltr">
-                             <h4 className="font-bold text-xs text-orange-600">English</h4>
+                              <h4 className="font-bold text-xs text-orange-600">English</h4>
                             <div><label className="block text-xs font-bold text-gray-500 mb-1">Address</label><input value={localSettings.contact?.address_en || ''} onChange={e => handleSettingChange('contact', 'address_en', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
                             <div><label className="block text-xs font-bold text-gray-500 mb-1">Copyright</label><input value={localSettings.contact?.copyright_en || ''} onChange={e => handleSettingChange('contact', 'copyright_en', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
                         </div>
                      </div>
                   </div>
+
+                  {/* تنظیمات لینک‌های مفید (فوتر) */}
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4 mt-6">
+                    <h3 className="font-bold border-b pb-2 text-[#058B8C] flex justify-between items-center">
+                        لینک‌های مفید (با قابلیت جابجایی)
+                        <button onClick={handleAddLink} className="text-xs bg-green-50 text-green-600 px-3 py-1 rounded-lg flex items-center gap-1 hover:bg-green-100 transition">
+                            <Plus size={14}/> افزودن لینک
+                        </button>
+                    </h3>
+                    
+                    <div className="space-y-3">
+                        {(localSettings.useful_links || []).map((link, index) => (
+                            <div 
+                                key={index} 
+                                className={`bg-gray-50 p-3 rounded-xl border transition-all ${editingLinkId === index ? 'ring-2 ring-[#058B8C] bg-white shadow-md' : 'hover:shadow-md'}`}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, index)}
+                                onDragEnter={(e) => handleDragEnter(e, index)}
+                                onDragEnd={handleSortLinks}
+                                onDragOver={(e) => e.preventDefault()}
+                            >
+                                {/* حالت نمایش (View Mode) یا ویرایش (Edit Mode) */}
+                                {editingLinkId === index ? (
+                                    // --- حالت ویرایش ---
+                                    <div className="space-y-4 animate-in fade-in">
+                                        <div className="flex justify-between items-center border-b pb-2 mb-2">
+                                            <span className="text-xs font-bold text-[#058B8C]">ویرایش لینک #{index + 1}</span>
+                                            <button onClick={() => setEditingLinkId(null)} className="text-xs bg-green-500 text-white px-3 py-1 rounded flex items-center gap-1 hover:bg-green-600">
+                                                <Check size={12}/> ذخیره
+                                            </button>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-bold text-blue-600 block">عنوان (دری) و لینک</label>
+                                                <input value={link.title_dr || ''} onChange={e => handleLinkChange(index, 'title_dr', e.target.value)} className="w-full p-2 border rounded bg-white text-xs font-bold" placeholder="مثلا: ریاست پاسپورت"/>
+                                                <div className="flex items-center gap-1">
+                                                    <Globe size={14} className="text-gray-400"/>
+                                                    <input value={link.url || ''} onChange={e => handleLinkChange(index, 'url', e.target.value)} className="w-full p-2 border rounded bg-white text-xs dir-ltr" placeholder="https://..."/>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <div className="flex gap-1 items-center">
+                                                    <input value={link.title_ps || ''} onChange={e => handleLinkChange(index, 'title_ps', e.target.value)} className="w-full p-2 border rounded bg-white text-xs" placeholder="پشتو"/>
+                                                    <button onClick={() => handleSmartFillLink(index, 'ps')} className="shrink-0 bg-green-100 text-green-700 px-2 h-8 rounded hover:bg-green-200 flex items-center justify-center" title="ترجمه هوشمند">
+                                                        {translatingField === `link_${index}_ps` ? <Loader2 size={14} className="animate-spin"/> : <Sparkles size={14}/>}
+                                                    </button>
+                                                </div>
+                                                <div className="flex gap-1 items-center" dir="ltr">
+                                                    <input value={link.title_en || ''} onChange={e => handleLinkChange(index, 'title_en', e.target.value)} className="w-full p-2 border rounded bg-white text-xs" placeholder="English"/>
+                                                    <button onClick={() => handleSmartFillLink(index, 'en')} className="shrink-0 bg-orange-100 text-orange-700 px-2 h-8 rounded hover:bg-orange-200 flex items-center justify-center" title="Smart Translate">
+                                                        {translatingField === `link_${index}_en` ? <Loader2 size={14} className="animate-spin"/> : <Sparkles size={14}/>}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    // --- حالت نمایش (کارت) ---
+                                    <div className="flex items-center gap-3">
+                                        {/* آیکون دستگیره برای دراگ */}
+                                        <div className="cursor-grab text-gray-300 hover:text-gray-600 active:cursor-grabbing p-1">
+                                            <GripVertical size={20}/>
+                                        </div>
+                                        
+                                        {/* اطلاعات لینک */}
+                                        <div className="flex-1">
+                                            <h4 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                                                {link.title_dr || 'بدون عنوان'}
+                                                <span className="text-[10px] font-normal text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded dir-ltr">{link.url}</span>
+                                            </h4>
+                                            <div className="text-[10px] text-gray-400 mt-0.5 flex gap-2">
+                                                {link.title_ps && <span>PS: {link.title_ps}</span>}
+                                                {link.title_en && <span>EN: {link.title_en}</span>}
+                                            </div>
+                                        </div>
+
+                                        {/* دکمه‌های عملیات (کپی، ویرایش، حذف) */}
+                                        <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                            <button onClick={() => handleDuplicateLink(link)} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition" title="کپی">
+                                                <Copy size={16}/>
+                                            </button>
+                                            <button onClick={() => setEditingLinkId(index)} className="p-2 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-100 transition" title="ویرایش">
+                                                <Edit size={16}/>
+                                            </button>
+                                            <button onClick={() => handleDeleteLink(index)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition" title="حذف">
+                                                <Trash size={16}/>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                        {(localSettings.useful_links || []).length === 0 && (
+                            <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50">
+                                <div className="text-gray-400 text-sm mb-2">هنوز لینکی اضافه نشده است</div>
+                                <button onClick={handleAddLink} className="text-xs text-[#058B8C] font-bold hover:underline">اولین لینک را اضافه کنید</button>
+                            </div>
+                        )}
+                    </div>
+                  </div>
                 </div>
-               )}
+            )}
 
               <div className="fixed bottom-6 left-6 z-50">
                 <button onClick={saveSettings} className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full shadow-2xl font-black flex items-center gap-2 animate-in slide-in-from-bottom-5">
                   <Save size={20}/> ذخیره تغییرات
                 </button>
-               </div>
+            </div>
             </div>
           )}
 
@@ -820,7 +1001,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
           {activeTab === 'bookings' && (
              <div className="space-y-6 animate-in fade-in">
                 <div className="overflow-x-auto rounded-2xl border border-gray-200 shadow-sm bg-white">
-                   <table className="w-full text-right text-sm">
+                  <table className="w-full text-right text-sm">
                     <thead className="bg-gray-50 border-b border-gray-200 text-gray-500">
                        <tr>
                         <th className="p-4 font-bold">زمان</th>
@@ -828,18 +1009,18 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                         <th className="p-4 font-bold">پرواز</th>
                         <th className="p-4 font-bold">پرداخت</th>
                         <th className="p-4 font-bold">وضعیت</th>
-                        <th className="p-4 font-bold text-center">عملیات</th>
+                         <th className="p-4 font-bold text-center">عملیات</th>
                       </tr>
                      </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {bookings && bookings.length > 0 ? bookings.map(b => (
+                       {bookings && bookings.length > 0 ? bookings.map(b => (
                          <tr key={b.id} className="hover:bg-gray-50 transition">
                             <td className="p-4 text-gray-500 text-xs">
                                <div dir="ltr" className="font-bold">{new Date(b.created_at).toLocaleDateString('fa-IR')}</div>
                                 <div dir="ltr" className="opacity-70 mt-1">{new Date(b.created_at).toLocaleTimeString('fa-IR')}</div>
                             </td>
                             <td className="p-4">
-                                  <div className="font-bold text-gray-800 flex items-center gap-1"><User size={14}/> {b.customer_name}</div>
+                               <div className="font-bold text-gray-800 flex items-center gap-1"><User size={14}/> {b.customer_name}</div>
                                 <div className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Phone size={14}/> {b.customer_phone}</div>
                              </td>
                              <td className="p-4">
@@ -847,16 +1028,16 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                                    <span className="text-2xl">{b.flight_info?.logo}</span>
                                    <div>
                                      <div className="font-bold text-xs text-gray-800">{b.flight_info?.airline}</div>
-                                      <div className="text-[10px] text-gray-500 dir-ltr mt-0.5">{b.flight_info?.origin} → {b.flight_info?.dest}</div>
+                                       <div className="text-[10px] text-gray-500 dir-ltr mt-0.5">{b.flight_info?.origin} → {b.flight_info?.dest}</div>
                                    </div>
                                </div>
-                              </td>
+                             </td>
                             <td className="p-4">
                                <div className="flex flex-col gap-1">
-                                  <div className="font-black text-blue-600">{(b.amount || 0).toLocaleString()} <span className="text-[9px] text-gray-400">افغانی</span></div>
+                                   <div className="font-black text-blue-600">{(b.amount || 0).toLocaleString()} <span className="text-[9px] text-gray-400">افغانی</span></div>
                                    {b.transaction_id && <div className="text-[10px] font-mono text-gray-500 select-all bg-yellow-50 px-2 rounded border border-yellow-100 w-fit">ID: {b.transaction_id}</div>}
                                </div>
-                              </td>
+                             </td>
                              <td className="p-4">{getStatusBadge(b.status)}</td>
                             <td className="p-4">
                                  <div className="flex justify-center gap-2">
@@ -870,7 +1051,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                                </div>
                              </td>
                          </tr>
-                         )) : (
+                          )) : (
                          <tr><td colSpan="6" className="p-10 text-center text-gray-400">موردی یافت نشد</td></tr>
                        )}
                     </tbody>
@@ -897,7 +1078,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                         <div className="space-y-2 bg-white p-3 rounded-lg border">
                            <div className="text-xs font-bold text-green-600 mb-1 flex justify-between items-center">
                                <span>پشتو</span>
-                                <button type="button" onClick={() => handleSmartFillNews('ps')} className="text-[9px] flex items-center gap-1 bg-green-100 text-green-700 px-2 py-0.5 rounded hover:bg-green-200 transition">
+                                 <button type="button" onClick={() => handleSmartFillNews('ps')} className="text-[9px] flex items-center gap-1 bg-green-100 text-green-700 px-2 py-0.5 rounded hover:bg-green-200 transition">
                                    {translatingField === 'ps' ? <Loader2 size={10} className="animate-spin"/> : <Sparkles size={10}/>} ترجمه هوشمند
                                </button>
                            </div>
@@ -907,10 +1088,10 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
 
                        {/* انگلیسی */}
                        <div className="space-y-2 bg-white p-3 rounded-lg border" dir="ltr">
-                            <div className="text-xs font-bold text-orange-600 mb-1 flex justify-between items-center">
+                          <div className="text-xs font-bold text-orange-600 mb-1 flex justify-between items-center">
                                <span>English</span>
                                <button type="button" onClick={() => handleSmartFillNews('en')} className="text-[9px] flex items-center gap-1 bg-orange-100 text-orange-700 px-2 py-0.5 rounded hover:bg-orange-200 transition">
-                                   {translatingField === 'en' ? <Loader2 size={10} className="animate-spin"/> : <Sparkles size={10}/>} Auto Translate
+                                     {translatingField === 'en' ? <Loader2 size={10} className="animate-spin"/> : <Sparkles size={10}/>} Auto Translate
                                </button>
                            </div>
                            <input placeholder="News Title" value={newNews.title_en || ''} onChange={e=>setNewNews({...newNews, title_en: e.target.value})} className="w-full p-2 rounded border text-sm font-bold"/>
@@ -929,21 +1110,21 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                 <div className="grid gap-3">
                   {news.map(n => (
                     <div key={n.id} className="flex gap-4 p-3 border rounded-xl items-center bg-white hover:shadow-md transition">
-                        <img src={n.image_url} className="w-20 h-20 rounded-lg object-cover bg-gray-100"/>
+                         <img src={n.image_url} className="w-20 h-20 rounded-lg object-cover bg-gray-100"/>
                        <div className="flex-1 space-y-1">
                          <h3 className="font-bold text-sm">{n.title}</h3>
                          <div className="text-xs text-gray-400 flex gap-2">
                               {n.title_ps && <span className="bg-green-50 text-green-600 px-1 rounded">PS</span>}
                              {n.title_en && <span className="bg-orange-50 text-orange-600 px-1 rounded">EN</span>}
                          </div>
-                          {n.pinned && <span className="text-xs bg-yellow-100 text-yellow-800 px-2 rounded mt-1 inline-block">پین شده</span>}
+                           {n.pinned && <span className="text-xs bg-yellow-100 text-yellow-800 px-2 rounded mt-1 inline-block">پین شده</span>}
                        </div>
                        <div className="flex gap-2">
-                          <button onClick={()=>handleTogglePin(n.id, n.pinned)} title={n.pinned ? "برداشتن پین" : "پین کردن"}><Pin size={18} className={n.pinned ? "text-yellow-500" : "text-gray-400"}/></button>
+                           <button onClick={()=>handleTogglePin(n.id, n.pinned)} title={n.pinned ? "برداشتن پین" : "پین کردن"}><Pin size={18} className={n.pinned ? "text-yellow-500" : "text-gray-400"}/></button>
                          <button onClick={()=>handleEditNews(n)} title="ویرایش"><Edit size={18} className="text-blue-500"/></button>
                          <button onClick={()=>handleDuplicateNews(n)} title="کپی"><Copy size={18} className="text-gray-500"/></button>
                          <button onClick={()=>handleDeleteNews(n.id)} title="حذف"><Trash size={18} className="text-red-500"/></button>
-                        </div>
+                         </div>
                     </div>
                    ))}
                 </div>

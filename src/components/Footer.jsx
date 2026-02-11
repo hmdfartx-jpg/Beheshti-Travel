@@ -1,30 +1,32 @@
 import React from 'react';
-import { Phone, Mail, MapPin, Instagram, Facebook, Send } from 'lucide-react';
+import { Phone, Mail, MapPin, Instagram, Facebook, Send, Link as LinkIcon } from 'lucide-react';
 
 export default function Footer({ t, lang, settings }) {
   // استفاده از تنظیمات دریافتی یا پیش‌فرض
   const contact = settings?.contact || {};
   const about = settings?.about || {};
-  const general = settings?.general || {};
+  
+  // انتخاب لوگو بر اساس زبان (دقیقا مثل ناوبار)
+  const logoSrc = lang === 'en' 
+    ? (settings?.navbar?.logo_en || '') 
+    : (settings?.navbar?.logo_dr || '');
 
-  // تابع کمکی برای ترجمه متون هاردکد شده در فوتر که در فایل translations نیستند
+  // تابع کمکی برای ترجمه متون هاردکد شده
   const getText = (dr, ps, en) => {
     if (lang === 'en') return en;
     if (lang === 'ps') return ps;
     return dr;
   };
 
-  // تابع کمکی جدید برای خواندن فیلدهای تنظیمات بر اساس زبان (مطابق ساختار Admin)
+  // تابع کمکی برای خواندن فیلدهای تنظیمات بر اساس زبان
   const getSettingText = (obj, field) => {
       if (!obj) return '';
-      if (lang === 'en') return obj[`${field}_en`] || obj[field]; // مثلا about.desc_en
+      if (lang === 'en') return obj[`${field}_en`] || obj[field];
       if (lang === 'ps') return obj[`${field}_ps`] || obj[`${field}_dr`] || obj[field];
-      return obj[`${field}_dr`] || obj[field]; // پیش فرض: about.desc_dr یا about.desc
+      return obj[`${field}_dr`] || obj[field];
   };
 
   return (
-    // تغییر رنگ پس‌زمینه به رنگ سازمانی (#058B8C)
-    // جهت صفحه (ltr/rtl) به صورت خودکار از کامپوننت والد (App) به ارث برده می‌شود
     <footer className="bg-[#058B8C] text-white pt-16 pb-8 mt-20 rounded-t-[3rem] relative overflow-hidden">
       {/* پترن پس‌زمینه */}
       <div className="absolute inset-0 opacity-10 pointer-events-none">
@@ -35,28 +37,31 @@ export default function Footer({ t, lang, settings }) {
       <div className="max-w-7xl mx-auto px-6 relative z-10">
          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           
-          {/* ستون اول: درباره ما */}
+          {/* ستون اول: لوگو و درباره ما */}
           <div className="space-y-6">
-            <div className="flex items-center gap-3">
-               <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center text-2xl font-black text-white shadow-inner">
-                  {general.logoText || 'B'}
-               </div>
-               <div className="flex flex-col">
-                 <span className="font-black text-xl tracking-tight">
-                    {/* اگر نام برند چندزبانه در تنظیمات بود استفاده کن، وگرنه پیش‌فرض */}
-                    {getText(general.brandName || "بهشتی تراول", general.brandName || "بهشتی تراول", "Beheshti Travel")}
-                 </span>
-                 <span className="text-[10px] text-white/80 font-bold tracking-widest opacity-90">TRAVEL AGENCY</span>
-               </div>
+            
+            {/* ✅ تغییر: نمایش لوگوی اصلی بجای متن و دایره */}
+            <div className="mb-4">
+                {logoSrc ? (
+                    <img 
+                        src={logoSrc} 
+                        alt="Company Logo" 
+                        className="h-20 w-auto object-contain bg-white/10 p-3 rounded-2xl backdrop-blur-sm border border-white/10"
+                    />
+                ) : (
+                    <div className="text-2xl font-black">LOGO</div>
+                )}
             </div>
-            {/* عنوان "درباره ما" - استفاده از تابع هوشمند برای خواندن از تنظیمات */}
+
+            {/* عنوان "درباره ما" */}
             <h4 className="font-bold text-white text-sm">
                 {getSettingText(about, 'title') || getText("درباره ما", "زموږ په اړه", "About Us")}
             </h4>
+            
             <p className="text-white/90 text-xs leading-6 text-justify">
-              {/* استفاده از متن تنظیمات بر اساس زبان */}
               {getSettingText(about, 'desc') || "..."}
             </p>
+            
             <div className="flex gap-4">
                <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#D4AF37] transition-colors"><Instagram size={18}/></a>
                <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#D4AF37] transition-colors"><Facebook size={18}/></a>
@@ -68,7 +73,7 @@ export default function Footer({ t, lang, settings }) {
           <div>
             <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
                <span className="w-8 h-1 bg-[#D4AF37] rounded-full"></span>
-                {t.footer?.quick_links || getText("دسترسی سریع", "چټک لاسرسی", "Quick Links")}
+               {t.footer?.quick_links || getText("دسترسی سریع", "چټک لاسرسی", "Quick Links")}
             </h3>
             <ul className="space-y-4 text-sm text-white/90">
               <li><a href="#" className="hover:text-[#D4AF37] transition-colors flex items-center gap-2"><span className="w-1 h-1 bg-current rounded-full"></span> {t.nav?.home}</a></li>
@@ -88,10 +93,9 @@ export default function Footer({ t, lang, settings }) {
               <li className="flex items-start gap-4 group">
                 <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-[#D4AF37] transition-colors shrink-0">
                    <Phone size={18}/>
-                 </div>
+                </div>
                 <div className="flex flex-col">
                    <span className="text-[10px] text-white/70 mb-1">{t.common?.phone}</span>
-                   {/* شماره تلفن معمولاً چپ به راست است */}
                    <span className="font-bold dir-ltr text-right" style={{ direction: 'ltr', textAlign: lang === 'en' ? 'left' : 'right' }}>
                        {contact.phone}
                    </span>
@@ -108,7 +112,7 @@ export default function Footer({ t, lang, settings }) {
                    <span className="font-bold">{contact.email}</span>
                 </div>
                </li>
-              <li className="flex items-start gap-4 group">
+               <li className="flex items-start gap-4 group">
                 <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-[#D4AF37] transition-colors shrink-0">
                    <MapPin size={18}/>
                 </div>
@@ -116,32 +120,54 @@ export default function Footer({ t, lang, settings }) {
                    <span className="text-[10px] text-white/70 mb-1">
                        {getText("آدرس", "پته", "Address")}
                    </span>
-                   {/* استفاده از آدرس چند زبانه */}
                    <span className="font-bold leading-relaxed">{getSettingText(contact, 'address')}</span>
                 </div>
                </li>
             </ul>
           </div>
 
-          {/* ستون چهارم: نماد اعتماد */}
-          <div className="bg-white/5 rounded-3xl p-6 text-center border border-white/10">
-             <div className="w-16 h-16 bg-[#D4AF37] rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">🛡️</div>
-             <h4 className="font-bold mb-2">
-                 {getText("ضمانت بهترین قیمت", "د غوره قیمت تضمین", "Best Price Guarantee")}
-             </h4>
-             <p className="text-xs text-white/80 mb-4">
-                 {getText(
-                     "ما تضمین می‌کنیم که بهترین نرخ بلیط و خدمات ویزا را ارائه می‌دهیم.",
-                     "موږ تضمین کوو چې د ټکټ او ویزې خدماتو غوره نرخ وړاندې کوو.",
-                     "We guarantee the best rates for tickets and visa services."
-                 )}
-             </p>
-            </div>
+          {/* ✅ تغییر: ستون چهارم: لینک‌های مفید (بجای گارانتی) */}
+          <div>
+             <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
+                 <span className="w-8 h-1 bg-[#D4AF37] rounded-full"></span>
+                 {getText("لینک‌های مفید", "ګټور لینکونه", "Useful Links")}
+             </h3>
+             <ul className="space-y-4 text-sm text-white/90">
+                {/* ریاست پاسپورت */}
+                <li>
+                    <a href="https://passport.gov.af/" target="_blank" rel="noopener noreferrer" className="hover:text-[#D4AF37] transition-colors flex items-center gap-2 group">
+                        <LinkIcon size={14} className="text-[#D4AF37] group-hover:rotate-45 transition-transform"/> 
+                        {getText("ریاست پاسپورت", "د پاسپورت ریاست", "Passport Directorate")}
+                    </a>
+                </li>
+                {/* وزارت داخله */}
+                <li>
+                    <a href="https://moi.gov.af/" target="_blank" rel="noopener noreferrer" className="hover:text-[#D4AF37] transition-colors flex items-center gap-2 group">
+                        <LinkIcon size={14} className="text-[#D4AF37] group-hover:rotate-45 transition-transform"/>
+                        {getText("وزارت امور داخله", "د کورنیو چارو وزارت", "Ministry of Interior")}
+                    </a>
+                </li>
+                {/* ویزای ایران */}
+                <li>
+                    <a href="https://evisa.mfa.ir/" target="_blank" rel="noopener noreferrer" className="hover:text-[#D4AF37] transition-colors flex items-center gap-2 group">
+                        <LinkIcon size={14} className="text-[#D4AF37] group-hover:rotate-45 transition-transform"/>
+                        {getText("سامانه روادید ایران", "د ایران ویزې سیسټم", "Iran E-Visa")}
+                    </a>
+                </li>
+                {/* افغان تور */}
+                <li>
+                    <a href="#" className="hover:text-[#D4AF37] transition-colors flex items-center gap-2 group">
+                        <LinkIcon size={14} className="text-[#D4AF37] group-hover:rotate-45 transition-transform"/>
+                        {getText("شرکت افغان تور", "افغان تور شرکت", "Afghan Tour")}
+                    </a>
+                </li>
+             </ul>
+          </div>
+
         </div>
 
         {/* کپی رایت */}
         <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-white/60">
-          {/* کپی رایت چند زبانه */}
           <p>{getSettingText(contact, 'copyright')}</p>
           <div className="flex gap-6">
              <a href="#" className="hover:text-white">

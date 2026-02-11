@@ -27,6 +27,12 @@ export default function Navbar({ lang, setLang, page, setPage, settings }) {
   // تعیین جهت متن برای منوها (انگلیسی چپ‌چین، بقیه راست‌چین)
   const alignClass = lang === 'en' ? 'text-left' : 'text-right';
 
+  // انتخاب لوگو بر اساس زبان
+  // اگر زبان انگلیسی بود لوگوی انگلیسی، در غیر این صورت لوگوی دری/پشتو
+  const logoSrc = lang === 'en' 
+    ? (settings?.navbar?.logo_en || '') 
+    : (settings?.navbar?.logo_dr || '');
+
   // لیست منوها
   const navItems = [
     { id: 'home', label: getText('خانه', 'کور', 'Home'), icon: Home },
@@ -39,34 +45,26 @@ export default function Navbar({ lang, setLang, page, setPage, settings }) {
   ];
 
   return (
-    <nav className="bg-[#058B8C] shadow-lg sticky top-0 z-50 border-b border-[#047070]">
+    // ✅ تغییر مهم: اضافه کردن w-screen و mx-[calc(50%-50vw)] برای اطمینان از تمام عرض بودن ناوبار و پوشاندن لبه‌ها
+    <nav className="bg-[#058B8C] shadow-lg sticky top-0 z-50 border-b border-[#047070] w-screen mx-[calc(50%-50vw)]">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center h-20">
           
-          {/* لوگو و نام برند */}
+          {/* لوگو (تصویر آپلود شده) */}
           <div 
             onClick={() => setPage('home')} 
-            className="flex items-center gap-3 cursor-pointer group"
+            className="flex items-center cursor-pointer hover:opacity-90 transition-opacity"
           >
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[#058B8C] font-black text-xl shadow-lg group-hover:scale-105 transition-transform">
-              {settings?.navbar?.logoText || 'B'}
-            </div>
-            <div className="flex flex-col">
-              <span className="font-black text-white text-lg leading-tight">
-                  {getText(
-                    settings?.navbar?.title_dr || 'بهشتی',
-                    settings?.navbar?.title_ps || 'بهشتی',
-                    settings?.navbar?.title_en || 'Beheshti'
-                  )}
-              </span>
-              <span className="text-[10px] text-white/80 font-bold tracking-wider">
-                  {getText(
-                    settings?.navbar?.subtitle_dr || 'TRAVEL AGENCY',
-                    settings?.navbar?.subtitle_ps || 'TRAVEL AGENCY',
-                    settings?.navbar?.subtitle_en || 'TRAVEL AGENCY'
-                  )}
-              </span>
-            </div>
+            {logoSrc ? (
+              <img 
+                src={logoSrc} 
+                alt="Logo" 
+                className="h-14 w-auto object-contain" 
+              />
+            ) : (
+              // اگر لوگویی آپلود نشده بود، یک متن پیش‌فرض نمایش بده
+              <span className="text-white font-black text-xl">LOGO</span>
+            )}
           </div>
 
           {/* منوی دسکتاپ */}
