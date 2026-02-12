@@ -833,10 +833,31 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                             <div className="bg-gray-50 p-4 rounded-xl">
                                 <label className="text-xs font-bold text-gray-500 mb-3 block">شبکه‌های اجتماعی دفتر مرکزی</label>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div><label className="text-[10px] text-green-600 block mb-1 flex items-center gap-1"><MessageCircle size={10}/> WhatsApp</label><input value={localSettings.contact?.whatsapp || ''} onChange={e => handleSettingChange('contact', 'whatsapp', e.target.value)} className="w-full p-2 border rounded text-xs dir-ltr" placeholder="Number"/></div>
-                                    <div><label className="text-[10px] text-blue-500 block mb-1 flex items-center gap-1"><Send size={10}/> Telegram</label><input value={localSettings.contact?.telegram || ''} onChange={e => handleSettingChange('contact', 'telegram', e.target.value)} className="w-full p-2 border rounded text-xs dir-ltr" placeholder="ID"/></div>
-                                    <div><label className="text-[10px] text-pink-600 block mb-1 flex items-center gap-1"><Instagram size={10}/> Instagram</label><input value={localSettings.contact?.instagram || ''} onChange={e => handleSettingChange('contact', 'instagram', e.target.value)} className="w-full p-2 border rounded text-xs dir-ltr" placeholder="ID"/></div>
-                                    <div><label className="text-[10px] text-blue-800 block mb-1 flex items-center gap-1"><Facebook size={10}/> Facebook</label><input value={localSettings.contact?.facebook || ''} onChange={e => handleSettingChange('contact', 'facebook', e.target.value)} className="w-full p-2 border rounded text-xs dir-ltr" placeholder="Page ID"/></div>
+                                    {/* کلمه block از کلاس‌های پایین حذف شد */}
+                                    <div>
+                                        <label className="text-[10px] text-green-600 mb-1 flex items-center gap-1 font-bold">
+                                            <MessageCircle size={10}/> WhatsApp
+                                        </label>
+                                        <input value={localSettings.contact?.whatsapp || ''} onChange={e => handleSettingChange('contact', 'whatsapp', e.target.value)} className="w-full p-2 border rounded text-xs dir-ltr" placeholder="Number"/>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] text-blue-500 mb-1 flex items-center gap-1 font-bold">
+                                            <Send size={10}/> Telegram
+                                        </label>
+                                        <input value={localSettings.contact?.telegram || ''} onChange={e => handleSettingChange('contact', 'telegram', e.target.value)} className="w-full p-2 border rounded text-xs dir-ltr" placeholder="ID"/>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] text-pink-600 mb-1 flex items-center gap-1 font-bold">
+                                            <Instagram size={10}/> Instagram
+                                        </label>
+                                        <input value={localSettings.contact?.instagram || ''} onChange={e => handleSettingChange('contact', 'instagram', e.target.value)} className="w-full p-2 border rounded text-xs dir-ltr" placeholder="ID"/>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] text-blue-800 mb-1 flex items-center gap-1 font-bold">
+                                            <Facebook size={10}/> Facebook
+                                        </label>
+                                        <input value={localSettings.contact?.facebook || ''} onChange={e => handleSettingChange('contact', 'facebook', e.target.value)} className="w-full p-2 border rounded text-xs dir-ltr" placeholder="Page ID"/>
+                                    </div>
                                 </div>
                             </div>
 

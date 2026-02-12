@@ -166,10 +166,12 @@ export default function Navbar({ lang, setLang, page, setPage, settings }) {
             {/* دکمه ادمین/ورود */}
             <button 
               onClick={() => setPage('admin')}
-              className="flex items-center justify-center p-3 rounded-xl bg-white text-[#058B8C] hover:bg-gray-100 font-bold shadow-lg shadow-black/10 transition-all active:scale-95 group"
+              // کلاس‌ها دقیقاً مشابه دکمه زبان تنظیم شدند (ارتفاع، رنگ، حاشیه)
+              className="flex items-center justify-center px-3 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors border border-transparent hover:border-white/30"
               title={getText('حساب کاربری', 'خپل حساب', 'Account')}
             >
-              <User size={20} className="group-hover:scale-110 transition-transform"/>
+              {/* سایز آیکون هم ۱۸ شد تا با کره زمین دکمه زبان برابر شود */}
+              <User size={18} />
             </button>
           </div>
 
