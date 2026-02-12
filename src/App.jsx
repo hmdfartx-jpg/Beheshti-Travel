@@ -15,6 +15,7 @@ import Cargo from './pages/Cargo';
 import Tracking from './pages/Tracking';
 import Admin from './pages/Admin';
 import News from './pages/News';
+import About from './pages/About';
 
 // تنظیمات پیش‌فرض برای جلوگیری از ارور قبل از لود شدن دیتابیس
 const DEFAULT_SETTINGS = {
@@ -159,7 +160,7 @@ export default function App() {
             viewId={page.replace('view-news-', '')} 
           />
         )}
-        
+        {page === 'about' && <About t={t} lang={lang} settings={settings} />}
         {page === 'admin' && (
   <Admin 
     t={t} 

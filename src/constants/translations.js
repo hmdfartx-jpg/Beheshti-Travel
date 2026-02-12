@@ -9,6 +9,7 @@ export const translations = {
     subtitle: "نماینده معتبر خدمات مسافرتی و تحصیلی در کابل",
     nav: { 
       home: "صفحه اصلی", 
+      about: "درباره ما", // اضافه شد
       visa: "ویزای کشورها", 
       tickets: "رزرو تکت", 
       scholarship: "بورسیه", 
@@ -58,6 +59,7 @@ export const translations = {
     subtitle: "په کابل کې د سفر او تحصیلي خدمتونو معتبره اداره",
     nav: { 
       home: "اصلي پاڼه", 
+      about: "زموږ په اړه", // اضافه شد
       visa: "د هیوادونو ویزې", 
       tickets: "ټکټ ریزرو", 
       scholarship: "بورسونه", 
@@ -107,6 +109,7 @@ export const translations = {
     subtitle: "Trusted Representative for Travel and Educational Services in Kabul",
     nav: { 
       home: "Home", 
+      about: "About Us", // Added
       visa: "Visas", 
       tickets: "Tickets", 
       scholarship: "Scholarship", 

@@ -1,12 +1,13 @@
 import React from 'react';
-import { Phone, Mail, MapPin, Instagram, Facebook, Send, Link as LinkIcon } from 'lucide-react';
+import { Phone, Mail, MapPin, Instagram, Facebook, Send, Link as LinkIcon, MessageCircle } from 'lucide-react';
 
 export default function Footer({ t, lang, settings }) {
-  // استفاده از تنظیمات دریافتی یا پیش‌فرض
+  // استفاده از تنظیمات تماس که الان در بخش "درباره ما" ادمین تنظیم می‌شود
   const contact = settings?.contact || {};
   const about = settings?.about || {};
+  const usefulLinks = settings?.useful_links || [];
   
-  // انتخاب لوگو بر اساس زبان (دقیقا مثل ناوبار)
+  // انتخاب لوگو بر اساس زبان
   const logoSrc = lang === 'en' 
     ? (settings?.navbar?.logo_en || '') 
     : (settings?.navbar?.logo_dr || '');
@@ -35,14 +36,14 @@ export default function Footer({ t, lang, settings }) {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
+        
          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           
           {/* ستون اول: لوگو و درباره ما */}
           <div className="space-y-6">
             
-            {/* ✅ تغییر: نمایش لوگوی اصلی بجای متن و دایره */}
             <div className="mb-4">
-                {logoSrc ? (
+                 {logoSrc ? (
                     <img 
                         src={logoSrc} 
                         alt="Company Logo" 
@@ -51,7 +52,7 @@ export default function Footer({ t, lang, settings }) {
                 ) : (
                     <div className="text-2xl font-black">LOGO</div>
                 )}
-            </div>
+             </div>
 
             {/* عنوان "درباره ما" */}
             <h4 className="font-bold text-white text-sm">
@@ -62,10 +63,23 @@ export default function Footer({ t, lang, settings }) {
               {getSettingText(about, 'desc') || "..."}
             </p>
             
+            {/* دکمه‌های سوشال هوشمند (اگر در ادمین وارد شده باشند) */}
             <div className="flex gap-4">
-               <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#D4AF37] transition-colors"><Instagram size={18}/></a>
-               <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#D4AF37] transition-colors"><Facebook size={18}/></a>
-               <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#D4AF37] transition-colors"><Send size={18}/></a>
+               {contact.instagram && (
+                   <a href={`https://instagram.com/${contact.instagram.replace('@','')}`} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#D4AF37] transition-colors">
+                       <Instagram size={18}/>
+                   </a>
+               )}
+               {contact.whatsapp && (
+                   <a href={`https://wa.me/${contact.whatsapp.replace(/\+/g,'')}`} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#25D366] transition-colors">
+                       <MessageCircle size={18}/>
+                   </a>
+               )}
+               {contact.telegram && (
+                   <a href={`https://t.me/${contact.telegram.replace('@','')}`} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#229ED9] transition-colors">
+                       <Send size={18}/>
+                   </a>
+               )}
             </div>
           </div>
 
@@ -83,33 +97,35 @@ export default function Footer({ t, lang, settings }) {
             </ul>
           </div>
 
-          {/* ستون سوم: تماس با ما */}
+          {/* ستون سوم: تماس با ما (دیپ لینک و هوشمند) */}
           <div>
             <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
-              <span className="w-8 h-1 bg-[#D4AF37] rounded-full"></span>
+               <span className="w-8 h-1 bg-[#D4AF37] rounded-full"></span>
                {t.footer?.contact_us || getText("تماس با ما", "موږ سره اړیکه", "Contact Us")}
             </h3>
             <ul className="space-y-6 text-sm">
               <li className="flex items-start gap-4 group">
                 <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-[#D4AF37] transition-colors shrink-0">
                    <Phone size={18}/>
-                </div>
+                 </div>
                 <div className="flex flex-col">
                    <span className="text-[10px] text-white/70 mb-1">{t.common?.phone}</span>
-                   <span className="font-bold dir-ltr text-right" style={{ direction: 'ltr', textAlign: lang === 'en' ? 'left' : 'right' }}>
-                       {contact.phone}
-                   </span>
+                   {/* دیپ لینک تلفن */}
+                   <a href={`tel:${contact.phone}`} className="font-bold dir-ltr text-right hover:text-[#D4AF37] transition-colors" style={{ direction: 'ltr', textAlign: lang === 'en' ? 'left' : 'right' }}>
+                       {contact.phone || '...'}
+                   </a>
                 </div>
               </li>
               <li className="flex items-start gap-4 group">
-                 <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-[#D4AF37] transition-colors shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-[#D4AF37] transition-colors shrink-0">
                    <Mail size={18}/>
                  </div>
                 <div className="flex flex-col">
                    <span className="text-[10px] text-white/70 mb-1">
                        {getText("ایمیل", "بریښنالیک", "Email")}
                    </span>
-                   <span className="font-bold">{contact.email}</span>
+                   {/* دیپ لینک ایمیل */}
+                   <a href={`mailto:${contact.email}`} className="font-bold hover:text-[#D4AF37] transition-colors">{contact.email || '...'}</a>
                 </div>
                </li>
                <li className="flex items-start gap-4 group">
@@ -120,47 +136,45 @@ export default function Footer({ t, lang, settings }) {
                    <span className="text-[10px] text-white/70 mb-1">
                        {getText("آدرس", "پته", "Address")}
                    </span>
-                   <span className="font-bold leading-relaxed">{getSettingText(contact, 'address')}</span>
+                   {/* دیپ لینک آدرس به گوگل مپ */}
+                   <a 
+                     href={contact.map_link || '#'} 
+                     target="_blank" 
+                     rel="noreferrer"
+                     className="font-bold leading-relaxed hover:text-[#D4AF37] transition-colors cursor-pointer"
+                   >
+                       {getSettingText(contact, 'address') || '...'}
+                   </a>
                 </div>
                </li>
             </ul>
           </div>
 
-          {/* ✅ تغییر: ستون چهارم: لینک‌های مفید (بجای گارانتی) */}
+          {/* ستون چهارم: لینک‌های مفید (داینامیک از ادمین) */}
           <div>
              <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
                  <span className="w-8 h-1 bg-[#D4AF37] rounded-full"></span>
                  {getText("لینک‌های مفید", "ګټور لینکونه", "Useful Links")}
              </h3>
              <ul className="space-y-4 text-sm text-white/90">
-                {/* ریاست پاسپورت */}
-                <li>
-                    <a href="https://passport.gov.af/" target="_blank" rel="noopener noreferrer" className="hover:text-[#D4AF37] transition-colors flex items-center gap-2 group">
-                        <LinkIcon size={14} className="text-[#D4AF37] group-hover:rotate-45 transition-transform"/> 
-                        {getText("ریاست پاسپورت", "د پاسپورت ریاست", "Passport Directorate")}
-                    </a>
-                </li>
-                {/* وزارت داخله */}
-                <li>
-                    <a href="https://moi.gov.af/" target="_blank" rel="noopener noreferrer" className="hover:text-[#D4AF37] transition-colors flex items-center gap-2 group">
-                        <LinkIcon size={14} className="text-[#D4AF37] group-hover:rotate-45 transition-transform"/>
-                        {getText("وزارت امور داخله", "د کورنیو چارو وزارت", "Ministry of Interior")}
-                    </a>
-                </li>
-                {/* ویزای ایران */}
-                <li>
-                    <a href="https://evisa.mfa.ir/" target="_blank" rel="noopener noreferrer" className="hover:text-[#D4AF37] transition-colors flex items-center gap-2 group">
-                        <LinkIcon size={14} className="text-[#D4AF37] group-hover:rotate-45 transition-transform"/>
-                        {getText("سامانه روادید ایران", "د ایران ویزې سیسټم", "Iran E-Visa")}
-                    </a>
-                </li>
-                {/* افغان تور */}
-                <li>
-                    <a href="#" className="hover:text-[#D4AF37] transition-colors flex items-center gap-2 group">
-                        <LinkIcon size={14} className="text-[#D4AF37] group-hover:rotate-45 transition-transform"/>
-                        {getText("شرکت افغان تور", "افغان تور شرکت", "Afghan Tour")}
-                    </a>
-                </li>
+                {usefulLinks.length > 0 ? usefulLinks.map((link, idx) => (
+                    <li key={idx}>
+                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="hover:text-[#D4AF37] transition-colors flex items-center gap-2 group">
+                            <LinkIcon size={14} className="text-[#D4AF37] group-hover:rotate-45 transition-transform"/> 
+                            {getSettingText(link, 'title') || link.title_dr}
+                        </a>
+                    </li>
+                )) : (
+                    // فال‌بک استاتیک اگر لینکی در ادمین نباشد
+                    <>
+                        <li>
+                             <a href="https://passport.gov.af/" target="_blank" rel="noopener noreferrer" className="hover:text-[#D4AF37] transition-colors flex items-center gap-2 group">
+                                <LinkIcon size={14} className="text-[#D4AF37] group-hover:rotate-45 transition-transform"/> 
+                                {getText("ریاست پاسپورت", "د پاسپورت ریاست", "Passport Directorate")}
+                            </a>
+                        </li>
+                    </>
+                )}
              </ul>
           </div>
 
@@ -178,7 +192,7 @@ export default function Footer({ t, lang, settings }) {
              </a>
           </div>
         </div>
-      </div>
+   </div>
     </footer>
   );
 }
