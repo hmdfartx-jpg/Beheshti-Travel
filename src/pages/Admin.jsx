@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Plus, Trash, Megaphone, Ticket, User, Phone, CheckCircle, XCircle, Edit, Copy, X, Save, Settings, GripVertical, Check, CreditCard, Clock, Calendar, Lock, ArrowRight, RefreshCw, Eye, EyeOff, Image, LogOut, Layout, Globe, Sparkles, Loader2, Pin, MapPin, Instagram, MessageCircle, Send, Facebook, Info, Building2 } from 'lucide-react';
+import { Plus, Trash, Megaphone, Ticket, User, Phone, CheckCircle, XCircle, Edit, Copy, X, Save, Settings, GripVertical, Check, CreditCard, Clock, Calendar, Lock, ArrowRight, RefreshCw, Eye, EyeOff, Image, LogOut, Layout, Globe, Sparkles, Loader2, Pin, MapPin, Instagram, MessageCircle, Send, Facebook, Info, Building2, Shield, Users, Award, Target } from 'lucide-react';
 
 // لیست تایم‌زون‌ها
 const VALID_TIMEZONES = [
@@ -81,7 +81,6 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
   const [aboutContactTab, setAboutContactTab] = useState('about'); // 'about' or 'contact'
 
   const [localSettings, setLocalSettings] = useState(settings || {});
-  
   // استیت اخبار (با فیلدهای سه زبانه)
   const [newNews, setNewNews] = useState({ 
     title: '', desc: '', 
@@ -89,17 +88,15 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
     title_en: '', desc_en: '',
     img: '' 
   });
-  
   const [editingId, setEditingId] = useState(null);
   const [editingCityId, setEditingCityId] = useState(null);
   const [editingLinkId, setEditingLinkId] = useState(null);
-  const [editingTeamId, setEditingTeamId] = useState(null); 
-  const [editingAgencyId, setEditingAgencyId] = useState(null); // برای ویرایش نمایندگی‌ها
-  const [editingWhyUsId, setEditingWhyUsId] = useState(null); // برای ویرایش بخش چرا ما
+  const [editingTeamId, setEditingTeamId] = useState(null);
+  const [editingAgencyId, setEditingAgencyId] = useState(null);
+  const [editingWhyUsId, setEditingWhyUsId] = useState(null);
 
   const [tempSliderImage, setTempSliderImage] = useState('');
   const [translatingField, setTranslatingField] = useState(null);
-  
   const dragItem = useRef();
   const dragOverItem = useRef();
 
@@ -182,7 +179,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
       setTranslatingField(null);
   };
 
-  // --- جدید: هندلرهای ترجمه بخش "درباره ما و تماس" ---
+  // --- هندلرهای ترجمه بخش "درباره ما و تماس" ---
 
   // 1. عمومی (توضیحات درباره ما)
   const handleSmartFillAboutGeneral = async (targetLang) => {
@@ -190,10 +187,8 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
       const desc = localSettings.about?.desc_dr || localSettings.about?.desc;
       if (!title && !desc) return alert("لطفا اطلاعات فارسی را وارد کنید.");
       setTranslatingField(`about_general_${targetLang}`);
-      
       const tTitle = title ? await fetchTranslation(title, targetLang) : "";
       const tDesc = desc ? await fetchTranslation(desc, targetLang) : "";
-      
       handleSettingChange('about', `title_${targetLang}`, tTitle);
       handleSettingChange('about', `desc_${targetLang}`, tDesc);
       setTranslatingField(null);
@@ -254,7 +249,6 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
       
       if (!address) return alert("آدرس فارسی را وارد کنید.");
       setTranslatingField(`contact_${targetLang}`);
-
       const tAddress = await fetchTranslation(address, targetLang);
       const tCopyright = copyright ? await fetchTranslation(copyright, targetLang) : "";
 
@@ -271,12 +265,23 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
 
       const tName = agency.name_dr ? await fetchTranslation(agency.name_dr, targetLang) : "";
       const tAddress = agency.address_dr ? await fetchTranslation(agency.address_dr, targetLang) : "";
-
       setLocalSettings(prev => {
           const updated = [...(prev.agencies || [])];
           updated[index] = { ...updated[index], [`name_${targetLang}`]: tName, [`address_${targetLang}`]: tAddress };
           return { ...prev, agencies: updated };
       });
+      setTranslatingField(null);
+  };
+
+  // 7. متن کوتاه درباره ما در فوتر (جدید)
+  const handleSmartFillFooterAbout = async (targetLang) => {
+      const text = localSettings.contact?.footer_about_dr;
+      if (!text) return alert("لطفا ابتدا متن فارسی را وارد کنید.");
+      setTranslatingField(`footer_about_${targetLang}`);
+      
+      const tText = await fetchTranslation(text, targetLang);
+      
+      handleSettingChange('contact', `footer_about_${targetLang}`, tText);
       setTranslatingField(null);
   };
 
@@ -305,7 +310,6 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
     dragItem.current = null; dragOverItem.current = null;
     handleSettingChange('team', null, _team);
   };
-
   const handleTeamChange = (index, key, value) => {
     setLocalSettings(prev => {
         const updated = [...(prev.team || [])];
@@ -384,7 +388,6 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
         setLocalSettings(prev => ({ ...prev, useful_links: updatedLinks }));
       }
   };
-  
   const handleSortLinks = () => {
     const _links = [...(localSettings.useful_links || [])];
     const item = _links[dragItem.current];
@@ -393,27 +396,23 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
     dragItem.current = null; dragOverItem.current = null;
     handleSettingChange('useful_links', null, _links);
   };
-
   const handleDuplicateLink = (link) => {
     const newLink = { ...link, title_dr: (link.title_dr || '') + ' (کپی)' };
     const updated = [...(localSettings.useful_links || []), newLink];
     handleSettingChange('useful_links', null, updated);
   };
-
   const generateCaptcha = () => {
     const chars = "0123456789";
     let result = "";
     for (let i = 0; i < 4; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
     setGeneratedCaptcha(result);
   };
-
   useEffect(() => {
     generateCaptcha();
     if(settings && Object.keys(settings).length > 0) {
         setLocalSettings(settings);
     }
   }, [settings]);
-
   const handleLogin = (e) => {
     e.preventDefault();
     const t = loginTranslations[lang || 'dr'];
@@ -448,8 +447,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
       const { data, error } = await supabase
         .from('site_settings')
         .select('id')
-        .order('id', { ascending: true }); 
-
+        .order('id', { ascending: true });
       if (error) throw error;
 
       if (data && data.length > 0) {
@@ -459,7 +457,6 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
           .from('site_settings')
           .update({ config: localSettings })
           .eq('id', firstRowId);
-
         if (!updateError) {
            alert('تنظیمات با موفقیت ذخیره شد!');
            onUpdate();
@@ -471,13 +468,12 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
         const { error: insertError } = await supabase
           .from('site_settings')
           .insert([{ config: localSettings }]);
-          
         if (!insertError) {
             onUpdate();
         }
       }
     } catch (err) { 
-      console.error(err); 
+      console.error(err);
       alert('خطا در ارتباط با دیتابیس');
     }
   };
@@ -501,7 +497,6 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
       const updated = currentImages.filter((_, i) => i !== index);
       handleSettingChange('hero', 'images', updated);
   };
-
   const handleServiceChange = (index, key, value) => {
     setLocalSettings(prev => {
         const updatedServices = [...(prev.services || [])];
@@ -512,7 +507,6 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
 
   const handleDragStart = (e, position) => { dragItem.current = position; };
   const handleDragEnter = (e, position) => { dragOverItem.current = position; };
-  
   const handleSort = () => {
     const _cities = [...(localSettings.weather_cities || [])];
     const item = _cities[dragItem.current];
@@ -521,13 +515,11 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
     dragItem.current = null; dragOverItem.current = null;
     handleSettingChange('weather_cities', null, _cities);
   };
-
   const handleDuplicateCity = (city) => {
     const newCity = { ...city, id: Date.now(), name: city.name, faName: city.faName + ' (کپی)', countryName: city.countryName || '' };
     const updated = [...(localSettings.weather_cities || []), newCity];
     handleSettingChange('weather_cities', null, updated);
   };
-
   const handleDeleteCity = (index) => {
     if(window.confirm('آیا مطمئن هستید؟')) {
       const updated = localSettings.weather_cities.filter((_, i) => i !== index);
@@ -549,17 +541,18 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
     };
     if (editingId) {
       const { error } = await supabase.from('news').update(newsData).eq('id', editingId);
-      if (!error) { alert('ویرایش شد'); setEditingId(null); onUpdate(); } else { alert('خطا در ویرایش: ' + error.message); }
+      if (!error) { alert('ویرایش شد'); setEditingId(null); onUpdate(); } else { alert('خطا در ویرایش: ' + error.message);
+      }
     } else {
       const { error } = await supabase.from('news').insert([{ ...newsData, pinned: false, created_at: currentDate }]);
-      if (!error) { alert('ثبت شد'); onUpdate(); } else { alert('خطا در ثبت: ' + error.message); }
+      if (!error) { alert('ثبت شد'); onUpdate(); } else { alert('خطا در ثبت: ' + error.message);
+      }
     }
     setNewNews({ title: '', desc: '', title_ps: '', desc_ps: '', title_en: '', desc_en: '', img: '' });
   };
 
   const handleDeleteNews = async (id) => { if(window.confirm('حذف؟')) { await supabase.from('news').delete().eq('id', id); onUpdate(); }};
   const handleTogglePin = async (id, status) => { await supabase.from('news').update({ pinned: !status }).eq('id', id); onUpdate(); };
-  
   const handleDuplicateNews = async (item) => { 
       await supabase.from('news').insert([{ 
           title: `${item.title} (کپی)`, 
@@ -573,7 +566,6 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
       }]); 
       onUpdate();
   };
-
   const handleEditNews = (item) => { 
       setNewNews({ 
           title: item.title, desc: item.description, 
@@ -585,9 +577,9 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
       window.scrollTo({ top: 0, behavior: 'smooth' }); 
   };
 
-  const handleChangeStatus = async (id, s) => { if(window.confirm('تغییر وضعیت؟')) { await supabase.from('bookings').update({ status: s }).eq('id', id); onUpdate(); }};
+  const handleChangeStatus = async (id, s) => { if(window.confirm('تغییر وضعیت؟')) { await supabase.from('bookings').update({ status: s }).eq('id', id);
+  onUpdate(); }};
   const handleDeleteBooking = async (id) => { if(window.confirm('حذف؟')) { await supabase.from('bookings').delete().eq('id', id); onUpdate(); }};
-
   const getStatusBadge = (status) => {
     switch (status) {
       case 'confirmed': return <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold border border-green-200">تایید شده</span>;
@@ -597,7 +589,6 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
       default: return <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">{status}</span>;
     }
   };
-
   // 3. رندر شرطی لاگین
   if (!isAuthenticated) {
     const currentLoginLang = lang || 'dr';
@@ -627,9 +618,11 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
               <label className={`block text-xs font-bold text-gray-500 mb-1 ${alignClass}`}>{t.pass}</label>
               <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl p-3 focus-within:border-[#058B8C] focus-within:bg-white transition-all">
                 <Lock size={18} className="text-gray-400"/>
-                <input type={showPassword ? "text" : "password"} value={loginData.password} onChange={e => setLoginData({...loginData, password: e.target.value})} className={`bg-transparent outline-none w-full text-sm font-bold text-gray-800 ${alignClass}`} placeholder={t.ph_pass}/>
+                <input type={showPassword ?
+                "text" : "password"} value={loginData.password} onChange={e => setLoginData({...loginData, password: e.target.value})} className={`bg-transparent outline-none w-full text-sm font-bold text-gray-800 ${alignClass}`} placeholder={t.ph_pass}/>
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-gray-400 hover:text-gray-600">
-                  {showPassword ? <EyeOff size={16}/> : <Eye size={16}/>}
+                  {showPassword ?
+                  <EyeOff size={16}/> : <Eye size={16}/>}
                 </button>
               </div>
             </div>
@@ -647,7 +640,8 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
               </div>
             </div>
             <button type="submit" className="w-full bg-[#058B8C] hover:bg-[#047070] text-white py-3.5 rounded-xl font-bold transition shadow-lg shadow-[#058B8C]/20 flex items-center justify-center gap-2 mt-4">
-               {t.btn} <ArrowRight size={18} className={currentLoginLang === 'en' ? "" : "rotate-180"}/>
+               {t.btn} <ArrowRight size={18} className={currentLoginLang === 'en' ?
+                "" : "rotate-180"}/>
             </button>
             <button type="button" onClick={() => setPage && setPage('home')} className="w-full bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 py-3 rounded-xl font-bold transition flex items-center justify-center gap-2">
                {t.back}
@@ -672,12 +666,15 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
          {/* منوی راست */}
         <div className="w-full md:w-64 bg-gray-50 p-4 border-l border-gray-200 space-y-2 shrink-0">
           <button onClick={() => setActiveTab('bookings')} className={`w-full flex items-center gap-3 p-3 rounded-xl font-bold transition-all ${activeTab === 'bookings' ? 'bg-[#058B8C] text-white' : 'hover:bg-gray-200'}`}><Ticket size={20}/> رزروها</button>
-          <button onClick={() => setActiveTab('news')} className={`w-full flex items-center gap-3 p-3 rounded-xl font-bold transition-all ${activeTab === 'news' ? 'bg-[#058B8C] text-white' : 'hover:bg-gray-200'}`}><Megaphone size={20}/> اخبار</button>
+          <button onClick={() => setActiveTab('news')} className={`w-full flex items-center gap-3 p-3 rounded-xl font-bold transition-all ${activeTab === 'news' ?
+          'bg-[#058B8C] text-white' : 'hover:bg-gray-200'}`}><Megaphone size={20}/> اخبار</button>
           
           {/* ✅ دکمه جدید در سایدبار: درباره ما و تماس */}
-          <button onClick={() => setActiveTab('about_contact')} className={`w-full flex items-center gap-3 p-3 rounded-xl font-bold transition-all ${activeTab === 'about_contact' ? 'bg-[#058B8C] text-white' : 'hover:bg-gray-200'}`}><Info size={20}/> درباره ما و تماس</button>
+          <button onClick={() => setActiveTab('about_contact')} className={`w-full flex items-center gap-3 p-3 rounded-xl font-bold transition-all ${activeTab === 'about_contact' ?
+          'bg-[#058B8C] text-white' : 'hover:bg-gray-200'}`}><Info size={20}/> درباره ما و تماس</button>
           
-          <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center gap-3 p-3 rounded-xl font-bold transition-all ${activeTab === 'settings' ? 'bg-[#058B8C] text-white' : 'hover:bg-gray-200'}`}><Settings size={20}/> تنظیمات سایت</button>
+          <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center gap-3 p-3 rounded-xl font-bold transition-all ${activeTab === 'settings' ?
+          'bg-[#058B8C] text-white' : 'hover:bg-gray-200'}`}><Settings size={20}/> تنظیمات سایت</button>
         </div>
 
         {/* محتوای اصلی */}
@@ -694,45 +691,80 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
 
                   {aboutContactTab === 'about' && (
                       <div className="space-y-6">
-                           {/* 1. تنظیمات عمومی درباره ما (هیرو) */}
+                          {/* 1. تنظیمات عمومی درباره ما (هیرو) */}
                           <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                             <h3 className="font-bold border-b pb-2 text-[#058B8C]">متن‌های اصلی صفحه «درباره ما»</h3>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 {/* دری */}
                                 <div className="space-y-3 bg-blue-50/50 p-4 rounded-xl">
                                     <h4 className="font-bold text-xs text-blue-600 mb-2">دری</h4>
-                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">عنوان (Header)</label><input value={localSettings.about?.title_dr || localSettings.about?.title || ''} onChange={e => handleSettingChange('about', 'title_dr', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
-                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">توضیحات</label><textarea value={localSettings.about?.desc_dr || localSettings.about?.desc || ''} onChange={e => handleSettingChange('about', 'desc_dr', e.target.value)} className="w-full p-2 border rounded-lg h-32"/></div>
+                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">عنوان (Header)</label><input value={localSettings.about?.title_dr ||
+                                    localSettings.about?.title || ''} onChange={e => handleSettingChange('about', 'title_dr', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
+                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">توضیحات</label><textarea value={localSettings.about?.desc_dr ||
+                                    localSettings.about?.desc || ''} onChange={e => handleSettingChange('about', 'desc_dr', e.target.value)} className="w-full p-2 border rounded-lg h-32"/></div>
                                 </div>
                                 {/* پشتو */}
                                 <div className="space-y-3 bg-green-50/50 p-4 rounded-xl">
-                                    <div className="flex justify-between mb-2"><h4 className="font-bold text-xs text-green-600">پشتو</h4><button type="button" onClick={() => handleSmartFillAboutGeneral('ps')} className="text-[9px] bg-green-200 px-2 rounded">{translatingField === 'about_general_ps' ? <Loader2 size={10} className="animate-spin"/> : 'ترجمه'}</button></div>
-                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">عنوان</label><input value={localSettings.about?.title_ps || ''} onChange={e => handleSettingChange('about', 'title_ps', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
-                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">توضیحات</label><textarea value={localSettings.about?.desc_ps || ''} onChange={e => handleSettingChange('about', 'desc_ps', e.target.value)} className="w-full p-2 border rounded-lg h-32"/></div>
+                                    <div className="flex justify-between mb-2"><h4 className="font-bold text-xs text-green-600">پشتو</h4><button type="button" onClick={() => handleSmartFillAboutGeneral('ps')} className="text-[9px] bg-green-200 px-2 rounded">{translatingField === 'about_general_ps' ?
+                                    <Loader2 size={10} className="animate-spin"/> : 'ترجمه'}</button></div>
+                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">عنوان</label><input value={localSettings.about?.title_ps ||
+                                    ''} onChange={e => handleSettingChange('about', 'title_ps', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
+                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">توضیحات</label><textarea value={localSettings.about?.desc_ps ||
+                                    ''} onChange={e => handleSettingChange('about', 'desc_ps', e.target.value)} className="w-full p-2 border rounded-lg h-32"/></div>
                                 </div>
                                 {/* انگلیسی */}
                                 <div className="space-y-3 bg-orange-50/50 p-4 rounded-xl" dir="ltr">
-                                    <div className="flex justify-between mb-2"><h4 className="font-bold text-xs text-orange-600">English</h4><button type="button" onClick={() => handleSmartFillAboutGeneral('en')} className="text-[9px] bg-orange-200 px-2 rounded">{translatingField === 'about_general_en' ? <Loader2 size={10} className="animate-spin"/> : 'Translate'}</button></div>
-                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">Title</label><input value={localSettings.about?.title_en || ''} onChange={e => handleSettingChange('about', 'title_en', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
-                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">Description</label><textarea value={localSettings.about?.desc_en || ''} onChange={e => handleSettingChange('about', 'desc_en', e.target.value)} className="w-full p-2 border rounded-lg h-32"/></div>
-                                </div>
+                                    <div className="flex justify-between mb-2"><h4 className="font-bold text-xs text-orange-600">English</h4><button type="button" onClick={() => handleSmartFillAboutGeneral('en')} className="text-[9px] bg-orange-200 px-2 rounded">{translatingField === 'about_general_en' ?
+                                    <Loader2 size={10} className="animate-spin"/> : 'Translate'}</button></div>
+                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">Title</label><input value={localSettings.about?.title_en ||
+                                    ''} onChange={e => handleSettingChange('about', 'title_en', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
+                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">Description</label><textarea value={localSettings.about?.desc_en ||
+                                    ''} onChange={e => handleSettingChange('about', 'desc_en', e.target.value)} className="w-full p-2 border rounded-lg h-32"/></div>
                             </div>
-                          </div>
+                        </div>
+
+                        {/* فیلد جدید: تصویر درباره ما */}
+                        <div className="mt-4 pt-4 border-t border-gray-100">
+                            <label className="block text-xs font-bold text-gray-500 mb-2">لینک تصویر اختصاصی صفحه درباره ما</label>
+                            <div className="flex items-center gap-2 bg-gray-50 border rounded-lg p-2">
+                                <Image size={20} className="text-gray-400"/>
+                                <input 
+                                    value={localSettings.about?.image ||
+                                    ''} 
+                                    onChange={e => handleSettingChange('about', 'image', e.target.value)} 
+                                    className="w-full bg-transparent text-sm outline-none dir-ltr" 
+                                    placeholder="https://example.com/about-image.jpg"
+                                />
+                            </div>
+                        </div>
+                      </div>
 
                           {/* 2. ماموریت و چشم‌انداز */}
                           <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-6">
                               <h3 className="font-bold border-b pb-2 text-[#058B8C]">ماموریت و چشم‌انداز</h3>
                               {/* بخش ماموریت */}
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                  <div className="space-y-2 bg-blue-50/30 p-3 rounded-xl"><label className="text-xs font-bold text-blue-600">ماموریت (دری)</label><input placeholder="عنوان" value={localSettings.about?.mission_title_dr || ''} onChange={e => handleSettingChange('about', 'mission_title_dr', e.target.value)} className="w-full p-2 border rounded text-sm"/><textarea placeholder="توضیحات..." value={localSettings.about?.mission_desc_dr || ''} onChange={e => handleSettingChange('about', 'mission_desc_dr', e.target.value)} className="w-full p-2 border rounded text-sm h-20"/></div>
-                                  <div className="space-y-2 bg-green-50/30 p-3 rounded-xl"><div className="flex justify-between items-center"><label className="text-xs font-bold text-green-600">پشتو</label><button onClick={() => handleSmartFillMissionVision('mission', 'ps')} className="text-[9px] bg-green-200 px-2 rounded">{translatingField === 'mission_ps' ? <Loader2 size={10} className="animate-spin"/> : 'ترجمه'}</button></div><input placeholder="عنوان" value={localSettings.about?.mission_title_ps || ''} onChange={e => handleSettingChange('about', 'mission_title_ps', e.target.value)} className="w-full p-2 border rounded text-sm"/><textarea placeholder="توضیحات..." value={localSettings.about?.mission_desc_ps || ''} onChange={e => handleSettingChange('about', 'mission_desc_ps', e.target.value)} className="w-full p-2 border rounded text-sm h-20"/></div>
-                                  <div className="space-y-2 bg-orange-50/30 p-3 rounded-xl" dir="ltr"><div className="flex justify-between items-center"><label className="text-xs font-bold text-orange-600">English</label><button onClick={() => handleSmartFillMissionVision('mission', 'en')} className="text-[9px] bg-orange-200 px-2 rounded">{translatingField === 'mission_en' ? <Loader2 size={10} className="animate-spin"/> : 'Translate'}</button></div><input placeholder="Title" value={localSettings.about?.mission_title_en || ''} onChange={e => handleSettingChange('about', 'mission_title_en', e.target.value)} className="w-full p-2 border rounded text-sm"/><textarea placeholder="Description..." value={localSettings.about?.mission_desc_en || ''} onChange={e => handleSettingChange('about', 'mission_desc_en', e.target.value)} className="w-full p-2 border rounded text-sm h-20"/></div>
+                                  <div className="space-y-2 bg-blue-50/30 p-3 rounded-xl"><label className="text-xs font-bold text-blue-600">ماموریت (دری)</label><input placeholder="عنوان" value={localSettings.about?.mission_title_dr ||
+                                  ''} onChange={e => handleSettingChange('about', 'mission_title_dr', e.target.value)} className="w-full p-2 border rounded text-sm"/><textarea placeholder="توضیحات..." value={localSettings.about?.mission_desc_dr ||
+                                  ''} onChange={e => handleSettingChange('about', 'mission_desc_dr', e.target.value)} className="w-full p-2 border rounded text-sm h-20"/></div>
+                                  <div className="space-y-2 bg-green-50/30 p-3 rounded-xl"><div className="flex justify-between items-center"><label className="text-xs font-bold text-green-600">پشتو</label><button onClick={() => handleSmartFillMissionVision('mission', 'ps')} className="text-[9px] bg-green-200 px-2 rounded">{translatingField === 'mission_ps' ?
+                                  <Loader2 size={10} className="animate-spin"/> : 'ترجمه'}</button></div><input placeholder="عنوان" value={localSettings.about?.mission_title_ps || ''} onChange={e => handleSettingChange('about', 'mission_title_ps', e.target.value)} className="w-full p-2 border rounded text-sm"/><textarea placeholder="توضیحات..." value={localSettings.about?.mission_desc_ps ||
+                                  ''} onChange={e => handleSettingChange('about', 'mission_desc_ps', e.target.value)} className="w-full p-2 border rounded text-sm h-20"/></div>
+                                  <div className="space-y-2 bg-orange-50/30 p-3 rounded-xl" dir="ltr"><div className="flex justify-between items-center"><label className="text-xs font-bold text-orange-600">English</label><button onClick={() => handleSmartFillMissionVision('mission', 'en')} className="text-[9px] bg-orange-200 px-2 rounded">{translatingField === 'mission_en' ?
+                                  <Loader2 size={10} className="animate-spin"/> : 'Translate'}</button></div><input placeholder="Title" value={localSettings.about?.mission_title_en || ''} onChange={e => handleSettingChange('about', 'mission_title_en', e.target.value)} className="w-full p-2 border rounded text-sm"/><textarea placeholder="Description..." value={localSettings.about?.mission_desc_en ||
+                                  ''} onChange={e => handleSettingChange('about', 'mission_desc_en', e.target.value)} className="w-full p-2 border rounded text-sm h-20"/></div>
                               </div>
                               {/* بخش چشم‌انداز */}
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-t pt-4">
-                                  <div className="space-y-2 bg-blue-50/30 p-3 rounded-xl"><label className="text-xs font-bold text-blue-600">چشم‌انداز (دری)</label><input placeholder="عنوان" value={localSettings.about?.vision_title_dr || ''} onChange={e => handleSettingChange('about', 'vision_title_dr', e.target.value)} className="w-full p-2 border rounded text-sm"/><textarea placeholder="توضیحات..." value={localSettings.about?.vision_desc_dr || ''} onChange={e => handleSettingChange('about', 'vision_desc_dr', e.target.value)} className="w-full p-2 border rounded text-sm h-20"/></div>
-                                  <div className="space-y-2 bg-green-50/30 p-3 rounded-xl"><div className="flex justify-between items-center"><label className="text-xs font-bold text-green-600">پشتو</label><button onClick={() => handleSmartFillMissionVision('vision', 'ps')} className="text-[9px] bg-green-200 px-2 rounded">{translatingField === 'vision_ps' ? <Loader2 size={10} className="animate-spin"/> : 'ترجمه'}</button></div><input placeholder="عنوان" value={localSettings.about?.vision_title_ps || ''} onChange={e => handleSettingChange('about', 'vision_title_ps', e.target.value)} className="w-full p-2 border rounded text-sm"/><textarea placeholder="توضیحات..." value={localSettings.about?.vision_desc_ps || ''} onChange={e => handleSettingChange('about', 'vision_desc_ps', e.target.value)} className="w-full p-2 border rounded text-sm h-20"/></div>
-                                  <div className="space-y-2 bg-orange-50/30 p-3 rounded-xl" dir="ltr"><div className="flex justify-between items-center"><label className="text-xs font-bold text-orange-600">English</label><button onClick={() => handleSmartFillMissionVision('vision', 'en')} className="text-[9px] bg-orange-200 px-2 rounded">{translatingField === 'vision_en' ? <Loader2 size={10} className="animate-spin"/> : 'Translate'}</button></div><input placeholder="Title" value={localSettings.about?.vision_title_en || ''} onChange={e => handleSettingChange('about', 'vision_title_en', e.target.value)} className="w-full p-2 border rounded text-sm"/><textarea placeholder="Description..." value={localSettings.about?.vision_desc_en || ''} onChange={e => handleSettingChange('about', 'vision_desc_en', e.target.value)} className="w-full p-2 border rounded text-sm h-20"/></div>
+                                  <div className="space-y-2 bg-blue-50/30 p-3 rounded-xl"><label className="text-xs font-bold text-blue-600">چشم‌انداز (دری)</label><input placeholder="عنوان" value={localSettings.about?.vision_title_dr ||
+                                  ''} onChange={e => handleSettingChange('about', 'vision_title_dr', e.target.value)} className="w-full p-2 border rounded text-sm"/><textarea placeholder="توضیحات..." value={localSettings.about?.vision_desc_dr ||
+                                  ''} onChange={e => handleSettingChange('about', 'vision_desc_dr', e.target.value)} className="w-full p-2 border rounded text-sm h-20"/></div>
+                                  <div className="space-y-2 bg-green-50/30 p-3 rounded-xl"><div className="flex justify-between items-center"><label className="text-xs font-bold text-green-600">پشتو</label><button onClick={() => handleSmartFillMissionVision('vision', 'ps')} className="text-[9px] bg-green-200 px-2 rounded">{translatingField === 'vision_ps' ?
+                                  <Loader2 size={10} className="animate-spin"/> : 'ترجمه'}</button></div><input placeholder="عنوان" value={localSettings.about?.vision_title_ps || ''} onChange={e => handleSettingChange('about', 'vision_title_ps', e.target.value)} className="w-full p-2 border rounded text-sm"/><textarea placeholder="توضیحات..." value={localSettings.about?.vision_desc_ps ||
+                                  ''} onChange={e => handleSettingChange('about', 'vision_desc_ps', e.target.value)} className="w-full p-2 border rounded text-sm h-20"/></div>
+                                  <div className="space-y-2 bg-orange-50/30 p-3 rounded-xl" dir="ltr"><div className="flex justify-between items-center"><label className="text-xs font-bold text-orange-600">English</label><button onClick={() => handleSmartFillMissionVision('vision', 'en')} className="text-[9px] bg-orange-200 px-2 rounded">{translatingField === 'vision_en' ?
+                                  <Loader2 size={10} className="animate-spin"/> : 'Translate'}</button></div><input placeholder="Title" value={localSettings.about?.vision_title_en || ''} onChange={e => handleSettingChange('about', 'vision_title_en', e.target.value)} className="w-full p-2 border rounded text-sm"/><textarea placeholder="Description..." value={localSettings.about?.vision_desc_en ||
+                                  ''} onChange={e => handleSettingChange('about', 'vision_desc_en', e.target.value)} className="w-full p-2 border rounded text-sm h-20"/></div>
                               </div>
                           </div>
 
@@ -745,25 +777,59 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                               <div className="space-y-4">
                                   {(localSettings.why_us || []).map((item, index) => (
                                       <div key={index} className="bg-gray-50 p-4 rounded-xl border">
-                                          <div className="flex justify-between mb-2">
-                                              <span className="font-bold text-gray-500 text-sm">آیتم #{index + 1}</span>
-                                              <button onClick={() => handleDeleteWhyUs(index)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash size={16}/></button>
+                                          
+                                          {/* --- بخش جدید: انتخاب آیکون --- */}
+                                          <div className="flex flex-col gap-3 mb-4">
+                                              <div className="flex justify-between items-center border-b pb-2 border-gray-200">
+                                                  <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                                                      <span className="font-bold text-gray-500 text-xs ml-2">آیکون:</span>
+                                                      {['Shield', 'Globe', 'Users', 'Award', 'Target', 'Eye', 'Clock', 'CheckCircle'].map(iconName => (
+                                                          <button 
+                                                              key={iconName}
+                                                              onClick={() => handleWhyUsChange(index, 'icon', iconName)}
+                                                              className={`p-1.5 rounded-lg border transition-all ${item.icon === iconName ?
+                                                              'bg-[#058B8C] text-white border-[#058B8C] scale-110 shadow-md' : 'bg-white text-gray-400 border-gray-200 hover:border-gray-400'}`}
+                                                              title={iconName}
+                                                          >
+                                                              {iconName === 'Shield' && <Shield size={16}/>}
+                                                              {iconName === 'Globe' && <Globe size={16}/>}
+                                                              {iconName === 'Users' && <Users size={16}/>}
+                                                              {iconName === 'Award' && <Award size={16}/>}
+                                                              {iconName === 'Target' && <Target size={16}/>}
+                                                              {iconName === 'Eye' && <Eye size={16}/>}
+                                                              {iconName === 'Clock' && <Clock size={16}/>}
+                                                              {iconName === 'CheckCircle' && <CheckCircle size={16}/>}
+                                                          </button>
+                                                      ))}
+                                                  </div>
+                                                  <button onClick={() => handleDeleteWhyUs(index)} className="text-red-500 hover:bg-red-50 p-1.5 rounded shrink-0"><Trash size={16}/></button>
+                                              </div>
                                           </div>
+                                          {/* ----------------------------- */}
+
                                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                               <div className="space-y-2 border-l pl-2">
                                                   <label className="text-[10px] font-bold text-blue-600">دری</label>
-                                                  <input value={item.title_dr || ''} onChange={e => handleWhyUsChange(index, 'title_dr', e.target.value)} placeholder="عنوان (مثلا: امنیت)" className="w-full p-2 border rounded text-sm font-bold"/>
-                                                  <textarea value={item.desc_dr || ''} onChange={e => handleWhyUsChange(index, 'desc_dr', e.target.value)} placeholder="توضیحات" className="w-full p-2 border rounded text-sm"/>
+                                                  <input value={item.title_dr ||
+                                                  ''} onChange={e => handleWhyUsChange(index, 'title_dr', e.target.value)} placeholder="عنوان (مثلا: امنیت)" className="w-full p-2 border rounded text-sm font-bold"/>
+                                                  <textarea value={item.desc_dr ||
+                                                  ''} onChange={e => handleWhyUsChange(index, 'desc_dr', e.target.value)} placeholder="توضیحات" className="w-full p-2 border rounded text-sm"/>
                                               </div>
                                               <div className="space-y-2 border-l pl-2">
-                                                   <div className="flex justify-between items-center"><label className="text-[10px] font-bold text-green-600">پشتو</label><button onClick={() => handleSmartFillWhyUs(index, 'ps')} className="text-[9px] bg-green-100 px-2 rounded">{translatingField === `whyus_${index}_ps` ? <Loader2 size={10} className="animate-spin"/> : 'ترجمه'}</button></div>
-                                                  <input value={item.title_ps || ''} onChange={e => handleWhyUsChange(index, 'title_ps', e.target.value)} placeholder="عنوان" className="w-full p-2 border rounded text-sm font-bold"/>
-                                                  <textarea value={item.desc_ps || ''} onChange={e => handleWhyUsChange(index, 'desc_ps', e.target.value)} placeholder="توضیحات" className="w-full p-2 border rounded text-sm"/>
+                                                   <div className="flex justify-between items-center"><label className="text-[10px] font-bold text-green-600">پشتو</label><button onClick={() => handleSmartFillWhyUs(index, 'ps')} className="text-[9px] bg-green-100 px-2 rounded">{translatingField === `whyus_${index}_ps` ?
+                                                   <Loader2 size={10} className="animate-spin"/> : 'ترجمه'}</button></div>
+                                                  <input value={item.title_ps ||
+                                                  ''} onChange={e => handleWhyUsChange(index, 'title_ps', e.target.value)} placeholder="عنوان" className="w-full p-2 border rounded text-sm font-bold"/>
+                                                  <textarea value={item.desc_ps ||
+                                                  ''} onChange={e => handleWhyUsChange(index, 'desc_ps', e.target.value)} placeholder="توضیحات" className="w-full p-2 border rounded text-sm"/>
                                               </div>
                                               <div className="space-y-2" dir="ltr">
-                                                   <div className="flex justify-between items-center"><label className="text-[10px] font-bold text-orange-600">English</label><button onClick={() => handleSmartFillWhyUs(index, 'en')} className="text-[9px] bg-orange-100 px-2 rounded">{translatingField === `whyus_${index}_en` ? <Loader2 size={10} className="animate-spin"/> : 'Translate'}</button></div>
-                                                  <input value={item.title_en || ''} onChange={e => handleWhyUsChange(index, 'title_en', e.target.value)} placeholder="Title" className="w-full p-2 border rounded text-sm font-bold"/>
-                                                  <textarea value={item.desc_en || ''} onChange={e => handleWhyUsChange(index, 'desc_en', e.target.value)} placeholder="Description" className="w-full p-2 border rounded text-sm"/>
+                                                   <div className="flex justify-between items-center"><label className="text-[10px] font-bold text-orange-600">English</label><button onClick={() => handleSmartFillWhyUs(index, 'en')} className="text-[9px] bg-orange-100 px-2 rounded">{translatingField === `whyus_${index}_en` ?
+                                                   <Loader2 size={10} className="animate-spin"/> : 'Translate'}</button></div>
+                                                  <input value={item.title_en ||
+                                                  ''} onChange={e => handleWhyUsChange(index, 'title_en', e.target.value)} placeholder="Title" className="w-full p-2 border rounded text-sm font-bold"/>
+                                                  <textarea value={item.desc_en ||
+                                                  ''} onChange={e => handleWhyUsChange(index, 'desc_en', e.target.value)} placeholder="Description" className="w-full p-2 border rounded text-sm"/>
                                               </div>
                                           </div>
                                       </div>
@@ -774,7 +840,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
 
                           {/* 4. اعضای تیم (تیم ما - آپدیت شده) */}
                           <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                            <h3 className="font-bold border-b pb-2 flex justify-between items-center text-[#058B8C]">
+                              <h3 className="font-bold border-b pb-2 flex justify-between items-center text-[#058B8C]">
                                 اعضای تیم (تیم ما)
                                 <button onClick={handleAddTeamMember} className="text-xs bg-green-50 text-green-600 px-3 py-1 rounded-lg flex items-center gap-1 hover:bg-green-100 transition"><Plus size={14}/> افزودن عضو</button>
                             </h3>
@@ -787,19 +853,28 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     <div className="space-y-3">
                                                         <div><label className="text-[10px] font-bold text-gray-500 block mb-1">نام (فارسی)</label><input value={member.name_fa || member.name || ''} onChange={e => handleTeamChange(index, 'name_fa', e.target.value)} className="w-full p-2 border rounded text-sm"/></div>
-                                                        <div dir="ltr"><label className="text-[10px] font-bold text-gray-500 block mb-1">Name (English)</label><input value={member.name_en || ''} onChange={e => handleTeamChange(index, 'name_en', e.target.value)} className="w-full p-2 border rounded text-sm"/></div>
-                                                        <div className="flex items-center gap-2"><Image size={16} className="text-gray-400"/><input value={member.image || ''} onChange={e => handleTeamChange(index, 'image', e.target.value)} className="w-full p-2 border rounded text-sm dir-ltr" placeholder="لینک عکس پروفایل"/></div>
+                                                        <div dir="ltr"><label className="text-[10px] font-bold text-gray-500 block mb-1">Name (English)</label><input value={member.name_en ||
+                                                        ''} onChange={e => handleTeamChange(index, 'name_en', e.target.value)} className="w-full p-2 border rounded text-sm"/></div>
+                                                        <div className="flex items-center gap-2"><Image size={16} className="text-gray-400"/><input value={member.image ||
+                                                        ''} onChange={e => handleTeamChange(index, 'image', e.target.value)} className="w-full p-2 border rounded text-sm dir-ltr" placeholder="لینک عکس پروفایل"/></div>
                                                     </div>
                                                     <div className="space-y-2">
                                                         <label className="text-[10px] font-bold text-gray-500 block">سمت (سه زبانه)</label>
-                                                        <input value={member.role_dr || ''} onChange={e => handleTeamChange(index, 'role_dr', e.target.value)} className="w-full p-2 border rounded text-sm" placeholder="سمت (دری)"/>
-                                                        <div className="flex gap-1"><input value={member.role_ps || ''} onChange={e => handleTeamChange(index, 'role_ps', e.target.value)} className="w-full p-2 border rounded text-sm" placeholder="سمت (پشتو)"/><button onClick={()=>handleSmartFillTeam(index, 'ps')} className="bg-green-100 px-2 rounded hover:bg-green-200">{translatingField === `team_${index}_ps` ? <Loader2 size={12} className="animate-spin"/> : <Sparkles size={12}/>}</button></div>
-                                                        <div className="flex gap-1" dir="ltr"><input value={member.role_en || ''} onChange={e => handleTeamChange(index, 'role_en', e.target.value)} className="w-full p-2 border rounded text-sm" placeholder="Role (English)"/><button onClick={()=>handleSmartFillTeam(index, 'en')} className="bg-orange-100 px-2 rounded hover:bg-orange-200">{translatingField === `team_${index}_en` ? <Loader2 size={12} className="animate-spin"/> : <Sparkles size={12}/>}</button></div>
+                                                        <input value={member.role_dr ||
+                                                        ''} onChange={e => handleTeamChange(index, 'role_dr', e.target.value)} className="w-full p-2 border rounded text-sm" placeholder="سمت (دری)"/>
+                                                        <div className="flex gap-1"><input value={member.role_ps ||
+                                                        ''} onChange={e => handleTeamChange(index, 'role_ps', e.target.value)} className="w-full p-2 border rounded text-sm" placeholder="سمت (پشتو)"/><button onClick={()=>handleSmartFillTeam(index, 'ps')} className="bg-green-100 px-2 rounded hover:bg-green-200">{translatingField === `team_${index}_ps` ?
+                                                        <Loader2 size={12} className="animate-spin"/> : <Sparkles size={12}/>}</button></div>
+                                                        <div className="flex gap-1" dir="ltr"><input value={member.role_en ||
+                                                        ''} onChange={e => handleTeamChange(index, 'role_en', e.target.value)} className="w-full p-2 border rounded text-sm" placeholder="Role (English)"/><button onClick={()=>handleSmartFillTeam(index, 'en')} className="bg-orange-100 px-2 rounded hover:bg-orange-200">{translatingField === `team_${index}_en` ?
+                                                        <Loader2 size={12} className="animate-spin"/> : <Sparkles size={12}/>}</button></div>
                                                     </div>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-100">
-                                                    <div><label className="text-[10px] font-bold text-gray-500 block mb-1">شماره تماس (دیپ لینک)</label><input value={member.phone || ''} onChange={e => handleTeamChange(index, 'phone', e.target.value)} className="w-full p-2 border rounded text-sm dir-ltr" placeholder="+93..."/></div>
-                                                    <div><label className="text-[10px] font-bold text-green-600 block mb-1">واتساپ (دیپ لینک)</label><input value={member.whatsapp || ''} onChange={e => handleTeamChange(index, 'whatsapp', e.target.value)} className="w-full p-2 border rounded text-sm dir-ltr" placeholder="+93..."/></div>
+                                                    <div><label className="text-[10px] font-bold text-gray-500 block mb-1">شماره تماس (دیپ لینک)</label><input value={member.phone ||
+                                                    ''} onChange={e => handleTeamChange(index, 'phone', e.target.value)} className="w-full p-2 border rounded text-sm dir-ltr" placeholder="+93..."/></div>
+                                                    <div><label className="text-[10px] font-bold text-green-600 block mb-1">واتساپ (دیپ لینک)</label><input value={member.whatsapp ||
+                                                    ''} onChange={e => handleTeamChange(index, 'whatsapp', e.target.value)} className="w-full p-2 border rounded text-sm dir-ltr" placeholder="+93..."/></div>
                                                 </div>
                                             </div>
                                         ) : (
@@ -824,39 +899,45 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                             <h3 className="font-bold border-b pb-2 text-[#058B8C] flex items-center gap-2"><Building2 size={20}/> دفتر مرکزی (Main Branch)</h3>
                             
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div><label className="block text-xs font-bold text-gray-500 mb-1">شماره تماس اصلی</label><div className="flex items-center gap-2 border rounded-lg p-2"><Phone size={16} className="text-gray-400"/><input value={localSettings.contact?.phone || ''} onChange={e => handleSettingChange('contact', 'phone', e.target.value)} className="w-full bg-transparent outline-none dir-ltr" placeholder="+93..."/></div></div>
-                                <div><label className="block text-xs font-bold text-gray-500 mb-1">ایمیل رسمی</label><div className="flex items-center gap-2 border rounded-lg p-2"><span className="text-gray-400">@</span><input value={localSettings.contact?.email || ''} onChange={e => handleSettingChange('contact', 'email', e.target.value)} className="w-full bg-transparent outline-none dir-ltr" placeholder="info@..."/></div></div>
-                                <div className="md:col-span-2"><label className="block text-xs font-bold text-gray-500 mb-1">لینک گوگل مپ</label><div className="flex items-center gap-2 border rounded-lg p-2"><MapPin size={16} className="text-gray-400"/><input value={localSettings.contact?.map_link || ''} onChange={e => handleSettingChange('contact', 'map_link', e.target.value)} className="w-full bg-transparent outline-none dir-ltr" placeholder="https://maps.google..."/></div></div>
+                                <div><label className="block text-xs font-bold text-gray-500 mb-1">شماره تماس اصلی</label><div className="flex items-center gap-2 border rounded-lg p-2"><Phone size={16} className="text-gray-400"/><input value={localSettings.contact?.phone ||
+                                ''} onChange={e => handleSettingChange('contact', 'phone', e.target.value)} className="w-full bg-transparent outline-none dir-ltr" placeholder="+93..."/></div></div>
+                                <div><label className="block text-xs font-bold text-gray-500 mb-1">ایمیل رسمی</label><div className="flex items-center gap-2 border rounded-lg p-2"><span className="text-gray-400">@</span><input value={localSettings.contact?.email ||
+                                ''} onChange={e => handleSettingChange('contact', 'email', e.target.value)} className="w-full bg-transparent outline-none dir-ltr" placeholder="info@..."/></div></div>
+                                <div className="md:col-span-2"><label className="block text-xs font-bold text-gray-500 mb-1">لینک گوگل مپ</label><div className="flex items-center gap-2 border rounded-lg p-2"><MapPin size={16} className="text-gray-400"/><input value={localSettings.contact?.map_link ||
+                                ''} onChange={e => handleSettingChange('contact', 'map_link', e.target.value)} className="w-full bg-transparent outline-none dir-ltr" placeholder="https://maps.google..."/></div></div>
                             </div>
 
                             {/* شبکه‌های اجتماعی دفتر مرکزی */}
                             <div className="bg-gray-50 p-4 rounded-xl">
                                 <label className="text-xs font-bold text-gray-500 mb-3 block">شبکه‌های اجتماعی دفتر مرکزی</label>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    {/* کلمه block از کلاس‌های پایین حذف شد */}
                                     <div>
                                         <label className="text-[10px] text-green-600 mb-1 flex items-center gap-1 font-bold">
                                             <MessageCircle size={10}/> WhatsApp
                                         </label>
-                                        <input value={localSettings.contact?.whatsapp || ''} onChange={e => handleSettingChange('contact', 'whatsapp', e.target.value)} className="w-full p-2 border rounded text-xs dir-ltr" placeholder="Number"/>
+                                        <input value={localSettings.contact?.whatsapp ||
+                                        ''} onChange={e => handleSettingChange('contact', 'whatsapp', e.target.value)} className="w-full p-2 border rounded text-xs dir-ltr" placeholder="Number"/>
                                     </div>
                                     <div>
                                         <label className="text-[10px] text-blue-500 mb-1 flex items-center gap-1 font-bold">
                                             <Send size={10}/> Telegram
                                         </label>
-                                        <input value={localSettings.contact?.telegram || ''} onChange={e => handleSettingChange('contact', 'telegram', e.target.value)} className="w-full p-2 border rounded text-xs dir-ltr" placeholder="ID"/>
+                                        <input value={localSettings.contact?.telegram ||
+                                        ''} onChange={e => handleSettingChange('contact', 'telegram', e.target.value)} className="w-full p-2 border rounded text-xs dir-ltr" placeholder="ID"/>
                                     </div>
                                     <div>
                                         <label className="text-[10px] text-pink-600 mb-1 flex items-center gap-1 font-bold">
                                             <Instagram size={10}/> Instagram
                                         </label>
-                                        <input value={localSettings.contact?.instagram || ''} onChange={e => handleSettingChange('contact', 'instagram', e.target.value)} className="w-full p-2 border rounded text-xs dir-ltr" placeholder="ID"/>
+                                        <input value={localSettings.contact?.instagram ||
+                                        ''} onChange={e => handleSettingChange('contact', 'instagram', e.target.value)} className="w-full p-2 border rounded text-xs dir-ltr" placeholder="ID"/>
                                     </div>
                                     <div>
                                         <label className="text-[10px] text-blue-800 mb-1 flex items-center gap-1 font-bold">
                                             <Facebook size={10}/> Facebook
                                         </label>
-                                        <input value={localSettings.contact?.facebook || ''} onChange={e => handleSettingChange('contact', 'facebook', e.target.value)} className="w-full p-2 border rounded text-xs dir-ltr" placeholder="Page ID"/>
+                                        <input value={localSettings.contact?.facebook ||
+                                        ''} onChange={e => handleSettingChange('contact', 'facebook', e.target.value)} className="w-full p-2 border rounded text-xs dir-ltr" placeholder="Page ID"/>
                                     </div>
                                 </div>
                             </div>
@@ -865,18 +946,24 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-gray-100">
                                 <div className="space-y-3">
                                     <h4 className="font-bold text-xs text-blue-600">دری</h4>
-                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">آدرس دقیق</label><input value={localSettings.contact?.address || localSettings.contact?.address_dr || ''} onChange={e => handleSettingChange('contact', 'address', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
-                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">کپی‌رایت</label><input value={localSettings.contact?.copyright || localSettings.contact?.copyright_dr || ''} onChange={e => handleSettingChange('contact', 'copyright', e.target.value)} className="w-full p-2 border rounded-lg" dir="ltr"/></div>
+                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">آدرس دقیق</label><input value={localSettings.contact?.address ||
+                                    localSettings.contact?.address_dr || ''} onChange={e => handleSettingChange('contact', 'address', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
+                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">کپی‌رایت</label><input value={localSettings.contact?.copyright ||
+                                    localSettings.contact?.copyright_dr || ''} onChange={e => handleSettingChange('contact', 'copyright', e.target.value)} className="w-full p-2 border rounded-lg" dir="ltr"/></div>
                                 </div>
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-center"><h4 className="font-bold text-xs text-green-600">پشتو</h4><button onClick={() => handleSmartFillAddress('ps')} className="text-[9px] bg-green-200 px-2 rounded">ترجمه</button></div>
-                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">پته</label><input value={localSettings.contact?.address_ps || ''} onChange={e => handleSettingChange('contact', 'address_ps', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
-                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">حق کاپي</label><input value={localSettings.contact?.copyright_ps || ''} onChange={e => handleSettingChange('contact', 'copyright_ps', e.target.value)} className="w-full p-2 border rounded-lg" dir="ltr"/></div>
+                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">پته</label><input value={localSettings.contact?.address_ps ||
+                                    ''} onChange={e => handleSettingChange('contact', 'address_ps', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
+                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">حق کاپي</label><input value={localSettings.contact?.copyright_ps ||
+                                    ''} onChange={e => handleSettingChange('contact', 'copyright_ps', e.target.value)} className="w-full p-2 border rounded-lg" dir="ltr"/></div>
                                 </div>
                                 <div className="space-y-3" dir="ltr">
                                     <div className="flex justify-between items-center"><h4 className="font-bold text-xs text-orange-600">English</h4><button onClick={() => handleSmartFillAddress('en')} className="text-[9px] bg-orange-200 px-2 rounded">Translate</button></div>
-                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">Address</label><input value={localSettings.contact?.address_en || ''} onChange={e => handleSettingChange('contact', 'address_en', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
-                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">Copyright</label><input value={localSettings.contact?.copyright_en || ''} onChange={e => handleSettingChange('contact', 'copyright_en', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
+                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">Address</label><input value={localSettings.contact?.address_en ||
+                                    ''} onChange={e => handleSettingChange('contact', 'address_en', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
+                                    <div><label className="block text-xs font-bold text-gray-500 mb-1">Copyright</label><input value={localSettings.contact?.copyright_en ||
+                                    ''} onChange={e => handleSettingChange('contact', 'copyright_en', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
                                 </div>
                             </div>
                           </div>
@@ -890,7 +977,8 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                               <div className="space-y-4">
                                   {(localSettings.agencies || []).map((agency, index) => (
                                       <div key={index} className="bg-gray-50 p-4 rounded-xl border">
-                                          {editingAgencyId === index ? (
+                                          {editingAgencyId === index ?
+                                          (
                                               <div className="space-y-4 animate-in fade-in bg-white p-4 rounded-lg shadow-sm">
                                                   <div className="flex justify-between items-center border-b pb-2"><span className="text-xs font-bold text-[#058B8C]">ویرایش نمایندگی</span><button onClick={() => setEditingAgencyId(null)} className="text-xs bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">ذخیره</button></div>
                                                   
@@ -898,30 +986,40 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                                                       {/* دری */}
                                                       <div className="space-y-2 border-l pl-2">
                                                           <label className="text-[10px] text-blue-600 font-bold">دری</label>
-                                                          <input value={agency.name_dr || ''} onChange={e => handleAgencyChange(index, 'name_dr', e.target.value)} placeholder="نام نمایندگی" className="w-full p-2 border rounded text-xs font-bold"/>
-                                                          <textarea value={agency.address_dr || ''} onChange={e => handleAgencyChange(index, 'address_dr', e.target.value)} placeholder="آدرس" className="w-full p-2 border rounded text-xs"/>
+                                                          <input value={agency.name_dr ||
+                                                          ''} onChange={e => handleAgencyChange(index, 'name_dr', e.target.value)} placeholder="نام نمایندگی" className="w-full p-2 border rounded text-xs font-bold"/>
+                                                          <textarea value={agency.address_dr ||
+                                                          ''} onChange={e => handleAgencyChange(index, 'address_dr', e.target.value)} placeholder="آدرس" className="w-full p-2 border rounded text-xs"/>
                                                       </div>
                                                       {/* پشتو */}
                                                       <div className="space-y-2 border-l pl-2">
                                                           <div className="flex justify-between"><label className="text-[10px] text-green-600 font-bold">پشتو</label><button onClick={()=>handleSmartFillAgency(index, 'ps')} className="text-[9px] bg-green-100 px-2 rounded">ترجمه</button></div>
                                                           <input value={agency.name_ps || ''} onChange={e => handleAgencyChange(index, 'name_ps', e.target.value)} placeholder="نوم" className="w-full p-2 border rounded text-xs font-bold"/>
-                                                          <textarea value={agency.address_ps || ''} onChange={e => handleAgencyChange(index, 'address_ps', e.target.value)} placeholder="پته" className="w-full p-2 border rounded text-xs"/>
+                                                          <textarea value={agency.address_ps ||
+                                                          ''} onChange={e => handleAgencyChange(index, 'address_ps', e.target.value)} placeholder="پته" className="w-full p-2 border rounded text-xs"/>
                                                       </div>
                                                       {/* انگلیسی */}
                                                       <div className="space-y-2" dir="ltr">
                                                           <div className="flex justify-between"><label className="text-[10px] text-orange-600 font-bold">English</label><button onClick={()=>handleSmartFillAgency(index, 'en')} className="text-[9px] bg-orange-100 px-2 rounded">Translate</button></div>
                                                           <input value={agency.name_en || ''} onChange={e => handleAgencyChange(index, 'name_en', e.target.value)} placeholder="Name" className="w-full p-2 border rounded text-xs font-bold"/>
-                                                          <textarea value={agency.address_en || ''} onChange={e => handleAgencyChange(index, 'address_en', e.target.value)} placeholder="Address" className="w-full p-2 border rounded text-xs"/>
+                                                          <textarea value={agency.address_en ||
+                                                          ''} onChange={e => handleAgencyChange(index, 'address_en', e.target.value)} placeholder="Address" className="w-full p-2 border rounded text-xs"/>
                                                       </div>
                                                   </div>
 
                                                   <div className="bg-gray-100 p-3 rounded-lg grid grid-cols-2 md:grid-cols-4 gap-3">
-                                                      <input value={agency.phone || ''} onChange={e => handleAgencyChange(index, 'phone', e.target.value)} placeholder="Phone" className="p-2 rounded text-xs dir-ltr"/>
-                                                      <input value={agency.whatsapp || ''} onChange={e => handleAgencyChange(index, 'whatsapp', e.target.value)} placeholder="WhatsApp" className="p-2 rounded text-xs dir-ltr"/>
-                                                      <input value={agency.telegram || ''} onChange={e => handleAgencyChange(index, 'telegram', e.target.value)} placeholder="Telegram" className="p-2 rounded text-xs dir-ltr"/>
-                                                      <input value={agency.instagram || ''} onChange={e => handleAgencyChange(index, 'instagram', e.target.value)} placeholder="Instagram" className="p-2 rounded text-xs dir-ltr"/>
-                                                      <input value={agency.facebook || ''} onChange={e => handleAgencyChange(index, 'facebook', e.target.value)} placeholder="Facebook" className="p-2 rounded text-xs dir-ltr"/>
-                                                      <input value={agency.map_link || ''} onChange={e => handleAgencyChange(index, 'map_link', e.target.value)} placeholder="Map Link" className="p-2 rounded text-xs dir-ltr col-span-3"/>
+                                                      <input value={agency.phone ||
+                                                      ''} onChange={e => handleAgencyChange(index, 'phone', e.target.value)} placeholder="Phone" className="p-2 rounded text-xs dir-ltr"/>
+                                                      <input value={agency.whatsapp ||
+                                                      ''} onChange={e => handleAgencyChange(index, 'whatsapp', e.target.value)} placeholder="WhatsApp" className="p-2 rounded text-xs dir-ltr"/>
+                                                      <input value={agency.telegram ||
+                                                      ''} onChange={e => handleAgencyChange(index, 'telegram', e.target.value)} placeholder="Telegram" className="p-2 rounded text-xs dir-ltr"/>
+                                                      <input value={agency.instagram ||
+                                                      ''} onChange={e => handleAgencyChange(index, 'instagram', e.target.value)} placeholder="Instagram" className="p-2 rounded text-xs dir-ltr"/>
+                                                      <input value={agency.facebook ||
+                                                      ''} onChange={e => handleAgencyChange(index, 'facebook', e.target.value)} placeholder="Facebook" className="p-2 rounded text-xs dir-ltr"/>
+                                                      <input value={agency.map_link ||
+                                                      ''} onChange={e => handleAgencyChange(index, 'map_link', e.target.value)} placeholder="Map Link" className="p-2 rounded text-xs dir-ltr col-span-3"/>
                                                   </div>
                                               </div>
                                           ) : (
@@ -946,7 +1044,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                   <div className="mt-8 flex justify-end">
                       <button onClick={saveSettings} className="bg-green-600 hover:bg-green-700 text-white px-10 py-3 rounded-xl shadow-lg font-black flex items-center gap-2 transition-transform transform active:scale-95">
                           <Save size={20}/> ذخیره تغییرات
-                      </button>
+                       </button>
                   </div>
               </div>
           )}
@@ -956,12 +1054,18 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
             <div className="space-y-6 animate-in fade-in pb-20">
               <div className="flex gap-2 overflow-x-auto pb-2 border-b custom-scrollbar">
                 {['general', 'navbar', 'hero', 'weather', 'services', 'footer'].map(tab => (
-                  <button key={tab} onClick={() => setSettingsTab(tab)} className={`px-4 py-2 rounded-lg font-bold whitespace-nowrap transition-colors ${settingsTab === tab ? 'bg-blue-100 text-blue-800' : 'text-gray-500 hover:bg-gray-100'}`}>
-                    {tab === 'general' ? 'عمومی' : 
-                     tab === 'navbar' ? 'ناوبار (لوگو)' : 
-                     tab === 'hero' ? 'هیرو و آمار' : 
-                     tab === 'weather' ? 'آب و هوا' : 
-                     tab === 'services' ? 'خدمات' : 
+                  <button key={tab} onClick={() => setSettingsTab(tab)} className={`px-4 py-2 rounded-lg font-bold whitespace-nowrap transition-colors ${settingsTab === tab ?
+                  'bg-blue-100 text-blue-800' : 'text-gray-500 hover:bg-gray-100'}`}>
+                    {tab === 'general' ?
+                    'عمومی' : 
+                     tab === 'navbar' ?
+                    'ناوبار (لوگو)' : 
+                     tab === 'hero' ?
+                    'هیرو و آمار' : 
+                     tab === 'weather' ?
+                    'آب و هوا' : 
+                     tab === 'services' ?
+                    'خدمات' : 
                      'فوتر (لینک‌ها)'}
                   </button>
                 ))}
@@ -978,7 +1082,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
 
               {settingsTab === 'navbar' && (
                   <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                  <h3 className="font-bold border-b pb-2 text-[#058B8C]">تنظیمات لوگو و ناوبار</h3>
+                   <h3 className="font-bold border-b pb-2 text-[#058B8C]">تنظیمات لوگو و ناوبار</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-3 bg-blue-50/50 p-4 rounded-xl">
                           <h4 className="font-bold text-xs text-blue-600 mb-2">لوگوی پیش‌فرض (دری و پشتو)</h4>
@@ -986,11 +1090,12 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                             <label className="block text-xs font-bold text-gray-500 mb-1">لینک لوگو (Dr/Ps)</label>
                             <div className="flex gap-2 items-center">
                               <Image size={18} className="text-gray-400" />
-                              <input value={localSettings.navbar?.logo_dr || ''} onChange={e => handleSettingChange('navbar', 'logo_dr', e.target.value)} className="w-full p-2 border rounded-lg dir-ltr text-left" placeholder="https://..."/>
+                              <input value={localSettings.navbar?.logo_dr ||
+                              ''} onChange={e => handleSettingChange('navbar', 'logo_dr', e.target.value)} className="w-full p-2 border rounded-lg dir-ltr text-left" placeholder="https://..."/>
                             </div>
                           </div>
                           {localSettings.navbar?.logo_dr && (
-                            <div className="mt-2 p-2 bg-white rounded border border-blue-100 flex justify-center"><img src={localSettings.navbar?.logo_dr} alt="Preview" className="h-10 object-contain"/></div>
+                              <div className="mt-2 p-2 bg-white rounded border border-blue-100 flex justify-center"><img src={localSettings.navbar?.logo_dr} alt="Preview" className="h-10 object-contain"/></div>
                           )}
                       </div>
                       <div className="space-y-3 bg-orange-50/50 p-4 rounded-xl" dir="ltr">
@@ -999,11 +1104,12 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                             <label className="block text-xs font-bold text-gray-500 mb-1">Logo Link (En)</label>
                             <div className="flex gap-2 items-center">
                               <Image size={18} className="text-gray-400" />
-                              <input value={localSettings.navbar?.logo_en || ''} onChange={e => handleSettingChange('navbar', 'logo_en', e.target.value)} className="w-full p-2 border rounded-lg" placeholder="https://..."/>
+                              <input value={localSettings.navbar?.logo_en ||
+                              ''} onChange={e => handleSettingChange('navbar', 'logo_en', e.target.value)} className="w-full p-2 border rounded-lg" placeholder="https://..."/>
                             </div>
                           </div>
                           {localSettings.navbar?.logo_en && (
-                            <div className="mt-2 p-2 bg-white rounded border border-orange-100 flex justify-center"><img src={localSettings.navbar?.logo_en} alt="Preview" className="h-10 object-contain"/></div>
+                              <div className="mt-2 p-2 bg-white rounded border border-orange-100 flex justify-center"><img src={localSettings.navbar?.logo_en} alt="Preview" className="h-10 object-contain"/></div>
                           )}
                       </div>
                   </div>
@@ -1013,48 +1119,55 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
               {settingsTab === 'hero' && (
                 <div className="space-y-6">
                   <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                    <h3 className="font-bold border-b pb-2 text-[#058B8C]">متن‌های هیرو (سه زبانه)</h3>
+                     <h3 className="font-bold border-b pb-2 text-[#058B8C]">متن‌های هیرو (سه زبانه)</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-3 bg-blue-50/50 p-4 rounded-xl">
                             <h4 className="font-bold text-xs text-blue-600 mb-2">نسخه دری</h4>
-                            <div><label className="block text-xs font-bold text-gray-500 mb-1">تیتر اصلی</label><input value={localSettings.hero?.title_dr || ''} onChange={e => handleSettingChange('hero', 'title_dr', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
-                            <div><label className="block text-xs font-bold text-gray-500 mb-1">زیرعنوان</label><input value={localSettings.hero?.subtitle_dr || ''} onChange={e => handleSettingChange('hero', 'subtitle_dr', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
+                            <div><label className="block text-xs font-bold text-gray-500 mb-1">تیتر اصلی</label><input value={localSettings.hero?.title_dr ||
+                            ''} onChange={e => handleSettingChange('hero', 'title_dr', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
+                            <div><label className="block text-xs font-bold text-gray-500 mb-1">زیرعنوان</label><input value={localSettings.hero?.subtitle_dr ||
+                            ''} onChange={e => handleSettingChange('hero', 'subtitle_dr', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
                         </div>
                         <div className="space-y-3 bg-green-50/50 p-4 rounded-xl">
                             <div className="flex justify-between mb-2">
                                 <h4 className="font-bold text-xs text-green-600">نسخه پشتو</h4>
                                 <button type="button" onClick={() => handleSmartFillHero('ps')} className="text-[9px] flex items-center gap-1 bg-green-200 text-green-800 px-2 py-0.5 rounded hover:bg-green-300">
-                                    {translatingField === 'hero_ps' ? <Loader2 size={10} className="animate-spin"/> : <Sparkles size={10}/>} ترجمه
+                                    {translatingField === 'hero_ps' ?
+                                    <Loader2 size={10} className="animate-spin"/> : <Sparkles size={10}/>} ترجمه
                                 </button>
                             </div>
                             <div><label className="block text-xs font-bold text-gray-500 mb-1">تیتر اصلی</label><input value={localSettings.hero?.title_ps || ''} onChange={e => handleSettingChange('hero', 'title_ps', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
-                            <div><label className="block text-xs font-bold text-gray-500 mb-1">زیرعنوان</label><input value={localSettings.hero?.subtitle_ps || ''} onChange={e => handleSettingChange('hero', 'subtitle_ps', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
+                            <div><label className="block text-xs font-bold text-gray-500 mb-1">زیرعنوان</label><input value={localSettings.hero?.subtitle_ps ||
+                            ''} onChange={e => handleSettingChange('hero', 'subtitle_ps', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
                         </div>
                         <div className="space-y-3 bg-orange-50/50 p-4 rounded-xl" dir="ltr">
                               <div className="flex justify-between mb-2">
                                 <h4 className="font-bold text-xs text-orange-600">English Version</h4>
                                 <button type="button" onClick={() => handleSmartFillHero('en')} className="text-[9px] flex items-center gap-1 bg-orange-200 text-orange-800 px-2 py-0.5 rounded hover:bg-orange-300">
-                                    {translatingField === 'hero_en' ? <Loader2 size={10} className="animate-spin"/> : <Sparkles size={10}/>} Translate
+                                    {translatingField === 'hero_en' ?
+                                    <Loader2 size={10} className="animate-spin"/> : <Sparkles size={10}/>} Translate
                                 </button>
                             </div>
                             <div><label className="block text-xs font-bold text-gray-500 mb-1">Main Title</label><input value={localSettings.hero?.title_en || ''} onChange={e => handleSettingChange('hero', 'title_en', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
-                            <div><label className="block text-xs font-bold text-gray-500 mb-1">Subtitle</label><input value={localSettings.hero?.subtitle_en || ''} onChange={e => handleSettingChange('hero', 'subtitle_en', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
+                            <div><label className="block text-xs font-bold text-gray-500 mb-1">Subtitle</label><input value={localSettings.hero?.subtitle_en ||
+                            ''} onChange={e => handleSettingChange('hero', 'subtitle_en', e.target.value)} className="w-full p-2 border rounded-lg"/></div>
                         </div>
                     </div>
                   </div>
                   <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
-                    <h3 className="font-bold border-b pb-2 flex justify-between items-center text-[#058B8C]">
+                     <h3 className="font-bold border-b pb-2 flex justify-between items-center text-[#058B8C]">
                         تصاویر اسلایدر هیرو
-                        <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded">تعداد: {localSettings.hero?.images?.length || 0}</span>
+                        <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded">تعداد: {localSettings.hero?.images?.length ||
+                        0}</span>
                     </h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                          {(localSettings.hero?.images || []).map((imgUrl, idx) => (
-                              <div key={idx} className="relative group rounded-xl overflow-hidden border border-gray-200 aspect-video">
+                             <div key={idx} className="relative group rounded-xl overflow-hidden border border-gray-200 aspect-video">
                                 <img src={imgUrl} alt="Slide" className="w-full h-full object-cover"/>
                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                                     <button onClick={() => handleRemoveSliderImage(idx)} className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition shadow-lg" title="حذف تصویر">
+                                      <button onClick={() => handleRemoveSliderImage(idx)} className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition shadow-lg" title="حذف تصویر">
                                         <Trash size={16}/>
-                                     </button>
+                                  </button>
                                 </div>
                                 <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded">اسلاید {idx + 1}</div>
                               </div>
@@ -1064,7 +1177,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                         <div className="flex-1">
                             <label className="block text-xs font-bold text-gray-500 mb-1">لینک تصویر جدید</label>
                             <div className="flex items-center gap-2 bg-gray-50 border rounded-lg p-2">
-                                  <Image size={16} className="text-gray-400"/>
+                                <Image size={16} className="text-gray-400"/>
                                 <input value={tempSliderImage} onChange={e => setTempSliderImage(e.target.value)} className="bg-transparent w-full text-sm outline-none dir-ltr" placeholder="https://example.com/image.jpg"/>
                             </div>
                         </div>
@@ -1075,22 +1188,26 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                   </div>
                   <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                     <h3 className="font-bold border-b pb-2">آمار</h3>
-                     <div className="grid grid-cols-4 gap-4">
-                      <div><label className="block text-xs font-bold text-gray-500 mb-1">مشتریان</label><input type="number" value={localSettings.stats?.customers || 0} onChange={e => handleSettingChange('stats', 'customers', Number(e.target.value))} className="w-full p-2 border rounded-lg"/></div>
-                      <div><label className="block text-xs font-bold text-gray-500 mb-1">پروازها</label><input type="number" value={localSettings.stats?.flights || 0} onChange={e => handleSettingChange('stats', 'flights', Number(e.target.value))} className="w-full p-2 border rounded-lg"/></div>
-                      <div><label className="block text-xs font-bold text-gray-500 mb-1">ویزاها</label><input type="number" value={localSettings.stats?.visas || 0} onChange={e => handleSettingChange('stats', 'visas', Number(e.target.value))} className="w-full p-2 border rounded-lg"/></div>
-                      <div><label className="block text-xs font-bold text-gray-500 mb-1">تجربه</label><input type="number" value={localSettings.stats?.experience || 0} onChange={e => handleSettingChange('stats', 'experience', Number(e.target.value))} className="w-full p-2 border rounded-lg"/></div>
+                      <div className="grid grid-cols-4 gap-4">
+                      <div><label className="block text-xs font-bold text-gray-500 mb-1">مشتریان</label><input type="number" value={localSettings.stats?.customers ||
+                      0} onChange={e => handleSettingChange('stats', 'customers', Number(e.target.value))} className="w-full p-2 border rounded-lg"/></div>
+                      <div><label className="block text-xs font-bold text-gray-500 mb-1">پروازها</label><input type="number" value={localSettings.stats?.flights ||
+                      0} onChange={e => handleSettingChange('stats', 'flights', Number(e.target.value))} className="w-full p-2 border rounded-lg"/></div>
+                      <div><label className="block text-xs font-bold text-gray-500 mb-1">ویزاها</label><input type="number" value={localSettings.stats?.visas ||
+                      0} onChange={e => handleSettingChange('stats', 'visas', Number(e.target.value))} className="w-full p-2 border rounded-lg"/></div>
+                      <div><label className="block text-xs font-bold text-gray-500 mb-1">تجربه</label><input type="number" value={localSettings.stats?.experience ||
+                      0} onChange={e => handleSettingChange('stats', 'experience', Number(e.target.value))} className="w-full p-2 border rounded-lg"/></div>
                     </div>
                   </div>
                 </div>
               )}
 
               {settingsTab === 'weather' && (
-                   <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-6">
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-6">
                   <h3 className="font-bold border-b pb-2 flex justify-between items-center">
                     <span>لیست شهرها (جابجایی با درگ)</span>
                     <button onClick={() => {
-                       const newCity = { id: Date.now(), name: "London", faName: "لندن", countryName: "انگلستان", timezone: "Europe/London", image: "" };
+                      const newCity = { id: Date.now(), name: "London", faName: "لندن", countryName: "انگلستان", timezone: "Europe/London", image: "" };
                        const updated = [...(localSettings.weather_cities || []), newCity];
                        handleSettingChange('weather_cities', null, updated); 
                     }} className="text-xs bg-green-50 text-green-600 px-3 py-1 rounded-lg flex items-center gap-1 hover:bg-green-100 transition">
@@ -1098,7 +1215,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                     </button>
                   </h3>
                   <div className="space-y-3">
-                      {(localSettings.weather_cities || []).map((city, index) => (
+                     {(localSettings.weather_cities || []).map((city, index) => (
                       <div 
                         key={city.id || index}
                         className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all group"
@@ -1112,34 +1229,41 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                         <div className="flex-1">
                               {editingCityId === city.id ? (
                              <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
-                               <input value={city.name} onChange={e => { const updated = [...localSettings.weather_cities]; updated[index].name = e.target.value; handleSettingChange('weather_cities', null, updated); }} className="p-2 rounded border text-sm" placeholder="نام انگلیسی"/>
-                               <input value={city.faName} onChange={e => { const updated = [...localSettings.weather_cities]; updated[index].faName = e.target.value; handleSettingChange('weather_cities', null, updated); }} className="p-2 rounded border text-sm" placeholder="نام شهر (فارسی)"/>
-                               <input value={city.countryName || ''} onChange={e => { const updated = [...localSettings.weather_cities]; updated[index].countryName = e.target.value; handleSettingChange('weather_cities', null, updated); }} className="p-2 rounded border text-sm" placeholder="نام کشور (فارسی)"/>
-                               <select value={city.timezone} onChange={e => { const updated = [...localSettings.weather_cities]; updated[index].timezone = e.target.value; handleSettingChange('weather_cities', null, updated); }} className="p-2 rounded border text-sm dir-ltr bg-white">
+                               <input value={city.name} onChange={e => { const updated = [...localSettings.weather_cities];
+                               updated[index].name = e.target.value; handleSettingChange('weather_cities', null, updated); }} className="p-2 rounded border text-sm" placeholder="نام انگلیسی"/>
+                               <input value={city.faName} onChange={e => { const updated = [...localSettings.weather_cities];
+                               updated[index].faName = e.target.value; handleSettingChange('weather_cities', null, updated); }} className="p-2 rounded border text-sm" placeholder="نام شهر (فارسی)"/>
+                               <input value={city.countryName ||
+                               ''} onChange={e => { const updated = [...localSettings.weather_cities]; updated[index].countryName = e.target.value; handleSettingChange('weather_cities', null, updated);
+                                }} className="p-2 rounded border text-sm" placeholder="نام کشور (فارسی)"/>
+                               <select value={city.timezone} onChange={e => { const updated = [...localSettings.weather_cities];
+                               updated[index].timezone = e.target.value; handleSettingChange('weather_cities', null, updated); }} className="p-2 rounded border text-sm dir-ltr bg-white">
                                 {VALID_TIMEZONES.map(tz => (<option key={tz.value} value={tz.value}>{tz.label}</option>))}
                                </select>
-                                <input value={city.image} onChange={e => { const updated = [...localSettings.weather_cities]; updated[index].image = e.target.value; handleSettingChange('weather_cities', null, updated); }} className="p-2 rounded border text-sm dir-ltr" placeholder="لینک عکس"/>
+                               <input value={city.image} onChange={e => { const updated = [...localSettings.weather_cities];
+                               updated[index].image = e.target.value; handleSettingChange('weather_cities', null, updated); }} className="p-2 rounded border text-sm dir-ltr" placeholder="لینک عکس"/>
                              </div>
                           ) : (
                             <div className="flex items-center gap-4">
                                <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden shrink-0 border">
                                  {city.image ? <img src={city.image} className="w-full h-full object-cover"/> : <div className="flex items-center justify-center h-full text-gray-300"><Image size={20}/></div>}
-                                  </div>
+                               </div>
                                <div>
                                 <h4 className="font-bold text-gray-800 text-sm">{city.faName} <span className="text-xs text-gray-500 mr-1">({city.countryName || city.name})</span></h4>
-                                 <div className="text-[10px] text-gray-400 font-mono mt-0.5 dir-ltr">{city.timezone}</div>
+                                  <div className="text-[10px] text-gray-400 font-mono mt-0.5 dir-ltr">{city.timezone}</div>
                               </div>
                             </div>
-                             )}
+                          )}
                         </div>
                         <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                           {editingCityId === city.id ? (
+                           {editingCityId 
+                            === city.id ? (
                             <button onClick={() => setEditingCityId(null)} className="p-2 bg-green-500 text-white rounded-lg shadow-sm hover:bg-green-600 transition"><Check size={16}/></button>
                           ) : (
                             <>
-                                 <button onClick={() => handleDuplicateCity(city)} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition"><Copy size={16}/></button>
+                                <button onClick={() => handleDuplicateCity(city)} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition"><Copy size={16}/></button>
                               <button onClick={() => setEditingCityId(city.id)} className="p-2 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-100 transition"><Edit size={16}/></button>
-                               <button onClick={() => handleDeleteCity(index)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition"><Trash size={16}/></button>
+                                <button onClick={() => handleDeleteCity(index)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition"><Trash size={16}/></button>
                             </>
                           )}
                         </div>
@@ -1157,44 +1281,103 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                       <div key={index} className="bg-gray-50 p-4 rounded-xl border">
                         <div className="flex justify-between mb-2">
                             <div className="font-bold text-gray-400">سرویس #{index+1}</div>
-                         </div>
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-2 border-l pl-2">
                                  <label className="text-[10px] font-bold text-blue-600 block">دری</label>
                                 <input value={srv.title} onChange={e => handleServiceChange(index, 'title', e.target.value)} className="w-full p-2 border rounded bg-white font-bold text-xs" placeholder="عنوان"/>
                                 <input value={srv.desc} onChange={e => handleServiceChange(index, 'desc', e.target.value)} className="w-full p-2 border rounded bg-white text-xs" placeholder="توضیحات"/>
-                            </div>
+                             </div>
                             <div className="space-y-2 border-l pl-2">
                                 <div className="flex justify-between items-center mb-1">
-                                    <label className="text-[10px] font-bold text-green-600 block">پشتو</label>
+                                     <label className="text-[10px] font-bold text-green-600 block">پشتو</label>
                                      <button onClick={() => handleSmartFillService(index, 'ps')} className="text-[9px] flex items-center gap-1 bg-green-100 text-green-700 px-1.5 py-0.5 rounded hover:bg-green-200">
-                                        {translatingField === `service_${index}_ps` ? <Loader2 size={8} className="animate-spin"/> : <Sparkles size={8}/>} ترجمه
+                                         {translatingField === `service_${index}_ps` ?
+                                         <Loader2 size={8} className="animate-spin"/> : <Sparkles size={8}/>} ترجمه
                                     </button>
                                 </div>
-                                 <input value={srv.title_ps || ''} onChange={e => handleServiceChange(index, 'title_ps', e.target.value)} className="w-full p-2 border rounded bg-white font-bold text-xs" placeholder="عنوان پشتو"/>
-                                <input value={srv.desc_ps || ''} onChange={e => handleServiceChange(index, 'desc_ps', e.target.value)} className="w-full p-2 border rounded bg-white text-xs" placeholder="توضیحات پشتو"/>
+                                <input value={srv.title_ps ||
+                                ''} onChange={e => handleServiceChange(index, 'title_ps', e.target.value)} className="w-full p-2 border rounded bg-white font-bold text-xs" placeholder="عنوان پشتو"/>
+                                <input value={srv.desc_ps ||
+                                ''} onChange={e => handleServiceChange(index, 'desc_ps', e.target.value)} className="w-full p-2 border rounded bg-white text-xs" placeholder="توضیحات پشتو"/>
                             </div>
                             <div className="space-y-2" dir="ltr">
                                 <div className="flex justify-between items-center mb-1">
                                     <label className="text-[10px] font-bold text-orange-600 block">English</label>
                                     <button onClick={() => handleSmartFillService(index, 'en')} className="text-[9px] flex items-center gap-1 bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded hover:bg-orange-200">
-                                        {translatingField === `service_${index}_en` ? <Loader2 size={8} className="animate-spin"/> : <Sparkles size={8}/>} Translate
+                                        {translatingField === `service_${index}_en` ?
+                                        <Loader2 size={8} className="animate-spin"/> : <Sparkles size={8}/>} Translate
                                     </button>
                                 </div>
-                                 <input value={srv.title_en || ''} onChange={e => handleServiceChange(index, 'title_en', e.target.value)} className="w-full p-2 border rounded bg-white font-bold text-xs" placeholder="Title"/>
-                                <input value={srv.desc_en || ''} onChange={e => handleServiceChange(index, 'desc_en', e.target.value)} className="w-full p-2 border rounded bg-white text-xs" placeholder="Description"/>
+                                <input value={srv.title_en ||
+                                ''} onChange={e => handleServiceChange(index, 'title_en', e.target.value)} className="w-full p-2 border rounded bg-white font-bold text-xs" placeholder="Title"/>
+                                <input value={srv.desc_en ||
+                                ''} onChange={e => handleServiceChange(index, 'desc_en', e.target.value)} className="w-full p-2 border rounded bg-white text-xs" placeholder="Description"/>
                             </div>
                         </div>
                       </div>
-                      ))}
+                    ))}
                   </div>
                 </div>
                )}
 
-              {/* تب فوتر: فقط لینک‌های مفید */}
+              {/* تب فوتر: لینک‌های مفید + متن درباره ما */}
               {settingsTab === 'footer' && (
-                <div className="space-y-6">
-                   <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4 mt-6">
+                 <div className="space-y-6 animate-in fade-in">
+                   
+                   {/* بخش جدید: متن درباره ما در فوتر */}
+                   <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
+                      <h3 className="font-bold border-b pb-2 text-[#058B8C]">متن کوتاه «درباره ما» در فوتر</h3>
+                      <p className="text-xs text-gray-400 mb-2">این متن فقط در پایین سایت نمایش داده می‌شود. پیشنهاد می‌شود کوتاه باشد (حدود 30 تا 50 کلمه).</p>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {/* دری */}
+                          <div className="space-y-2 border-l pl-2">
+                              <label className="text-[10px] font-bold text-blue-600 block">دری (فارسی)</label>
+                              <textarea 
+                                value={localSettings.contact?.footer_about_dr || ''} 
+                                onChange={e => handleSettingChange('contact', 'footer_about_dr', e.target.value)} 
+                                className="w-full p-2 border rounded-lg h-24 text-sm"
+                                placeholder="متن کوتاه معرفی شرکت..."
+                              />
+                          </div>
+                          
+                          {/* پشتو */}
+                          <div className="space-y-2 border-l pl-2">
+                              <div className="flex justify-between items-center mb-1">
+                                  <label className="text-[10px] font-bold text-green-600 block">پشتو</label>
+                                  <button onClick={() => handleSmartFillFooterAbout('ps')} className="text-[9px] flex items-center gap-1 bg-green-100 text-green-700 px-2 py-0.5 rounded hover:bg-green-200">
+                                      {translatingField === 'footer_about_ps' ? <Loader2 size={10} className="animate-spin"/> : <Sparkles size={10}/>} ترجمه
+                                  </button>
+                              </div>
+                              <textarea 
+                                value={localSettings.contact?.footer_about_ps || ''} 
+                                onChange={e => handleSettingChange('contact', 'footer_about_ps', e.target.value)} 
+                                className="w-full p-2 border rounded-lg h-24 text-sm"
+                                placeholder="لنډ متن..."
+                              />
+                          </div>
+
+                          {/* انگلیسی */}
+                          <div className="space-y-2" dir="ltr">
+                              <div className="flex justify-between items-center mb-1">
+                                  <label className="text-[10px] font-bold text-orange-600 block">English</label>
+                                  <button onClick={() => handleSmartFillFooterAbout('en')} className="text-[9px] flex items-center gap-1 bg-orange-100 text-orange-700 px-2 py-0.5 rounded hover:bg-orange-200">
+                                      {translatingField === 'footer_about_en' ? <Loader2 size={10} className="animate-spin"/> : <Sparkles size={10}/>} Translate
+                                  </button>
+                              </div>
+                              <textarea 
+                                value={localSettings.contact?.footer_about_en || ''} 
+                                onChange={e => handleSettingChange('contact', 'footer_about_en', e.target.value)} 
+                                className="w-full p-2 border rounded-lg h-24 text-sm"
+                                placeholder="Short description..."
+                              />
+                          </div>
+                      </div>
+                   </div>
+
+                   {/* بخش لینک‌های مفید */}
+                   <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                     <h3 className="font-bold border-b pb-2 text-[#058B8C] flex justify-between items-center">
                         لینک‌های مفید فوتر (با قابلیت جابجایی)
                         <button onClick={handleAddLink} className="text-xs bg-green-50 text-green-600 px-3 py-1 rounded-lg flex items-center gap-1 hover:bg-green-100 transition">
@@ -1202,85 +1385,81 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                         </button>
                     </h3>
                     <div className="space-y-3">
-    {(localSettings.useful_links || []).map((link, index) => (
-        <div 
-            key={index} 
-            // تغییر ۱: رنگ پس‌زمینه سفید شد تا با زمینه خاکستری پنل تضاد داشته باشد
-            className={`bg-white p-3 rounded-xl border transition-all ${editingLinkId === index ? 'ring-2 ring-[#058B8C] shadow-md' : 'hover:shadow-md'}`}
-            draggable
-            onDragStart={(e) => handleDragStart(e, index)}
-            onDragEnter={(e) => handleDragEnter(e, index)}
-            onDragEnd={handleSortLinks}
-            onDragOver={(e) => e.preventDefault()}
-        >
-            {editingLinkId === index ? (
-                // حالت ویرایش
-                <div className="space-y-4 animate-in fade-in">
-                    <div className="flex justify-between items-center border-b pb-2 mb-2">
-                        <span className="text-xs font-bold text-[#058B8C]">ویرایش لینک #{index + 1}</span>
-                        <button onClick={() => setEditingLinkId(null)} className="text-xs bg-green-500 text-white px-3 py-1 rounded flex items-center gap-1 hover:bg-green-600">
-                            <Check size={12}/> ذخیره
-                        </button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-blue-600 block">عنوان (دری) و لینک</label>
-                            <input value={link.title_dr || ''} onChange={e => handleLinkChange(index, 'title_dr', e.target.value)} className="w-full p-2 border rounded bg-gray-50 text-xs font-bold" placeholder="مثلا: ریاست پاسپورت"/>
-                            <div className="flex items-center gap-1">
-                                <Globe size={14} className="text-gray-400"/>
-                                <input value={link.url || ''} onChange={e => handleLinkChange(index, 'url', e.target.value)} className="w-full p-2 border rounded bg-gray-50 text-xs dir-ltr" placeholder="https://..."/>
+                        {(localSettings.useful_links || []).map((link, index) => (
+                            <div 
+                                key={index} 
+                                className={`bg-white p-3 rounded-xl border transition-all ${editingLinkId === index ? 'ring-2 ring-[#058B8C] shadow-md' : 'hover:shadow-md'}`}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, index)}
+                                onDragEnter={(e) => handleDragEnter(e, index)}
+                                onDragEnd={handleSortLinks}
+                                onDragOver={(e) => e.preventDefault()}
+                            >
+                                {editingLinkId === index ? (
+                                    <div className="space-y-4 animate-in fade-in">
+                                        <div className="flex justify-between items-center border-b pb-2 mb-2">
+                                            <span className="text-xs font-bold text-[#058B8C]">ویرایش لینک #{index + 1}</span>
+                                            <button onClick={() => setEditingLinkId(null)} className="text-xs bg-green-500 text-white px-3 py-1 rounded flex items-center gap-1 hover:bg-green-600">
+                                                <Check size={12}/> ذخیره
+                                            </button>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-bold text-blue-600 block">عنوان (دری) و لینک</label>
+                                                <input value={link.title_dr || ''} onChange={e => handleLinkChange(index, 'title_dr', e.target.value)} className="w-full p-2 border rounded bg-gray-50 text-xs font-bold" placeholder="مثلا: ریاست پاسپورت"/>
+                                                <div className="flex items-center gap-1">
+                                                    <Globe size={14} className="text-gray-400"/>
+                                                    <input value={link.url || ''} onChange={e => handleLinkChange(index, 'url', e.target.value)} className="w-full p-2 border rounded bg-gray-50 text-xs dir-ltr" placeholder="https://..."/>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <div className="flex gap-1 items-center">
+                                                    <input value={link.title_ps || ''} onChange={e => handleLinkChange(index, 'title_ps', e.target.value)} className="w-full p-2 border rounded bg-gray-50 text-xs" placeholder="پشتو"/>
+                                                    <button onClick={() => handleSmartFillLink(index, 'ps')} className="shrink-0 bg-green-100 text-green-700 px-2 h-8 rounded hover:bg-green-200 flex items-center justify-center" title="ترجمه هوشمند">
+                                                        {translatingField === `link_${index}_ps` ? <Loader2 size={14} className="animate-spin"/> : <Sparkles size={14}/>}
+                                                    </button>
+                                                </div>
+                                                <div className="flex gap-1 items-center" dir="ltr">
+                                                    <input value={link.title_en || ''} onChange={e => handleLinkChange(index, 'title_en', e.target.value)} className="w-full p-2 border rounded bg-gray-50 text-xs" placeholder="English"/>
+                                                    <button onClick={() => handleSmartFillLink(index, 'en')} className="shrink-0 bg-orange-100 text-orange-700 px-2 h-8 rounded hover:bg-orange-200 flex items-center justify-center" title="Smart Translate">
+                                                        {translatingField === `link_${index}_en` ? <Loader2 size={14} className="animate-spin"/> : <Sparkles size={14}/>}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-3">
+                                        <div className="cursor-grab text-gray-300 hover:text-gray-600 active:cursor-grabbing p-1"><GripVertical size={20}/></div>
+                                        <div className="flex-1">
+                                            <h4 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                                                {link.title_dr || 'بدون عنوان'}
+                                                <span className="text-[10px] font-normal text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded dir-ltr">{link.url}</span>
+                                            </h4>
+                                            <div className="text-[10px] text-gray-400 mt-0.5 flex gap-2">
+                                                {link.title_ps && <span>PS: {link.title_ps}</span>}
+                                                {link.title_en && <span>EN: {link.title_en}</span>}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={() => handleDuplicateLink(link)} className="p-2 bg-blue-100 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-200 transition" title="کپی"><Copy size={16}/></button>
+                                            <button onClick={() => setEditingLinkId(index)} className="p-2 bg-yellow-100 text-yellow-700 border border-yellow-200 rounded-lg hover:bg-yellow-200 transition" title="ویرایش"><Edit size={16}/></button>
+                                            <button onClick={() => handleDeleteLink(index)} className="p-2 bg-red-100 text-red-700 border border-red-200 rounded-lg hover:bg-red-200 transition" title="حذف"><Trash size={16}/></button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        </div>
-                        <div className="space-y-2">
-                            <div className="flex gap-1 items-center">
-                                <input value={link.title_ps || ''} onChange={e => handleLinkChange(index, 'title_ps', e.target.value)} className="w-full p-2 border rounded bg-gray-50 text-xs" placeholder="پشتو"/>
-                                <button onClick={() => handleSmartFillLink(index, 'ps')} className="shrink-0 bg-green-100 text-green-700 px-2 h-8 rounded hover:bg-green-200 flex items-center justify-center" title="ترجمه هوشمند">
-                                    {translatingField === `link_${index}_ps` ? <Loader2 size={14} className="animate-spin"/> : <Sparkles size={14}/>}
-                                </button>
+                        ))}
+                        {(localSettings.useful_links || []).length === 0 && (
+                            <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50">
+                                <div className="text-gray-400 text-sm mb-2">هنوز لینکی اضافه نشده است</div>
+                                <button onClick={handleAddLink} className="text-xs text-[#058B8C] font-bold hover:underline">اولین لینک را اضافه کنید</button>
                             </div>
-                            <div className="flex gap-1 items-center" dir="ltr">
-                                <input value={link.title_en || ''} onChange={e => handleLinkChange(index, 'title_en', e.target.value)} className="w-full p-2 border rounded bg-gray-50 text-xs" placeholder="English"/>
-                                <button onClick={() => handleSmartFillLink(index, 'en')} className="shrink-0 bg-orange-100 text-orange-700 px-2 h-8 rounded hover:bg-orange-200 flex items-center justify-center" title="Smart Translate">
-                                    {translatingField === `link_${index}_en` ? <Loader2 size={14} className="animate-spin"/> : <Sparkles size={14}/>}
-                                </button>
-                            </div>
-                        </div>
+                        )}
                     </div>
-                </div>
-            ) : (
-                // حالت نمایش (View Mode)
-                <div className="flex items-center gap-3">
-                    <div className="cursor-grab text-gray-300 hover:text-gray-600 active:cursor-grabbing p-1"><GripVertical size={20}/></div>
-                    <div className="flex-1">
-                        <h4 className="font-bold text-gray-800 text-sm flex items-center gap-2">
-                            {link.title_dr || 'بدون عنوان'}
-                            <span className="text-[10px] font-normal text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded dir-ltr">{link.url}</span>
-                        </h4>
-                        <div className="text-[10px] text-gray-400 mt-0.5 flex gap-2">
-                            {link.title_ps && <span>PS: {link.title_ps}</span>}
-                            {link.title_en && <span>EN: {link.title_en}</span>}
-                        </div>
-                    </div>
-                    {/* تغییر ۲: حذف opacity و پررنگ کردن دکمه‌ها */}
-                    <div className="flex items-center gap-2">
-                        <button onClick={() => handleDuplicateLink(link)} className="p-2 bg-blue-100 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-200 transition" title="کپی"><Copy size={16}/></button>
-                        <button onClick={() => setEditingLinkId(index)} className="p-2 bg-yellow-100 text-yellow-700 border border-yellow-200 rounded-lg hover:bg-yellow-200 transition" title="ویرایش"><Edit size={16}/></button>
-                        <button onClick={() => handleDeleteLink(index)} className="p-2 bg-red-100 text-red-700 border border-red-200 rounded-lg hover:bg-red-200 transition" title="حذف"><Trash size={16}/></button>
-                    </div>
-                </div>
-            )}
-        </div>
-    ))}
-    {(localSettings.useful_links || []).length === 0 && (
-        <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50">
-            <div className="text-gray-400 text-sm mb-2">هنوز لینکی اضافه نشده است</div>
-            <button onClick={handleAddLink} className="text-xs text-[#058B8C] font-bold hover:underline">اولین لینک را اضافه کنید</button>
-        </div>
-    )}
-</div>
                   </div>
-                </div>
-            )}
+                 </div>
+              )}
 
               <div className="mt-8 flex justify-end">
                 <button onClick={saveSettings} className="bg-green-600 hover:bg-green-700 text-white px-10 py-3 rounded-xl shadow-lg font-black flex items-center gap-2 transition-transform transform active:scale-95">
@@ -1298,57 +1477,59 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                     <thead className="bg-gray-50 border-b border-gray-200 text-gray-500">
                        <tr>
                          <th className="p-4 font-bold">زمان</th>
-                        <th className="p-4 font-bold">مشتری</th>
+                         <th className="p-4 font-bold">مشتری</th>
                         <th className="p-4 font-bold">پرواز</th>
                         <th className="p-4 font-bold">پرداخت</th>
-                         <th className="p-4 font-bold">وضعیت</th>
+                        <th className="p-4 font-bold">وضعیت</th>
                          <th className="p-4 font-bold text-center">عملیات</th>
                       </tr>
                      </thead>
                      <tbody className="divide-y divide-gray-100">
-                       {bookings && bookings.length > 0 ? bookings.map(b => (
+                       {bookings && bookings.length > 0 ?
+                       bookings.map(b => (
                          <tr key={b.id} className="hover:bg-gray-50 transition">
                             <td className="p-4 text-gray-500 text-xs">
                                <div dir="ltr" className="font-bold">{new Date(b.created_at).toLocaleDateString('fa-IR')}</div>
-                                 <div dir="ltr" className="opacity-70 mt-1">{new Date(b.created_at).toLocaleTimeString('fa-IR')}</div>
+                               <div dir="ltr" className="opacity-70 mt-1">{new Date(b.created_at).toLocaleTimeString('fa-IR')}</div>
                             </td>
                             <td className="p-4">
-                                <div className="font-bold text-gray-800 flex items-center gap-1"><User size={14}/> {b.customer_name}</div>
+                               <div className="font-bold text-gray-800 flex items-center gap-1"><User size={14}/> {b.customer_name}</div>
                                 <div className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Phone size={14}/> {b.customer_phone}</div>
                              </td>
-                              <td className="p-4">
+                             <td className="p-4">
                                <div className="flex items-center gap-3">
                                    <span className="text-2xl">{b.flight_info?.logo}</span>
                                    <div>
                                      <div className="font-bold text-xs text-gray-800">{b.flight_info?.airline}</div>
-                                      <div className="text-[10px] text-gray-500 dir-ltr mt-0.5">{b.flight_info?.origin} → {b.flight_info?.dest}</div>
+                                     <div className="text-[10px] text-gray-500 dir-ltr mt-0.5">{b.flight_info?.origin} → {b.flight_info?.dest}</div>
                                    </div>
                                </div>
-                              </td>
+                             </td>
                             <td className="p-4">
                                <div className="flex flex-col gap-1">
-                                   <div className="font-black text-blue-600">{(b.amount || 0).toLocaleString()} <span className="text-[9px] text-gray-400">افغانی</span></div>
+                                   <div className="font-black text-blue-600">{(b.amount ||
+                                   0).toLocaleString()} <span className="text-[9px] text-gray-400">افغانی</span></div>
                                    {b.transaction_id && <div className="text-[10px] font-mono text-gray-500 select-all bg-yellow-50 px-2 rounded border border-yellow-100 w-fit">ID: {b.transaction_id}</div>}
                                </div>
-                              </td>
+                             </td>
                              <td className="p-4">{getStatusBadge(b.status)}</td>
                             <td className="p-4">
-                                  <div className="flex justify-center gap-2">
+                               <div className="flex justify-center gap-2">
                                    {b.status === 'pending_verification' && (
                                     <button onClick={() => handleChangeStatus(b.id, 'confirmed')} title="تایید" className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 border border-green-200 transition"><Check size={16}/></button>
-                                    )}
+                                   )}
                                   {b.status !== 'cancelled' && (
-                                       <button onClick={() => handleChangeStatus(b.id, 'cancelled')} title="لغو" className="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 border border-red-100 transition"><X size={16}/></button>
+                                    <button onClick={() => handleChangeStatus(b.id, 'cancelled')} title="لغو" className="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 border border-red-100 transition"><X size={16}/></button>
                                    )}
                                   <button onClick={() => handleDeleteBooking(b.id)} title="حذف" className="p-2 bg-gray-100 text-gray-500 rounded-lg hover:bg-gray-200 transition"><Trash size={16}/></button>
                                </div>
                              </td>
                          </tr>
-                           )) : (
+                       )) : (
                          <tr><td colSpan="6" className="p-10 text-center text-gray-400">موردی یافت نشد</td></tr>
                        )}
                     </tbody>
-                   </table>
+                  </table>
                 </div>
               </div>
           )}
@@ -1370,37 +1551,44 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                            <div className="text-xs font-bold text-green-600 mb-1 flex justify-between items-center">
                                <span>پشتو</span>
                                 <button type="button" onClick={() => handleSmartFillNews('ps')} className="text-[9px] flex items-center gap-1 bg-green-100 text-green-700 px-2 py-0.5 rounded hover:bg-green-200 transition">
-                                   {translatingField === 'ps' ? <Loader2 size={10} className="animate-spin"/> : <Sparkles size={10}/>} ترجمه هوشمند
+                                   {translatingField === 'ps' ?
+                                   <Loader2 size={10} className="animate-spin"/> : <Sparkles size={10}/>} ترجمه هوشمند
                                </button>
                            </div>
-                           <input placeholder="د خبر سرلیک" value={newNews.title_ps || ''} onChange={e=>setNewNews({...newNews, title_ps: e.target.value})} className="w-full p-2 rounded border text-sm font-bold"/>
-                           <textarea placeholder="د خبر بشپړ متن..." value={newNews.desc_ps || ''} onChange={e=>setNewNews({...newNews, desc_ps: e.target.value})} className="w-full p-2 rounded border h-32 text-sm"/>
+                           <input placeholder="د خبر سرلیک" value={newNews.title_ps ||
+                           ''} onChange={e=>setNewNews({...newNews, title_ps: e.target.value})} className="w-full p-2 rounded border text-sm font-bold"/>
+                           <textarea placeholder="د خبر بشپړ متن..." value={newNews.desc_ps ||
+                           ''} onChange={e=>setNewNews({...newNews, desc_ps: e.target.value})} className="w-full p-2 rounded border h-32 text-sm"/>
                        </div>
                        {/* انگلیسی */}
                        <div className="space-y-2 bg-white p-3 rounded-lg border" dir="ltr">
-                          <div className="text-xs font-bold text-orange-600 mb-1 flex justify-between items-center">
+                           <div className="text-xs font-bold text-orange-600 mb-1 flex justify-between items-center">
                                <span>English</span>
                                <button type="button" onClick={() => handleSmartFillNews('en')} className="text-[9px] flex items-center gap-1 bg-orange-100 text-orange-700 px-2 py-0.5 rounded hover:bg-orange-200 transition">
-                                      {translatingField === 'en' ? <Loader2 size={10} className="animate-spin"/> : <Sparkles size={10}/>} Auto Translate
+                                   {translatingField === 'en' ?
+                                   <Loader2 size={10} className="animate-spin"/> : <Sparkles size={10}/>} Auto Translate
                                </button>
                            </div>
-                           <input placeholder="News Title" value={newNews.title_en || ''} onChange={e=>setNewNews({...newNews, title_en: e.target.value})} className="w-full p-2 rounded border text-sm font-bold"/>
-                           <textarea placeholder="Full news content..." value={newNews.desc_en || ''} onChange={e=>setNewNews({...newNews, desc_en: e.target.value})} className="w-full p-2 rounded border h-32 text-sm"/>
+                           <input placeholder="News Title" value={newNews.title_en ||
+                           ''} onChange={e=>setNewNews({...newNews, title_en: e.target.value})} className="w-full p-2 rounded border text-sm font-bold"/>
+                           <textarea placeholder="Full news content..." value={newNews.desc_en ||
+                           ''} onChange={e=>setNewNews({...newNews, desc_en: e.target.value})} className="w-full p-2 rounded border h-32 text-sm"/>
                        </div>
                    </div>
 
                    <div className="flex items-center gap-2">
                         <Image size={20} className="text-gray-400"/>
-                         <input placeholder="لینک عکس" value={newNews.img} onChange={e=>setNewNews({...newNews, img: e.target.value})} className="flex-1 p-2 rounded border dir-ltr text-left"/>
+                        <input placeholder="لینک عکس" value={newNews.img} onChange={e=>setNewNews({...newNews, img: e.target.value})} className="flex-1 p-2 rounded border dir-ltr text-left"/>
                    </div>
     
-                   <button className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold w-full shadow-lg hover:bg-blue-700 transition">{editingId ? 'ذخیره تغییرات' : 'انتشار خبر جدید'}</button>
+                   <button className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold w-full shadow-lg hover:bg-blue-700 transition">{editingId ?
+                   'ذخیره تغییرات' : 'انتشار خبر جدید'}</button>
                 </form>
 
                 <div className="grid gap-3">
                   {news.map(n => (
                     <div key={n.id} className="flex gap-4 p-3 border rounded-xl items-center bg-white hover:shadow-md transition">
-                          <img src={n.image_url} className="w-20 h-20 rounded-lg object-cover bg-gray-100"/>
+                       <img src={n.image_url} className="w-20 h-20 rounded-lg object-cover bg-gray-100"/>
                        <div className="flex-1 space-y-1">
                          <h3 className="font-bold text-sm">{n.title}</h3>
                          <div className="text-xs text-gray-400 flex gap-2">
@@ -1410,16 +1598,17 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                            {n.pinned && <span className="text-xs bg-yellow-100 text-yellow-800 px-2 rounded mt-1 inline-block">پین شده</span>}
                        </div>
                        <div className="flex gap-2">
-                          <button onClick={()=>handleTogglePin(n.id, n.pinned)} title={n.pinned ? "برداشتن پین" : "پین کردن"}><Pin size={18} className={n.pinned ? "text-yellow-500" : "text-gray-400"}/></button>
+                          <button onClick={()=>handleTogglePin(n.id, n.pinned)} title={n.pinned ?
+                          "برداشتن پین" : "پین کردن"}><Pin size={18} className={n.pinned ? "text-yellow-500" : "text-gray-400"}/></button>
                          <button onClick={()=>handleEditNews(n)} title="ویرایش"><Edit size={18} className="text-blue-500"/></button>
                          <button onClick={()=>handleDuplicateNews(n)} title="کپی"><Copy size={18} className="text-gray-500"/></button>
                          <button onClick={()=>handleDeleteNews(n.id)} title="حذف"><Trash size={18} className="text-red-500"/></button>
-                          </div>
+                        </div>
                     </div>
                    ))}
                 </div>
              </div>
-          )}
+         )}
         </div>
       </div>
     </div>

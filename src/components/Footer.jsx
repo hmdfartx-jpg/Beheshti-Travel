@@ -2,8 +2,9 @@ import React from 'react';
 import { Phone, Mail, MapPin, Instagram, Facebook, Send, Link as LinkIcon, MessageCircle } from 'lucide-react';
 
 export default function Footer({ t, lang, settings }) {
-  // استفاده از تنظیمات تماس که الان در بخش "درباره ما" ادمین تنظیم می‌شود
+  // استفاده از تنظیمات تماس (شامل آدرس، تلفن و اکنون متن کوتاه فوتر)
   const contact = settings?.contact || {};
+  // تنظیمات about برای عنوان (اگر نیاز بود)
   const about = settings?.about || {};
   const usefulLinks = settings?.useful_links || [];
   
@@ -44,7 +45,7 @@ export default function Footer({ t, lang, settings }) {
             
             <div className="mb-4">
                  {logoSrc ? (
-                    <img 
+                     <img 
                         src={logoSrc} 
                         alt="Company Logo" 
                         className="h-20 w-auto object-contain bg-white/10 p-3 rounded-2xl backdrop-blur-sm border border-white/10"
@@ -54,16 +55,22 @@ export default function Footer({ t, lang, settings }) {
                 )}
              </div>
 
-            {/* عنوان "درباره ما" */}
+             {/* عنوان "درباره ما" */}
             <h4 className="font-bold text-white text-sm">
                 {getSettingText(about, 'title') || getText("درباره ما", "زموږ په اړه", "About Us")}
             </h4>
             
+            {/* متن کوتاه شده اختصاصی فوتر */}
             <p className="text-white/90 text-xs leading-6 text-justify">
-              {getSettingText(about, 'desc') || "..."}
+              {/* اینجا به جای about.desc از contact.footer_about استفاده می‌کنیم */}
+              {getSettingText(contact, 'footer_about') || getText(
+                  "متن کوتاه درباره ما را از پنل مدیریت > تنظیمات سایت > فوتر وارد کنید.",
+                  "د پنل مدیریت څخه لنډ متن دننه کړئ.",
+                  "Please enter the short footer text from Admin Panel > Settings > Footer."
+              )}
             </p>
             
-            {/* دکمه‌های سوشال هوشمند (اگر در ادمین وارد شده باشند) */}
+            {/* دکمه‌های سوشال هوشمند */}
             <div className="flex gap-4">
                {contact.instagram && (
                    <a href={`https://instagram.com/${contact.instagram.replace('@','')}`} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#D4AF37] transition-colors">
@@ -107,7 +114,7 @@ export default function Footer({ t, lang, settings }) {
               <li className="flex items-start gap-4 group">
                 <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-[#D4AF37] transition-colors shrink-0">
                    <Phone size={18}/>
-                 </div>
+                </div>
                 <div className="flex flex-col">
                    <span className="text-[10px] text-white/70 mb-1">{t.common?.phone}</span>
                    {/* دیپ لینک تلفن */}
@@ -118,7 +125,7 @@ export default function Footer({ t, lang, settings }) {
               </li>
               <li className="flex items-start gap-4 group">
                   <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-[#D4AF37] transition-colors shrink-0">
-                   <Mail size={18}/>
+                    <Mail size={18}/>
                  </div>
                 <div className="flex flex-col">
                    <span className="text-[10px] text-white/70 mb-1">
