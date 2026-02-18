@@ -11,7 +11,8 @@ const VALID_TIMEZONES = [
   { label: "تورنتو (America/Toronto)", value: "America/Toronto" },
 ];
 
-export default function WeatherTab({ cities, onUpdateCities }) {
+// دریافت showAlert از props
+export default function WeatherTab({ cities, onUpdateCities, showAlert }) {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
 
@@ -32,7 +33,20 @@ export default function WeatherTab({ cities, onUpdateCities }) {
   };
 
   const handleDelete = (id) => {
-    if(window.confirm('آیا مطمئن هستید؟')) {
+    // استفاده از آلرت سفارشی اگر موجود باشد، وگرنه کانفرم معمولی (برای اطمینان)
+    if (showAlert) {
+        showAlert({
+            title: "حذف شهر",
+            message: "آیا از حذف این شهر از لیست اطمینان دارید؟",
+            type: "danger",
+            showCancel: true,
+            confirmText: "بله، حذف کن",
+            onConfirm: () => {
+                const updated = cities.filter(c => c.id !== id);
+                onUpdateCities(updated);
+            }
+        });
+    } else if(window.confirm('آیا مطمئن هستید؟')) {
         const updated = cities.filter(c => c.id !== id);
         onUpdateCities(updated);
     }
@@ -62,7 +76,6 @@ export default function WeatherTab({ cities, onUpdateCities }) {
   };
 
   return (
-    // حذف max-w-3xl و استفاده از w-full
     <div className="space-y-8 w-full animate-in fade-in">
         <h2 className="text-2xl font-black text-gray-800">مدیریت شهرهای آب‌وهوا</h2>
         

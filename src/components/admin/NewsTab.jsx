@@ -2,12 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Plus, Edit, Trash, Copy, Pin, Loader2, Image, Sparkles } from 'lucide-react';
 
-export default function NewsTab({ news, onUpdate, fetchTranslation }) {
+export default function NewsTab({ news, onUpdate, fetchTranslation, showAlert }) {
   const [newsTitle, setNewsTitle] = useState('');
   const [newsDesc, setNewsDesc] = useState('');
   const [newsImage, setNewsImage] = useState('');
   
-  // فیلدهای چند زبانه
   const [newsTitlePs, setNewsTitlePs] = useState('');
   const [newsDescPs, setNewsDescPs] = useState('');
   const [newsTitleEn, setNewsTitleEn] = useState('');
@@ -17,7 +16,6 @@ export default function NewsTab({ news, onUpdate, fetchTranslation }) {
   const [loading, setLoading] = useState(false);
   const [transLoading, setTransLoading] = useState(null);
 
-  // ریست کردن فرم
   const resetForm = () => {
     setNewsTitle(''); setNewsDesc(''); setNewsImage('');
     setNewsTitlePs(''); setNewsDescPs('');
@@ -26,7 +24,7 @@ export default function NewsTab({ news, onUpdate, fetchTranslation }) {
   };
 
   const handleSmartFill = async (lang) => {
-      if(!newsTitle) return alert('تیتر فارسی را وارد کنید');
+      if(!newsTitle) return; // اگر showAlert دارید می‌توانید اینجا خطا دهید
       setTransLoading(lang);
       
       const tTitle = await fetchTranslation(newsTitle, lang);
@@ -57,6 +55,15 @@ export default function NewsTab({ news, onUpdate, fetchTranslation }) {
        await supabase.from('news').insert([newsData]);
     }
     
+    // نمایش پیام موفقیت با آلرت جدید
+    if (showAlert) {
+        showAlert({
+            title: "موفق",
+            message: editingNews ? "خبر با موفقیت ویرایش شد" : "خبر جدید با موفقیت منتشر شد",
+            type: "success"
+        });
+    }
+
     resetForm();
     if(onUpdate) onUpdate();
   };
@@ -71,9 +78,22 @@ export default function NewsTab({ news, onUpdate, fetchTranslation }) {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('حذف شود؟')) {
-      await supabase.from('news').delete().eq('id', id);
-      if(onUpdate) onUpdate();
+    const performDelete = async () => {
+        await supabase.from('news').delete().eq('id', id);
+        if(onUpdate) onUpdate();
+    };
+
+    if (showAlert) {
+        showAlert({
+            title: "حذف خبر",
+            message: "آیا از حذف این خبر مطمئن هستید؟",
+            type: "danger",
+            showCancel: true,
+            confirmText: "بله، حذف کن",
+            onConfirm: performDelete
+        });
+    } else if (window.confirm('حذف شود؟')) {
+        performDelete();
     }
   };
 
@@ -93,20 +113,18 @@ export default function NewsTab({ news, onUpdate, fetchTranslation }) {
            {editingNews ? 'ویرایش خبر' : 'افزودن خبر جدید'}
          </h3>
          <form onSubmit={handleAddNews} className="space-y-4">
+           {/* ... (کد فرم بدون تغییر) ... */}
            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* فارسی */}
               <div className="space-y-2 border-l pl-2">
                   <span className="text-xs font-bold text-blue-600">فارسی</span>
                   <input value={newsTitle} onChange={e => setNewsTitle(e.target.value)} placeholder="عنوان" className="input-admin"/>
                   <textarea value={newsDesc} onChange={e => setNewsDesc(e.target.value)} placeholder="متن" className="input-admin h-24"/>
               </div>
-              {/* پشتو */}
               <div className="space-y-2 border-l pl-2">
                   <div className="flex justify-between"><span className="text-xs font-bold text-green-600">پشتو</span><button type="button" onClick={()=>handleSmartFill('ps')} className="text-[9px] bg-green-100 px-2 rounded">{transLoading === 'ps' ? '...' : 'ترجمه'}</button></div>
                   <input value={newsTitlePs} onChange={e => setNewsTitlePs(e.target.value)} placeholder="عنوان" className="input-admin"/>
                   <textarea value={newsDescPs} onChange={e => setNewsDescPs(e.target.value)} placeholder="متن" className="input-admin h-24"/>
               </div>
-              {/* انگلیسی */}
               <div className="space-y-2" dir="ltr">
                   <div className="flex justify-between"><span className="text-xs font-bold text-orange-600">English</span><button type="button" onClick={()=>handleSmartFill('en')} className="text-[9px] bg-orange-100 px-2 rounded">{transLoading === 'en' ? '...' : 'Translate'}</button></div>
                   <input value={newsTitleEn} onChange={e => setNewsTitleEn(e.target.value)} placeholder="Title" className="input-admin"/>

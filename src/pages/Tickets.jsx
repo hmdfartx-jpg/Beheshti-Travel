@@ -3,7 +3,7 @@ import { Search, MapPin, ArrowRightLeft, ChevronDown, User, Calendar, Plus, Minu
 import { supabase } from '../lib/supabase';
 import PaymentModal from '../components/PaymentModal';
 
-// لیست جامع فرودگاه‌ها (بیش از ۱۰۰ فرودگاه مرتبط)
+// --- لیست جامع و کامل فرودگاه‌ها (بدون حذفیات) ---
 const AIRPORTS = [
   // --- افغانستان (Afghanistan) ---
   { code: 'KBL', name: 'Kabul International', city: 'Kabul', fa: 'کابل', ps: 'کابل', country: 'Afghanistan' },
@@ -137,6 +137,68 @@ const AIRPORTS = [
   { code: 'MEL', name: 'Tullamarine', city: 'Melbourne', fa: 'ملبورن', ps: 'ملبورن', country: 'Australia' }
 ];
 
+// --- توابع تبدیل تاریخ (Jalaali Logic) ---
+const jalaali = {
+  toJalaali: (gy, gm, gd) => {
+    let g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+    let jy = (gy <= 1600) ? 0 : 979;
+    gy -= (gy <= 1600) ? 621 : 1600;
+    let gy2 = (gm > 2) ? (gy + 1) : gy;
+    let days = (365 * gy) + parseInt((gy2 + 3) / 4) - parseInt((gy2 + 99) / 100) + parseInt((gy2 + 399) / 400) - 80 + gd + g_d_m[gm - 1];
+    jy += 33 * parseInt(days / 12053);
+    days %= 12053;
+    jy += 4 * parseInt(days / 1461);
+    days %= 1461;
+    jy += parseInt((days - 1) / 365);
+    if (days > 365) days = (days - 1) % 365;
+    let jm = (days < 186) ? 1 + parseInt(days / 31) : 7 + parseInt((days - 186) / 30);
+    let jd = 1 + ((days < 186) ? (days % 31) : ((days - 186) % 30));
+    return { jy, jm, jd };
+  },
+  toGregorian: (jy, jm, jd) => {
+    let gy = (jy <= 979) ? 621 : 1600;
+    jy -= (jy <= 979) ? 0 : 979;
+    let days = (365 * jy) + (parseInt(jy / 33) * 8) + parseInt(((jy % 33) + 3) / 4) + 78 + jd + ((jm < 7) ? (jm - 1) * 31 : ((jm - 7) * 30) + 186);
+    gy += 400 * parseInt(days / 146097);
+    days %= 146097;
+    if (days > 36524) {
+      days--;
+      gy += 100 * parseInt(days / 36524);
+      days %= 36524;
+      if (days >= 365) days++;
+    }
+    gy += 4 * parseInt(days / 1461);
+    days %= 1461;
+    gy += parseInt((days - 1) / 365);
+    if (days > 365) days = (days - 1) % 365;
+    let gd = days + 1;
+    let sal_a = [0, 31, ((gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0)) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    let gm;
+    for (gm = 0; gm < 13; gm++) {
+      let v = sal_a[gm];
+      if (gd <= v) break;
+      gd -= v;
+    }
+    return new Date(gy, gm - 1, gd);
+  },
+  jalaaliMonthLength: (jy, jm) => {
+    if (jm <= 6) return 31;
+    if (jm <= 11) return 30;
+    const isLeap = (jy % 33 === 1 || jy % 33 === 5 || jy % 33 === 9 || jy % 33 === 13 || jy % 33 === 17 || jy % 33 === 22 || jy % 33 === 26 || jy % 33 === 30);
+    return isLeap ? 30 : 29;
+  }
+};
+
+// --- نام ماه‌ها (با نام‌های افغانی برای شمسی) ---
+const MONTH_NAMES = {
+  en: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+  dr_gregorian: ["جنوری", "فبروری", "مارچ", "اپریل", "می", "جون", "جولای", "آگوست", "سپتامبر", "اکتوبر", "نوامبر", "دسامبر"],
+  ps_gregorian: ["جنوري", "فبروري", "مارچ", "اپریل", "می", "جون", "جولای", "اګست", "سپتمبر", "اکتوبر", "نومبر", "دسمبر"],
+  dr_solar: ["حمل", "ثور", "جوزا", "سرطان", "اسد", "سنبله", "میزان", "عقرب", "قوس", "جدی", "دلو", "حوت"],
+  ps_solar: ["وری", "غویی", "غبرګولی", "چنګاښ", "زمری", "وږی", "تله", "لړم", "لیندۍ", "مرغومی", "سلواغه", "کب"]
+};
+
+// --- ترجمه‌ها ---
 const translations = {
   dr: {
     one_way: "یک طرفه", round_trip: "رفت و برگشت",
@@ -144,85 +206,63 @@ const translations = {
     adults: "بزرگسال", children: "کودک", passenger: "مسافر", confirm: "تایید",
     modalInfoTitle: "اطلاعات مسافر",
     modalInfoDesc: "برای رزرو پرواز، لطفاً مشخصات زیر را وارد کنید.",
-    labelName: "نام و نام خانوادگی",
-    labelPhone: "شماره تماس",
-    placeName: "مثلا: احمد محمدی",
-    placePhone: "0799...",
-    btnSubmit: "ثبت و ادامه جهت پرداخت",
-    btnLoading: "در حال ثبت...",
-    modalSuccessTitle: "رزرو اولیه انجام شد!",
-    labelOrderId: "شماره سفارش",
+    labelName: "نام و نام خانوادگی", labelPhone: "شماره تماس",
+    placeName: "مثلا: احمد محمدی", placePhone: "0799...",
+    btnSubmit: "ثبت و ادامه جهت پرداخت", btnLoading: "در حال ثبت...",
+    modalSuccessTitle: "رزرو اولیه انجام شد!", labelOrderId: "شماره سفارش",
     modalPayDesc: "برای نهایی کردن بلیط، لطفاً پرداخت را انجام دهید.",
     paySuccessMsg: "پرداخت با موفقیت انجام شد و بلیط صادر گردید!",
     errorEmpty: "لطفا نام و شماره تماس را وارد کنید",
     errorBooking: "خطا در ثبت رزرو. لطفا دوباره تلاش کنید.",
     searching: "در حال جستجو در ایرلاین‌ها...",
     noResult: "پروازی یافت نشد. لطفاً مسیر دیگری را امتحان کنید.",
-    originLabel: "مبدا (شهر یا فرودگاه)",
-    destLabel: "مقصد (شهر یا فرودگاه)"
+    originLabel: "مبدا (شهر یا فرودگاه)", destLabel: "مقصد (شهر یا فرودگاه)",
+    select_date: "تاریخ رفت", return_date: "تاریخ برگشت", close: "بستن", today: "برو به امروز"
   },
   ps: {
     one_way: "یو طرفه", round_trip: "تګ راتګ",
     economy: "اکونومي", business: "بیزنس", first: "لومړۍ درجه",
     adults: "لویان", children: "ماشومان", passenger: "مسافر", confirm: "تایید",
-    modalInfoTitle: "د مسافر معلومات",
-    modalInfoDesc: "د الوتنې د ثبت لپاره، مهرباني وکړئ لاندې مشخصات دننه کړئ.",
-    labelName: "بشپړ نوم",
-    labelPhone: "د اړیکې شمېره",
-    placeName: "مثلا: احمد محمدي",
-    placePhone: "0799...",
-    btnSubmit: "ثبت او د تادیې لپاره دوام",
-    btnLoading: "د ثبت په حال کې...",
-    modalSuccessTitle: "لومړنی ثبت ترسره شو!",
-    labelOrderId: "د سپارښتنې شمېره",
+    modalInfoTitle: "د مسافر معلومات", modalInfoDesc: "د الوتنې د ثبت لپاره، مهرباني وکړئ لاندې مشخصات دننه کړئ.",
+    labelName: "بشپړ نوم", labelPhone: "د اړیکې شمېره",
+    placeName: "مثلا: احمد محمدي", placePhone: "0799...",
+    btnSubmit: "ثبت او د تادیې لپاره دوام", btnLoading: "د ثبت په حال کې...",
+    modalSuccessTitle: "لومړنی ثبت ترسره شو!", labelOrderId: "د سپارښتنې شمېره",
     modalPayDesc: "د ټکټ نهایي کولو لپاره، مهرباني وکړئ تادیه ترسره کړئ.",
     paySuccessMsg: "تادیه په بریالیتوب سره ترسره شوه!",
     errorEmpty: "مهرباني وکړئ نوم او د اړیکې شمېره دننه کړئ",
     errorBooking: "د ثبت پرمهال ستونزه. مهرباني وکړئ بیا هڅه وکړئ.",
-    searching: "د الوتنو پلټنه...",
-    noResult: "هیڅ الوتنه ونه موندل شوه.",
-    originLabel: "مبدا (ښار یا هوايي ډګر)",
-    destLabel: "مقصد (ښار یا هوايي ډګر)"
+    searching: "د الوتنو پلټنه...", noResult: "هیڅ الوتنه ونه موندل شوه.",
+    originLabel: "مبدا (ښار یا هوايي ډګر)", destLabel: "مقصد (ښار یا هوايي ډګر)",
+    select_date: "د تګ نیټه", return_date: "د راستنیدو نیټه", close: "بندول", today: "نن ورځ"
   },
   en: {
     one_way: "One Way", round_trip: "Round Trip",
     economy: "Economy", business: "Business", first: "First Class",
     adults: "Adults", children: "Children", passenger: "Passenger", confirm: "Confirm",
-    modalInfoTitle: "Passenger Info",
-    modalInfoDesc: "Please enter your details to book the flight.",
-    labelName: "Full Name",
-    labelPhone: "Phone Number",
-    placeName: "Ex: John Doe",
-    placePhone: "+93...",
-    btnSubmit: "Register & Pay",
-    btnLoading: "Registering...",
-    modalSuccessTitle: "Booking Initiated!",
-    labelOrderId: "Order ID",
+    modalInfoTitle: "Passenger Info", modalInfoDesc: "Please enter your details to book the flight.",
+    labelName: "Full Name", labelPhone: "Phone Number",
+    placeName: "Ex: John Doe", placePhone: "+93...",
+    btnSubmit: "Register & Pay", btnLoading: "Registering...",
+    modalSuccessTitle: "Booking Initiated!", labelOrderId: "Order ID",
     modalPayDesc: "Please proceed with payment to finalize your ticket.",
     paySuccessMsg: "Payment successful! Ticket has been issued.",
     errorEmpty: "Please enter your name and phone number.",
     errorBooking: "Booking failed. Please try again.",
-    searching: "Searching airlines...",
-    noResult: "No flights found. Please try another route.",
-    originLabel: "Origin (City or Airport)",
-    destLabel: "Destination (City or Airport)"
+    searching: "Searching airlines...", noResult: "No flights found. Please try another route.",
+    originLabel: "Origin (City or Airport)", destLabel: "Destination (City or Airport)",
+    select_date: "Depart Date", return_date: "Return Date", close: "Close", today: "Go to Today"
   }
 };
 
-// --- کامپوننت جستجوی فرودگاه (نسخه نهایی: انیمیشن نرم، بدون پرش، وسط‌چین) ---
 const AirportSearch = ({ value, onChange, placeholder, icon: Icon, lang = 'dr' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const [isFocused, setIsFocused] = useState(false);
   const wrapperRef = useRef(null);
   const inputRef = useRef(null);
   const isLtr = lang === 'en';
 
-  const getDisplayName = (a) => {
-      if (lang === 'en') return `${a.name} (${a.code})`;
-      if (lang === 'ps') return `${a.ps} (${a.code})`;
-      return `${a.fa} (${a.code})`;
-  };
+  const getDisplayName = (a) => lang === 'en' ? `${a.name} (${a.code})` : lang === 'ps' ? `${a.ps} (${a.code})` : `${a.fa} (${a.code})`;
 
   useEffect(() => {
     const found = AIRPORTS.find(a => a.code === value);
@@ -234,7 +274,6 @@ const AirportSearch = ({ value, onChange, placeholder, icon: Icon, lang = 'dr' }
     function handleClickOutside(event) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
         setIsOpen(false);
-        setIsFocused(false);
         const found = AIRPORTS.find(a => a.code === value);
         setSearch(found ? getDisplayName(found) : '');
       }
@@ -246,36 +285,27 @@ const AirportSearch = ({ value, onChange, placeholder, icon: Icon, lang = 'dr' }
   const filteredAirports = AIRPORTS.filter(a => 
     a.city.toLowerCase().includes(search.toLowerCase()) || 
     a.code.toLowerCase().includes(search.toLowerCase()) ||
-    a.fa.includes(search) ||
-    a.ps.includes(search) ||
+    a.fa.includes(search) || a.ps.includes(search) ||
     (lang === 'en' && a.name.toLowerCase().includes(search.toLowerCase()))
   );
 
-  // وضعیت وسط‌چین (غیرفعال)
-  const isCentered = !search && !isFocused;
+  const isCentered = !search && !isOpen;
 
   return (
     <div className="relative w-full h-full" ref={wrapperRef}>
       <div 
         className="relative w-full h-full hover:bg-gray-50 rounded-xl transition-colors duration-300 cursor-text group"
-        onClick={() => {
-            setIsOpen(true);
-            setIsFocused(true);
-            inputRef.current?.focus();
-        }}
+        onClick={() => { setIsOpen(true); inputRef.current?.focus(); }}
       >
-        
-        {/* متن راهنما (Label) */}
         <div className={`absolute left-1/2 -translate-x-1/2 transition-all duration-300 pointer-events-none whitespace-nowrap z-10 px-2 rounded-full
             ${isCentered 
-               ? 'top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold bg-transparent' // حالت وسط
-               : 'top-0 -translate-y-1/2 text-[11px] text-[#058B8C] font-black bg-white shadow-sm' // حالت روی لبه
-            }`}
+               ? 'top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold bg-transparent'
+               : 'top-0 -translate-y-1/2 text-[11px] text-[#058B8C] font-black bg-white shadow-sm'
+             }`}
         >
              {placeholder}
         </div>
 
-        {/* آیکون */}
         <div className={`absolute top-1/2 -translate-y-1/2 transition-all duration-300 pointer-events-none z-10
             ${isCentered 
                ? (isLtr ? 'left-1/2 -translate-x-[110px] text-gray-400' : 'left-1/2 translate-x-[85px] text-gray-400')
@@ -285,19 +315,16 @@ const AirportSearch = ({ value, onChange, placeholder, icon: Icon, lang = 'dr' }
             <Icon size={20}/>
         </div>
 
-        {/* اینپوت */}
         <input 
           ref={inputRef}
           value={search}
-          onFocus={() => setIsFocused(true)}
           onChange={(e) => { setSearch(e.target.value); setIsOpen(true); }}
-          className={`w-full h-full bg-transparent outline-none font-black text-gray-800 text-sm transition-all duration-300 px-10
+          className={`w-full h-full bg-transparent outline-none font-black text-gray-800 text-lg transition-all duration-300 px-10
             ${isCentered ? 'opacity-0' : 'opacity-100'} ${isLtr ? 'text-left' : 'text-right'}`}
           autoComplete="off"
           dir={isLtr ? 'ltr' : 'rtl'}
         />
 
-        {/* دکمه حذف */}
         {value && (
             <button 
                 onClick={(e) => { 
@@ -307,16 +334,15 @@ const AirportSearch = ({ value, onChange, placeholder, icon: Icon, lang = 'dr' }
                     inputRef.current?.focus(); 
                 }} 
                 className={`absolute top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 rounded-full animate-in fade-in z-20 ${isLtr ? 'right-3' : 'left-3'}`}
-            >
+             >
                 <X size={14} className="text-gray-400"/>
             </button>
         )}
       </div>
       
-      {/* لیست نتایج */}
       {isOpen && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 max-h-60 overflow-y-auto z-50 animate-in fade-in zoom-in-95">
-          {filteredAirports.length > 0 ?
+           {filteredAirports.length > 0 ?
           filteredAirports.map(item => (
             <div 
               key={item.code} 
@@ -325,7 +351,6 @@ const AirportSearch = ({ value, onChange, placeholder, icon: Icon, lang = 'dr' }
                 onChange(item.code);
                 setSearch(getDisplayName(item));
                 setIsOpen(false);
-                setIsFocused(false);
               }}
             >
               <div>
@@ -348,78 +373,177 @@ const AirportSearch = ({ value, onChange, placeholder, icon: Icon, lang = 'dr' }
   );
 };
 
-// --- کامپوننت تقویم ---
-const GoogleCalendar = ({ onSelect, onClose, selectedDate, lang }) => {
-  const [viewDate, setViewDate] = useState(new Date());
-  const today = new Date(); today.setHours(0, 0, 0, 0);
+// --- کامپوننت هوشمند تقویم (Smart Calendar) ---
+const SmartCalendar = ({ selectedDate, onSelect, onClose, lang }) => {
+  const isLtr = lang === 'en';
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  // استیت نمایش فعلی: اگر انگلیسی باشد میلادی، اگر فارسی/پشتو باشد شمسی
+  const [currentView, setCurrentView] = useState(() => {
+      if (isLtr) {
+          return { year: today.getFullYear(), month: today.getMonth() }; // Gregorian (0-11)
+      } else {
+          const jToday = jalaali.toJalaali(today.getFullYear(), today.getMonth() + 1, today.getDate());
+          return { year: jToday.jy, month: jToday.jm - 1 }; // Jalaali (0-11)
+      }
+  });
+
+  const changeMonth = (offset) => {
+      let newMonth = currentView.month + offset;
+      let newYear = currentView.year;
+      if (newMonth > 11) { newMonth = 0; newYear++; }
+      else if (newMonth < 0) { newMonth = 11; newYear--; }
+      
+      // جلوگیری از رفتن به ماه قبل از ماه جاری
+      if (isLtr) {
+          if (new Date(newYear, newMonth, 1) < new Date(today.getFullYear(), today.getMonth(), 1)) return;
+      } else {
+          const jToday = jalaali.toJalaali(today.getFullYear(), today.getMonth() + 1, today.getDate());
+          if (newYear < jToday.jy || (newYear === jToday.jy && newMonth < jToday.jm - 1)) return;
+      }
+      setCurrentView({ year: newYear, month: newMonth });
+  };
+
+  const generateDays = () => {
+      const days = [];
+      let daysInMonth, startDayOfWeek;
+
+      if (isLtr) {
+          // --- حالت انگلیسی (اصلی: میلادی) ---
+          daysInMonth = new Date(currentView.year, currentView.month + 1, 0).getDate();
+          startDayOfWeek = new Date(currentView.year, currentView.month, 1).getDay(); // 0=Sun
+      } else {
+          // --- حالت دری/پشتو (اصلی: شمسی) ---
+          daysInMonth = jalaali.jalaaliMonthLength(currentView.year, currentView.month + 1);
+          // پیدا کردن روز هفته اول ماه شمسی
+          const gDate = jalaali.toGregorian(currentView.year, currentView.month + 1, 1);
+          const jsDay = gDate.getDay(); // 0=Sun ... 6=Sat
+          // برای تقویم فارسی که شنبه اول است (0)، باید شیفت دهیم:
+          // Sat(6)->0, Sun(0)->1, Mon(1)->2, ... Fri(5)->6
+          startDayOfWeek = (jsDay + 1) % 7; 
+      }
+
+      for (let i = 0; i < startDayOfWeek; i++) days.push({ empty: true });
+
+      for (let i = 1; i <= daysInMonth; i++) {
+          let dateObj, isPast, dateString, secondaryDay;
+          
+          if (isLtr) {
+              dateObj = new Date(currentView.year, currentView.month, i);
+              isPast = dateObj < today;
+              const jDate = jalaali.toJalaali(currentView.year, currentView.month + 1, i);
+              secondaryDay = jDate.jd;
+              dateString = `${currentView.year}-${String(currentView.month + 1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+          } else {
+              const gDate = jalaali.toGregorian(currentView.year, currentView.month + 1, i);
+              dateObj = gDate;
+              isPast = gDate < today;
+              secondaryDay = gDate.getDate();
+              dateString = `${gDate.getFullYear()}-${String(gDate.getMonth() + 1).padStart(2,'0')}-${String(gDate.getDate()).padStart(2,'0')}`;
+          }
+
+          days.push({
+              day: i,
+              secondaryDay: secondaryDay,
+              dateString: dateString,
+              isPast: isPast,
+              isSelected: selectedDate === dateString,
+              isToday: dateObj.getTime() === today.getTime()
+          });
+      }
+      return days;
+  };
+
+  const getSecondaryMonthRange = () => {
+      if (isLtr) {
+          // انگلیسی: زیرش نام ماه شمسی (افغانی) بیاید
+          const startJ = jalaali.toJalaali(currentView.year, currentView.month + 1, 1);
+          const endJ = jalaali.toJalaali(currentView.year, currentView.month + 1, 28); 
+          const m1 = MONTH_NAMES.dr_solar[startJ.jm - 1]; 
+          const m2 = MONTH_NAMES.dr_solar[endJ.jm - 1];
+          return startJ.jm === endJ.jm ? m1 : `${m1} - ${m2}`;
+      } else {
+          // دری/پشتو: زیرش نام ماه میلادی بیاید (به خط دری/پشتو)
+          const startG = jalaali.toGregorian(currentView.year, currentView.month + 1, 1);
+          const endG = jalaali.toGregorian(currentView.year, currentView.month + 1, 28);
+          const mArr = lang === 'ps' ? MONTH_NAMES.ps_gregorian : MONTH_NAMES.dr_gregorian;
+          const m1 = mArr[startG.getMonth()];
+          const m2 = mArr[endG.getMonth()];
+          return startG.getMonth() === endG.getMonth() ? m1 : `${m1} - ${m2}`;
+      }
+  };
+
+  const daysGrid = generateDays();
+  const weekDayNames = isLtr ? ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"] : ["ش", "ی", "د", "س", "چ", "پ", "ج"];
   
-  const getMonths = () => {
-      if (lang === 'en') return ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-      if (lang === 'ps') return ["جنوری", "فبروری", "مارچ", "اپریل", "می", "جون", "جولای", "آگوست", "سپتامبر", "اکتوبر", "نوامبر", "دسامبر"];
-      return ["جنوری", "فبروری", "مارچ", "اپریل", "می", "جون", "جولای", "آگوست", "سپتامبر", "اکتوبر", "نوامبر", "دسامبر"];
-  };
+  const primaryMonthName = isLtr 
+      ? MONTH_NAMES.en[currentView.month] 
+      : (lang === 'ps' ? MONTH_NAMES.ps_solar[currentView.month] : MONTH_NAMES.dr_solar[currentView.month]);
 
-  const getWeekDays = () => {
-      if (lang === 'en') return ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-      return ["ش", "ی", "د", "س", "چ", "پ", "ج"];
-  };
+  const toNativeNum = (num) => isLtr ? num : String(num).replace(/\d/g, d => "۰۱۲۳۴۵۶۷۸۹"[d]);
 
-  const months = getMonths();
-  const weekDays = getWeekDays();
-
-  const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
-  const getFirstDay = (year, month) => new Date(year, month, 1).getDay();
-  const changeMonth = (offset) => { const newDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + offset, 1); setViewDate(newDate); };
-  const renderMonth = (offset) => {
-    const currentView = new Date(viewDate.getFullYear(), viewDate.getMonth() + offset, 1);
-    const year = currentView.getFullYear();
-    const month = currentView.getMonth();
-    const daysInMonth = getDaysInMonth(year, month);
-    const firstDay = getFirstDay(year, month);
-    const blanks = Array(firstDay).fill(null);
-    const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-    return (
-      <div className="flex-1 px-4">
-        <div className="font-bold text-center mb-4 text-gray-700">{months[month]} {year}</div>
-        <div className="grid grid-cols-7 gap-1 text-center mb-2">
-          {weekDays.map((d, i) => <span key={i} className="text-xs text-gray-400 font-bold">{d}</span>)}
-        </div>
-        <div className="grid grid-cols-7 gap-y-2 text-center">
-          {blanks.map((_, i) => <div key={`blank-${offset}-${i}`} />)}
-          {days.map(d => {
-            const thisDayDate = new Date(year, month, d);
-            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const isSelected = selectedDate === dateStr;
-            const isPast = thisDayDate < today;
-            return (
-              <button 
-                key={d} type="button" disabled={isPast}
-                onClick={(e) => { e.stopPropagation(); if (!isPast) onSelect(dateStr); }}
-                className={`h-8 w-8 mx-auto rounded-full flex items-center justify-center text-xs transition-all ${isSelected ?
-                'bg-[#058B8C] text-white shadow-md' : ''} ${!isSelected && !isPast ? 'hover:bg-blue-50 text-gray-700' : ''} ${isPast ?
-                'text-gray-300' : ''}`}
-              >
-                <span className={`font-bold ${isPast ?
-                'line-through decoration-gray-300' : ''}`}>{d}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
   return (
-    <div className="absolute top-full left-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-6 z-50 w-[650px] animate-in fade-in zoom-in-95 hidden md:block cursor-default" onClick={(e) => e.stopPropagation()} dir="ltr">
-       <div className="flex justify-between items-center mb-4">
-          <button type="button" onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 rounded-full"><ChevronLeft size={20}/></button>
-          <button type="button" onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 rounded-full"><ChevronRight size={20}/></button>
-       </div>
-       <div className="flex divide-x divide-gray-100 divide-x-reverse">{renderMonth(0)}{renderMonth(1)}</div>
-       <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-          <button type="button" onClick={onClose} className="px-4 py-2 text-gray-500 font-bold text-sm hover:bg-gray-50 rounded-lg">
-             {lang === 'en' ? 'Cancel' : (lang === 'ps' ? 'لغوه' : 'انصراف')}
-          </button>
-       </div>
+    <div className="absolute top-full left-0 mt-3 bg-white rounded-3xl shadow-2xl border border-gray-100 p-5 z-50 w-[340px] md:w-[360px] animate-in zoom-in-95 origin-top-left" onClick={e => e.stopPropagation()} dir={isLtr ? 'ltr' : 'rtl'}>
+        
+        {/* هدر تقویم */}
+        <div className="flex justify-between items-center mb-4 bg-gray-50 p-2 rounded-2xl">
+            <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white hover:shadow rounded-full text-gray-600 transition disabled:opacity-30">
+                {isLtr ? <ChevronLeft size={20}/> : <ChevronRight size={20}/>}
+            </button>
+            <div className="text-center">
+                <span className="font-black text-lg text-gray-800 block leading-none">
+                    {primaryMonthName} {toNativeNum(currentView.year)}
+                </span>
+                <span className="text-xs font-bold text-[#058B8C] mt-1 block">
+                    {getSecondaryMonthRange()}
+                </span>
+            </div>
+            <button onClick={() => changeMonth(1)} className="p-2 hover:bg-white hover:shadow rounded-full text-gray-600 transition">
+                {isLtr ? <ChevronRight size={20}/> : <ChevronLeft size={20}/>}
+            </button>
+        </div>
+
+        {/* روزهای هفته */}
+        <div className="grid grid-cols-7 text-center mb-2">
+            {weekDayNames.map((d, i) => (
+                <div key={i} className={`text-xs font-black ${i===0 || i===6 ? 'text-red-400' : 'text-gray-400'}`}>{d}</div>
+            ))}
+        </div>
+
+        {/* شبکه روزها */}
+        <div className="grid grid-cols-7 gap-1.5">
+            {daysGrid.map((d, idx) => {
+                if (d.empty) return <div key={idx}></div>;
+                return (
+                    <button 
+                        key={idx}
+                        disabled={d.isPast}
+                        onClick={() => !d.isPast && onSelect(d.dateString)}
+                        className={`
+                            h-12 rounded-xl flex flex-col items-center justify-center relative transition-all border border-transparent
+                            ${d.isPast ? 'text-gray-300 cursor-not-allowed bg-gray-50/50' : 'hover:bg-blue-50 hover:border-blue-200 cursor-pointer text-gray-700'}
+                            ${d.isSelected ? '!bg-[#058B8C] !text-white shadow-lg shadow-[#058B8C]/30 transform scale-105 z-10' : ''}
+                            ${d.isToday && !d.isSelected ? 'border border-[#058B8C] text-[#058B8C] font-bold' : ''}
+                        `}
+                    >
+                        {/* عدد اصلی (بزرگ) */}
+                        <span className="text-sm font-black leading-none mb-0.5">{toNativeNum(d.day)}</span>
+                        {/* عدد فرعی (کوچک) */}
+                        <span className={`text-[9px] font-bold ${d.isSelected ? 'text-white/70' : 'text-gray-400'}`}>
+                            {toNativeNum(d.secondaryDay)}
+                        </span>
+                    </button>
+                )
+            })}
+        </div>
+
+        {/* فوتر */}
+        <div className="mt-4 pt-3 border-t border-gray-100 flex justify-end">
+            <button onClick={onClose} className="text-xs font-bold text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg transition">
+                {translations[lang].close}
+            </button>
+        </div>
     </div>
   );
 };
@@ -433,7 +557,6 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
   const [bookingLoading, setBookingLoading] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const dropdownRef = useRef(null);
-  // استیت‌های مودال
   const [selectedFlight, setSelectedFlight] = useState(null);
   const [customerInfo, setCustomerInfo] = useState({ name: '', phone: '' });
   const [bookedOrder, setBookedOrder] = useState(null);
@@ -449,7 +572,6 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
   const [results, setResults] = useState([]);
 
   useEffect(() => {
-    // اگر initialData وجود داشت جستجو کن
     if (initialData) {
       setFormData(initialData);
       performSearch(initialData);
@@ -540,11 +662,9 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
   return (
     <div className="space-y-8 animate-in fade-in font-[Vazirmatn]" dir={isLtr ? 'ltr' : 'rtl'}>
        
-       {/* --- مودال‌ها (بدون تغییر) --- */}
        {selectedFlight && (
          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
             <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl relative" dir={isLtr ? 'ltr' : 'rtl'}>
-              
                 <button onClick={() => setSelectedFlight(null)} className={`absolute top-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200 ${isLtr ? 'right-4' : 'left-4'}`}><X size={20}/></button>
                 <h3 className="text-xl font-black text-gray-800 mb-1">{txt.modalInfoTitle}</h3>
                 <p className="text-sm text-gray-500 mb-6">{txt.modalInfoDesc}</p>
@@ -586,11 +706,10 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
          </div>
        )}
 
-       {/* --- نوار جستجوی پیشرفته (اصلاح شده: منطبق بر صفحه اصلی) --- */}
        <div className="bg-white p-6 rounded-[2rem] shadow-xl border border-gray-100 space-y-6 relative z-30" ref={dropdownRef}>
           <div className="flex flex-wrap items-center gap-3 relative z-50">
              
-             {/* 1. نوع سفر */}
+             {/* نوع سفر */}
              <div className="relative">
                 <TopFilterBtn label={txt[formData.tripType]} icon={ArrowRightLeft} active={activeDropdown === 'type'} onClick={() => setActiveDropdown(activeDropdown === 'type' ? null : 'type')} />
                 {activeDropdown === 'type' && (
@@ -604,7 +723,7 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
                 )}
              </div>
 
-             {/* 2. تعداد مسافر */}
+             {/* مسافران */}
              <div className="relative">
                   <TopFilterBtn label={`${formData.adults + formData.children} ${txt.passenger}`} icon={Users} active={activeDropdown === 'pax'} onClick={() => setActiveDropdown(activeDropdown === 'pax' ? null : 'pax')} />
                   {activeDropdown === 'pax' && (
@@ -624,7 +743,7 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
                   )}
              </div>
 
-             {/* 3. کلاس پرواز */}
+             {/* کلاس پروازی */}
              <div className="relative">
                   <TopFilterBtn label={txt[formData.flightClass]} icon={Plane} active={activeDropdown === 'class'} onClick={() => setActiveDropdown(activeDropdown === 'class' ? null : 'class')} />
                   {activeDropdown === 'class' && (
@@ -639,26 +758,27 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
 
           <div className={`bg-white rounded-[1.5rem] p-2 flex flex-col lg:flex-row items-stretch shadow-lg relative z-30 min-h-[80px] ${isLtr ? 'divide-y lg:divide-y-0 lg:divide-x divide-gray-100' : 'divide-y lg:divide-y-0 lg:divide-x lg:divide-x-reverse divide-gray-100'}`}>
              
-             {/* مبدا (هوشمند) */}
              <div className="flex-1 h-20 lg:h-auto">
                 <AirportSearch lang={lang} icon={Plane} value={formData.origin} onChange={(val)=>setFormData({...formData, origin: val})} placeholder={txt.originLabel} />
              </div>
              
-             {/* مقصد (همراه با دکمه شناور) */}
-             <div className="flex-1 h-20 lg:h-auto relative">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 lg:top-1/2 lg:right-0 lg:left-auto lg:translate-x-1/2 lg:-translate-y-1/2 z-20">
+             <div className="relative h-0 lg:h-auto lg:w-0 z-40 flex items-center justify-center">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                       <button 
                         type="button" 
                         onClick={() => setFormData(p => ({...p, origin: p.destination, destination: p.origin}))} 
-                        className="bg-white p-2 rounded-full text-gray-500 hover:bg-[#058B8C] hover:text-white transition shadow-md border border-gray-100"
+                        className="bg-white p-2.5 rounded-full text-gray-500 hover:bg-[#058B8C] hover:text-white transition shadow-md border border-gray-100 flex items-center justify-center"
+                        style={{ width: '40px', height: '40px' }}
                       >
-                        <ArrowRightLeft size={16} />
+                        <ArrowRightLeft size={18} />
                       </button>
-                   </div>
+                </div>
+             </div>
+
+             <div className="flex-1 h-20 lg:h-auto">
                  <AirportSearch lang={lang} icon={MapPin} value={formData.destination} onChange={(val)=>setFormData({...formData, destination: val})} placeholder={txt.destLabel} />
              </div>
 
-             {/* تاریخ رفت */}
              <div className={`flex-1 relative h-20 lg:h-auto ${isLtr ? 'border-l border-gray-100' : 'border-r border-gray-100'}`}>
                 <div onClick={()=>setActiveDropdown(activeDropdown==='date'?null:'date')} className="flex items-center gap-3 px-4 py-3 cursor-pointer h-full hover:bg-gray-50 rounded-xl transition">
                    <Calendar size={20} className="text-gray-400"/>
@@ -667,10 +787,9 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
                         <span className={`text-sm font-black ${formData.date?'text-gray-800':'text-gray-300'}`}>{formData.date || '---'}</span>
                    </div>
                 </div>
-                {activeDropdown==='date' && <GoogleCalendar lang={lang} selectedDate={formData.date} onSelect={(d)=>{setFormData({...formData, date:d});setActiveDropdown(null)}} onClose={()=>setActiveDropdown(null)} />}
+                {activeDropdown==='date' && <SmartCalendar lang={lang} selectedDate={formData.date} onSelect={(d)=>{setFormData({...formData, date:d});setActiveDropdown(null)}} onClose={()=>setActiveDropdown(null)} />}
              </div>
 
-             {/* تاریخ برگشت */}
              <div className={`flex-1 relative h-20 lg:h-auto ${isLtr ? 'border-l border-gray-100' : 'border-r border-gray-100'}`}>
                 <div onClick={()=>formData.tripType==='round_trip' && setActiveDropdown(activeDropdown==='date_ret'?null:'date_ret')} className={`flex items-center gap-3 px-4 py-3 cursor-pointer h-full ${formData.tripType==='round_trip'?'hover:bg-gray-50 rounded-xl transition':'opacity-50 cursor-not-allowed bg-gray-50 rounded-xl'}`}>
                    <Calendar size={20} className="text-gray-400"/>
@@ -679,10 +798,9 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
                         <span className={`text-sm font-black ${formData.returnDate?'text-gray-800':'text-gray-300'}`}>{formData.returnDate || (formData.tripType === 'round_trip' ? '---' : txt.one_way)}</span>
                    </div>
                 </div>
-                {activeDropdown==='date_ret' && <GoogleCalendar lang={lang} selectedDate={formData.returnDate} onSelect={(d)=>{setFormData({...formData, returnDate:d});setActiveDropdown(null)}} onClose={()=>setActiveDropdown(null)} />}
+                {activeDropdown==='date_ret' && <SmartCalendar lang={lang} selectedDate={formData.returnDate} onSelect={(d)=>{setFormData({...formData, returnDate:d});setActiveDropdown(null)}} onClose={()=>setActiveDropdown(null)} />}
              </div>
 
-             {/* دکمه جستجو */}
              <div className="p-2 lg:w-auto w-full h-20 lg:h-auto">
                 <button onClick={handleSearch} disabled={searchState==='loading'} className="w-full lg:w-auto h-full min-w-[140px] bg-[#f97316] text-white rounded-xl font-bold px-8 py-3 flex items-center justify-center gap-2 transition disabled:opacity-70 shadow-lg shadow-orange-200 active:scale-95 transform">
                    {searchState==='loading' ? <Loader2 className="animate-spin"/> : <><Search size={20}/> {lt.search}</>}
@@ -691,14 +809,13 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
           </div>
        </div>
 
-       {/* --- نتایج جستجو --- */}
        {searchState === 'results' && (
           <div className="space-y-4">
              {results.map(flight => (
                 <div key={flight.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:border-[#1e3a8a] transition-all flex flex-col md:flex-row items-center justify-between gap-6 hover:shadow-lg">
                    <div className="flex items-center gap-4 min-w-[200px]">
                       <div className="w-16 h-16 flex items-center justify-center bg-gray-50 rounded-lg p-2">
-                           <img src={`https://pics.avs.io/200/200/${flight.logo}.png`} alt={flight.airline} className="max-w-full max-h-full object-contain" onError={(e) => e.target.src = 'https://cdn-icons-png.flaticon.com/512/7893/7893979.png'}/>
+                          <img src={`https://pics.avs.io/200/200/${flight.logo}.png`} alt={flight.airline} className="max-w-full max-h-full object-contain" onError={(e) => e.target.src = 'https://cdn-icons-png.flaticon.com/512/7893/7893979.png'}/>
                       </div>
                       <div>
                          <div className="font-black text-xl" dir="ltr">{flight.dep} - {flight.arr}</div>
@@ -717,9 +834,7 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
        {searchState === 'empty' && <div className="text-center text-gray-400 py-10">{txt.noResult}</div>}
        {searchState === 'loading' && <div className="text-center text-gray-500 py-20 flex flex-col items-center gap-4"><Loader2 size={40} className="animate-spin text-[#058B8C]"/><span>{txt.searching}</span></div>}
 
-       {/* --- بخش تذکرات مهم قبل از پرواز --- */}
        <div className="bg-orange-50 border border-orange-100 rounded-3xl p-6 md:p-8 relative overflow-hidden">
-          {/* آیکون پس‌زمینه تزئینی */}
           <div className="absolute -top-6 -left-6 opacity-5 rotate-12">
              <AlertTriangle size={150} className="text-[#f97316]"/>
           </div>
@@ -736,7 +851,6 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
              </h3>
 
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* اگر زبان انگلیسی است، توضیحات انگلیسی نمایش بده، در غیر اینصورت دری و پشتو */}
                 {lang === 'en' ? (
                    <>
                     <div className="space-y-4">
@@ -767,7 +881,6 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
                    </>
                 ) : (
                    <>
-                    {/* ستون دری */}
                     <div className="space-y-4">
                        <div className="flex gap-3 items-start">
                           <div className="w-2 h-2 mt-2 rounded-full bg-[#058B8C] shrink-0"></div>
@@ -780,7 +893,7 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
                           <div className="w-2 h-2 mt-2 rounded-full bg-[#058B8C] shrink-0"></div>
                           <p className="text-sm text-gray-600 leading-relaxed">
                               <span className="font-bold text-gray-800 block mb-1">ویزا و مدارک:</span>
-                             مسئولیت کنترل ویزا و صحت مدارک به عهده مسافر می‌باشد.
+                              مسئولیت کنترل ویزا و صحت مدارک به عهده مسافر می‌باشد.
                           </p>
                        </div>
                        <div className="flex gap-3 items-start">
@@ -792,12 +905,11 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
                        </div>
                     </div>
 
-                    {/* ستون پشتو */}
                     <div className="space-y-4 text-right" dir="rtl">
                        <div className="flex gap-3 items-start">
                            <div className="w-2 h-2 mt-2 rounded-full bg-[#f97316] shrink-0"></div>
                           <p className="text-sm text-gray-600 leading-relaxed">
-                             <span className="font-bold text-gray-800 block mb-1">د پاسپورټ اعتبار:</span>
+                              <span className="font-bold text-gray-800 block mb-1">د پاسپورټ اعتبار:</span>
                              ډاډ ترلاسه کړئ چې ستاسو پاسپورټ لږترلږه <span className="text-red-500 font-bold">۶ میاشتې</span> اعتبار لري.
                           </p>
                        </div>

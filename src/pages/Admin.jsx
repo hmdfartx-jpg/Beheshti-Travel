@@ -5,6 +5,7 @@ import { Save, Loader2, Menu } from 'lucide-react';
 // Components
 import Login from '../components/admin/Login';
 import Sidebar from '../components/admin/Sidebar';
+import CustomAlert from '../components/admin/CustomAlert'; // <--- ایمپورت جدید
 
 // Tab Components
 import Dashboard from '../components/admin/Dashboard';
@@ -20,34 +21,49 @@ import FooterTab from '../components/admin/FooterTab';
 import ReportsTab from '../components/admin/ReportsTab';
 import AdminsTab from '../components/admin/AdminsTab';
 
-// اسکریپت ترجمه گوگل
 const GOOGLE_TRANSLATE_URL = "https://script.google.com/macros/s/AKfycbyz_6Zw2PmqIFv5LFlx0ebLF0j52o0tEpFZ7Lw-W_kqRLTajbLazK9H5Wgzjmo5bd895w/exec";
 
 export default function Admin({ news, bookings, settings, onUpdate, setPage, lang }) {
-  // --- بررسی وضعیت لاگین (با حافظه سشن) ---
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     const session = localStorage.getItem('admin_session');
     if (session) {
       const parsed = JSON.parse(session);
       const now = new Date().getTime();
-      // اگر هنوز منقضی نشده (۲۴ ساعت)
       if (now < parsed.expiry) return true;
     }
     return false;
   });
 
+  // --- مدیریت سیستم آلرت (پاپ‌آپ) ---
+  const [alertConfig, setAlertConfig] = useState({
+    open: false,
+    title: '',
+    message: '',
+    type: 'info', // success, danger, warning, info, copy
+    showCancel: false,
+    onConfirm: null,
+    confirmText: 'تایید',
+    cancelText: 'لغو'
+  });
+
+  // تابع کمکی برای نمایش آلرت
+  const showAlert = ({ title, message, type = 'info', showCancel = false, onConfirm = null, confirmText = 'تایید', cancelText = 'انصراف' }) => {
+    setAlertConfig({ open: true, title, message, type, showCancel, onConfirm, confirmText, cancelText });
+  };
+
+  const closeAlert = () => {
+    setAlertConfig(prev => ({ ...prev, open: false }));
+  };
+  // -----------------------------------
+
   const [activeTab, setActiveTab] = useState('dashboard');
-  
-  // State های داخلی برای مدیریت تغییرات قبل از ذخیره
   const [localSettings, setLocalSettings] = useState(settings || {});
   const [teamMembers, setTeamMembers] = useState([]);
   const [agencies, setAgencies] = useState([]);
-  
   const [hasChanges, setHasChanges] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  // سینک کردن پراپ‌ها با استیت داخلی
   useEffect(() => {
     if (settings) {
        setLocalSettings(settings);
@@ -56,7 +72,6 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
     }
   }, [settings]);
 
-  // --- تابع کمکی ترجمه ---
   const fetchTranslation = async (text, targetLang) => {
     if (!text) return "";
     try {
@@ -66,18 +81,25 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
         return json.text || text;
     } catch (error) {
         console.error("Translation Error:", error);
+        showAlert({ title: "خطا", message: "خطا در ترجمه خودکار", type: "warning" });
         return text;
     }
   };
 
-  // --- هندلرها ---
-
+  // --- هندلر خروج با آلرت کاستوم ---
   const handleLogout = () => {
-    if(window.confirm('آیا مطمئن هستید که می‌خواهید خارج شوید؟')) {
+    showAlert({
+      title: "خروج از پنل",
+      message: "آیا مطمئن هستید که می‌خواهید از حساب کاربری خارج شوید؟",
+      type: "warning",
+      showCancel: true,
+      confirmText: "بله، خارج شو",
+      onConfirm: () => {
         localStorage.removeItem('admin_session');
         setIsAuthenticated(false);
         setPage('home');
-    }
+      }
+    });
   };
 
   const handleSettingChange = (section, key, value) => {
@@ -103,7 +125,6 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
       setHasChanges(true);
   };
 
-  // هندلرهای تیم
   const handleAddMember = () => {
     setTeamMembers([...teamMembers, { id: Date.now(), name: '', role_dr: '', role_ps: '', role_en: '', image: '' }]);
     setHasChanges(true);
@@ -112,16 +133,28 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
     setTeamMembers(teamMembers.map(m => m.id === id ? { ...m, [key]: value } : m));
     setHasChanges(true);
   };
+  
+  // --- هندلر حذف عضو با آلرت کاستوم ---
   const handleDeleteMember = (id) => {
-    setTeamMembers(teamMembers.filter(m => m.id !== id));
-    setHasChanges(true);
+    showAlert({
+      title: "حذف عضو تیم",
+      message: "آیا از حذف این عضو اطمینان دارید؟ این عملیات قابل بازگشت نیست.",
+      type: "danger",
+      showCancel: true,
+      confirmText: "حذف کن",
+      onConfirm: () => {
+        setTeamMembers(teamMembers.filter(m => m.id !== id));
+        setHasChanges(true);
+        // showAlert({ title: "انجام شد", message: "عضو با موفقیت حذف شد", type: "success" }); // اختیاری
+      }
+    });
   };
+
   const handleTeamListUpdate = (newList) => {
       setTeamMembers(newList);
       setHasChanges(true);
   };
 
-  // هندلرهای نمایندگی
   const handleAddAgency = () => {
     setAgencies([...agencies, { id: Date.now(), city_dr: '', address_dr: '', phone: '' }]);
     setHasChanges(true);
@@ -130,17 +163,40 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
     setAgencies(agencies.map(a => a.id === id ? { ...a, [key]: value } : a));
     setHasChanges(true);
   };
+
+  // --- هندلر حذف نمایندگی با آلرت کاستوم ---
   const handleDeleteAgency = (id) => {
-    setAgencies(agencies.filter(a => a.id !== id));
-    setHasChanges(true);
+    showAlert({
+      title: "حذف نمایندگی",
+      message: "آیا از حذف این شعبه اطمینان دارید؟",
+      type: "danger",
+      showCancel: true,
+      confirmText: "بله، حذف شود",
+      onConfirm: () => {
+        setAgencies(agencies.filter(a => a.id !== id));
+        setHasChanges(true);
+      }
+    });
   };
 
   const handleStatusUpdate = async (id, status) => {
-    await supabase.from('bookings').update({ status }).eq('id', id);
-    if(onUpdate) onUpdate();
+    // برای تغییر وضعیت رزرو هم می‌توان تاییدیه گرفت
+    const statusText = status === 'confirmed' ? 'تایید' : 'رد';
+    const type = status === 'confirmed' ? 'success' : 'warning';
+    
+    showAlert({
+      title: `تغییر وضعیت به ${statusText}`,
+      message: `آیا می‌خواهید وضعیت این رزرو را به "${statusText}" تغییر دهید؟`,
+      type: type,
+      showCancel: true,
+      onConfirm: async () => {
+        await supabase.from('bookings').update({ status }).eq('id', id);
+        if(onUpdate) onUpdate();
+      }
+    });
   };
 
-  // ذخیره کلی تنظیمات در دیتابیس
+  // --- ذخیره تنظیمات با آلرت موفقیت/خطا ---
   const saveSettings = async () => {
     setLoading(true);
     const finalSettings = {
@@ -151,17 +207,26 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
     
     try {
         const { data } = await supabase.from('site_settings').select('id').order('id', { ascending: true });
-        // همیشه ردیف اول را آپدیت کن یا اگر نبود بساز
         if (data && data.length > 0) {
             await supabase.from('site_settings').update({ config: finalSettings }).eq('id', data[0].id);
         } else {
             await supabase.from('site_settings').insert([{ config: finalSettings }]);
         }
-        alert('تنظیمات با موفقیت ذخیره شد!');
+        
+        showAlert({
+          title: "ذخیره موفق",
+          message: "تمام تغییرات با موفقیت در سیستم ذخیره شدند.",
+          type: "success"
+        });
+        
         setHasChanges(false);
         if(onUpdate) onUpdate();
     } catch (err) {
-        alert('خطا در ذخیره سازی: ' + err.message);
+        showAlert({
+          title: "خطا در ذخیره",
+          message: "مشکلی در ذخیره اطلاعات پیش آمد: " + err.message,
+          type: "warning"
+        });
     } finally {
         setLoading(false);
     }
@@ -174,7 +239,13 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
   return (
     <div className="min-h-screen bg-[#F8FAFB] flex font-[Vazirmatn]" dir="rtl">
       
-      {/* سایدبار دسکتاپ */}
+      {/* کامپوننت پاپ‌آپ سراسری */}
+      <CustomAlert 
+        open={alertConfig.open} 
+        config={alertConfig} 
+        onClose={closeAlert} 
+      />
+
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
@@ -182,15 +253,8 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
         onLogout={handleLogout} 
       />
 
-      {/* بخش اصلی محتوا:
-         pt-20: دقیقاً ارتفاع ناوبار (80px).
-         px-4 md:px-8: فاصله از چپ و راست.
-         pb-8: فاصله از پایین.
-         md:mr-64: برای سایدبار راست چین.
-      */}
-      <main className="flex-1 md:mr-64 px-4 md:px-8 pb-8 overflow-x-hidden transition-all pt-10"> 
+      <main className="flex-1 md:mr-64 px-4 md:px-8 pb-8 overflow-x-hidden transition-all pt-20"> 
         
-        {/* هدر موبایل */}
         <div className="md:hidden mb-6 flex items-center justify-between pt-4">
            <h1 className="font-black text-gray-800 text-xl">پنل مدیریت</h1>
            <button onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)} className="p-2 bg-white shadow rounded-lg text-[#058B8C]">
@@ -198,7 +262,6 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
            </button>
         </div>
 
-        {/* دکمه ذخیره شناور */}
         {hasChanges && (
             <div className="fixed bottom-6 left-6 z-50 animate-in slide-in-from-bottom-10">
                 <button 
@@ -212,47 +275,46 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
             </div>
         )}
 
-        {/* کانتینر تب‌ها:
-           w-full و max-w-7xl برای یکسان‌سازی عرض تمام تب‌ها
-        */}
         <div className="w-full max-w-7xl mx-auto pb-20">
-            {activeTab === 'dashboard' && <Dashboard bookings={bookings} news={news} />}
-            {activeTab === 'bookings' && <BookingsTab bookings={bookings} onStatusUpdate={handleStatusUpdate} />}
-            
-            {activeTab === 'hero' && <HeroTab settings={localSettings} onUpdate={handleSettingChange} fetchTranslation={fetchTranslation} />}
-            {activeTab === 'services' && <ServicesTab services={localSettings.services} onServiceUpdate={handleServicesChange} fetchTranslation={fetchTranslation} />}
-            {activeTab === 'weather' && <WeatherTab cities={localSettings.weather_cities} onUpdateCities={handleWeatherUpdate} />}
-            {activeTab === 'news' && <NewsTab news={news} onUpdate={onUpdate} fetchTranslation={fetchTranslation} />}
-            
-            {activeTab === 'about' && (
-                <AboutTab 
-                  settings={localSettings} 
-                  team={teamMembers} 
-                  onUpdate={handleSettingChange}
-                  onTeamAdd={handleAddMember}
-                  onTeamChange={handleTeamChange}
-                  onTeamDelete={handleDeleteMember}
-                  onTeamListUpdate={handleTeamListUpdate}
-                  fetchTranslation={fetchTranslation}
-                />
-            )}
-            {activeTab === 'contact_branches' && (
-                <ContactTab 
-                  settings={localSettings} 
-                  agencies={agencies}
-                  onUpdate={handleSettingChange}
-                  onAgencyAdd={handleAddAgency}
-                  onAgencyChange={handleAgencyChange}
-                  onAgencyDelete={handleDeleteAgency}
-                  fetchTranslation={fetchTranslation}
-                />
-            )}
+            <div className="mt-4">
+                {activeTab === 'dashboard' && <Dashboard bookings={bookings} news={news} />}
+                {activeTab === 'bookings' && <BookingsTab bookings={bookings} onStatusUpdate={handleStatusUpdate} />}
+                
+                {activeTab === 'hero' && <HeroTab settings={localSettings} onUpdate={handleSettingChange} fetchTranslation={fetchTranslation} showAlert={showAlert} />}
+                {activeTab === 'services' && <ServicesTab services={localSettings.services} onServiceUpdate={handleServicesChange} fetchTranslation={fetchTranslation} />}
+                {activeTab === 'weather' && <WeatherTab cities={localSettings.weather_cities} onUpdateCities={handleWeatherUpdate} showAlert={showAlert} />}
+                {activeTab === 'news' && <NewsTab news={news} onUpdate={onUpdate} fetchTranslation={fetchTranslation} showAlert={showAlert} />}
+                
+                {activeTab === 'about' && (
+                    <AboutTab 
+                      settings={localSettings} 
+                      team={teamMembers} 
+                      onUpdate={handleSettingChange}
+                      onTeamAdd={handleAddMember}
+                      onTeamChange={handleTeamChange}
+                      onTeamDelete={handleDeleteMember}
+                      onTeamListUpdate={handleTeamListUpdate}
+                      fetchTranslation={fetchTranslation}
+                    />
+                )}
+                {activeTab === 'contact_branches' && (
+                    <ContactTab 
+                      settings={localSettings} 
+                      agencies={agencies}
+                      onUpdate={handleSettingChange}
+                      onAgencyAdd={handleAddAgency}
+                      onAgencyChange={handleAgencyChange}
+                      onAgencyDelete={handleDeleteAgency}
+                      fetchTranslation={fetchTranslation}
+                    />
+                )}
 
-            {activeTab === 'navbar' && <NavbarTab settings={localSettings} onUpdate={handleSettingChange} />}
-            {activeTab === 'footer' && <FooterTab settings={localSettings} onUpdate={handleSettingChange} fetchTranslation={fetchTranslation} />}
+                {activeTab === 'navbar' && <NavbarTab settings={localSettings} onUpdate={handleSettingChange} />}
+                {activeTab === 'footer' && <FooterTab settings={localSettings} onUpdate={handleSettingChange} fetchTranslation={fetchTranslation} />}
 
-            {activeTab === 'reports' && <ReportsTab />}
-            {activeTab === 'admins' && <AdminsTab />}
+                {activeTab === 'reports' && <ReportsTab />}
+                {activeTab === 'admins' && <AdminsTab />}
+            </div>
         </div>
 
       </main>
