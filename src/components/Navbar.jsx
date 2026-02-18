@@ -1,12 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Ticket, FileText, GraduationCap, Package, Search, Menu, X, Globe, Megaphone, User, ChevronDown, Check, Info, Phone } from 'lucide-react';
 
-export default function Navbar({ lang, setLang, page, setPage, settings }) {
+export default function Navbar({ lang, setLang, settings }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [isAboutMenuOpen, setIsAboutMenuOpen] = useState(false);
   const langMenuRef = useRef(null);
   const aboutMenuRef = useRef(null);
+
+  // هوک‌های روتینگ
+  const location = useLocation();
+  const navigate = useNavigate();
+  const currentPath = location.pathname;
 
   // بستن منوها وقتی بیرون از آن‌ها کلیک شود
   useEffect(() => {
@@ -36,18 +42,27 @@ export default function Navbar({ lang, setLang, page, setPage, settings }) {
 
   const alignClass = lang === 'dr' || lang === 'ps' ? 'text-right' : 'text-left';
 
-  // هندل کردن کلیک روی منوی آبشاری
+  // هندل کردن کلیک روی منوی آبشاری (هدایت به صفحه درباره ما)
   const handleNavClick = (sectionId) => {
-    setPage('about');
     setIsAboutMenuOpen(false);
     setIsMobileMenuOpen(false);
     
-    setTimeout(() => {
+    // اول به صفحه درباره ما می‌رویم
+    if (currentPath !== '/about') {
+        navigate('/about');
+        // اسکرول با تاخیر برای لود شدن صفحه
+        setTimeout(() => {
+            const element = document.getElementById(sectionId);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+            }
+        }, 300);
+    } else {
         const element = document.getElementById(sectionId);
         if (element) {
             element.scrollIntoView({ behavior: 'smooth' });
         }
-    }, 100);
+    }
   };
 
   return (
@@ -56,11 +71,11 @@ export default function Navbar({ lang, setLang, page, setPage, settings }) {
         <div className="flex justify-between items-center h-20">
           
           {/* لوگو و نام برند */}
-          <div 
-            onClick={() => setPage('home')} 
+          <Link 
+            to="/" 
             className="flex items-center gap-3 cursor-pointer group"
           >
-            {/* لوگو با سایز جدید h-10 (افزایش 25 درصدی نسبت به h-8) */}
+            {/* لوگو با سایز جدید h-10 */}
             {logoSrc ? (
                 <img 
                   src={logoSrc} 
@@ -72,38 +87,43 @@ export default function Navbar({ lang, setLang, page, setPage, settings }) {
                   {settings?.navbar?.logoText || 'B'}
                 </div>
             )}
-          </div>
+          </Link>
 
-          {/* منوی دسکتاپ - اصلاح ارتفاع (py-2) برای هم‌اندازه شدن با دکمه زبان */}
+          {/* منوی دسکتاپ */}
           <div className="hidden xl:flex items-center gap-1 bg-white/10 p-1 rounded-2xl backdrop-blur-sm">
-            <button onClick={() => setPage('home')} className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${page === 'home' ? 'bg-white text-[#058B8C] shadow-sm' : 'text-white hover:bg-white/10'}`}>
-                <Home size={18} className={page === 'home' ? 'text-[#f97316]' : 'text-white/80'} /> 
+            <Link to="/" className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${currentPath === '/' ? 'bg-white text-[#058B8C] shadow-sm' : 'text-white hover:bg-white/10'}`}>
+                <Home size={18} className={currentPath === '/' ? 'text-[#f97316]' : 'text-white/80'} /> 
                 {getText('خانه', 'کور', 'Home')}
-            </button>
+            </Link>
 
-            <button onClick={() => setPage('tickets')} className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${page === 'tickets' ? 'bg-white text-[#058B8C] shadow-sm' : 'text-white hover:bg-white/10'}`}>
-                <Ticket size={18} className={page === 'tickets' ? 'text-[#f97316]' : 'text-white/80'} /> {getText('تکت', 'ټکټ', 'Tickets')}
-            </button>
-            <button onClick={() => setPage('visa')} className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${page.startsWith('visa') ? 'bg-white text-[#058B8C] shadow-sm' : 'text-white hover:bg-white/10'}`}>
-                <FileText size={18} className={page.startsWith('visa') ? 'text-[#f97316]' : 'text-white/80'} /> {getText('ویزا', 'ویزه', 'Visas')}
-            </button>
-            <button onClick={() => setPage('news')} className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${page === 'news' ? 'bg-white text-[#058B8C] shadow-sm' : 'text-white hover:bg-white/10'}`}>
-                <Megaphone size={18} className={page === 'news' ? 'text-[#f97316]' : 'text-white/80'} /> {getText('اخبار', 'خبرونه', 'News')}
-            </button>
-            <button onClick={() => setPage('scholarship')} className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${page === 'scholarship' ? 'bg-white text-[#058B8C] shadow-sm' : 'text-white hover:bg-white/10'}`}>
-                <GraduationCap size={18} className={page === 'scholarship' ? 'text-[#f97316]' : 'text-white/80'} /> {getText('بورسیه', 'بورسونه', 'Scholarships')}
-            </button>
-            <button onClick={() => setPage('cargo')} className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${page === 'cargo' ? 'bg-white text-[#058B8C] shadow-sm' : 'text-white hover:bg-white/10'}`}>
-                <Package size={18} className={page === 'cargo' ? 'text-[#f97316]' : 'text-white/80'} /> {getText('کارگو', 'کارګو', 'Cargo')}
-            </button>
-            <button onClick={() => setPage('tracking')} className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${page === 'tracking' ? 'bg-white text-[#058B8C] shadow-sm' : 'text-white hover:bg-white/10'}`}>
-                <Search size={18} className={page === 'tracking' ? 'text-[#f97316]' : 'text-white/80'} /> {getText('پیگیری', 'تعقیب', 'Tracking')}
-            </button>
+            <Link to="/tickets" className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${currentPath === '/tickets' ? 'bg-white text-[#058B8C] shadow-sm' : 'text-white hover:bg-white/10'}`}>
+                <Ticket size={18} className={currentPath === '/tickets' ? 'text-[#f97316]' : 'text-white/80'} /> {getText('تکت', 'ټکټ', 'Tickets')}
+            </Link>
+            
+            <Link to="/visa" className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${currentPath.startsWith('/visa') ? 'bg-white text-[#058B8C] shadow-sm' : 'text-white hover:bg-white/10'}`}>
+                <FileText size={18} className={currentPath.startsWith('/visa') ? 'text-[#f97316]' : 'text-white/80'} /> {getText('ویزا', 'ویزه', 'Visas')}
+            </Link>
+            
+            <Link to="/news" className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${currentPath === '/news' ? 'bg-white text-[#058B8C] shadow-sm' : 'text-white hover:bg-white/10'}`}>
+                <Megaphone size={18} className={currentPath === '/news' ? 'text-[#f97316]' : 'text-white/80'} /> {getText('اخبار', 'خبرونه', 'News')}
+            </Link>
+            
+            <Link to="/scholarship" className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${currentPath === '/scholarship' ? 'bg-white text-[#058B8C] shadow-sm' : 'text-white hover:bg-white/10'}`}>
+                <GraduationCap size={18} className={currentPath === '/scholarship' ? 'text-[#f97316]' : 'text-white/80'} /> {getText('بورسیه', 'بورسونه', 'Scholarships')}
+            </Link>
+            
+            <Link to="/cargo" className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${currentPath === '/cargo' ? 'bg-white text-[#058B8C] shadow-sm' : 'text-white hover:bg-white/10'}`}>
+                <Package size={18} className={currentPath === '/cargo' ? 'text-[#f97316]' : 'text-white/80'} /> {getText('کارگو', 'کارګو', 'Cargo')}
+            </Link>
+            
+            <Link to="/tracking" className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${currentPath === '/tracking' ? 'bg-white text-[#058B8C] shadow-sm' : 'text-white hover:bg-white/10'}`}>
+                <Search size={18} className={currentPath === '/tracking' ? 'text-[#f97316]' : 'text-white/80'} /> {getText('پیگیری', 'تعقیب', 'Tracking')}
+            </Link>
             
             {/* منوی آبشاری درباره ما */}
             <div className="relative" ref={aboutMenuRef}>
-                <button onClick={() => setIsAboutMenuOpen(!isAboutMenuOpen)} className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${page === 'about' ? 'bg-white text-[#058B8C] shadow-sm' : 'text-white hover:bg-white/10'}`}>
-                    <Info size={18} className={page === 'about' ? 'text-[#f97316]' : 'text-white/80'} /> 
+                <button onClick={() => setIsAboutMenuOpen(!isAboutMenuOpen)} className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${currentPath === '/about' ? 'bg-white text-[#058B8C] shadow-sm' : 'text-white hover:bg-white/10'}`}>
+                    <Info size={18} className={currentPath === '/about' ? 'text-[#f97316]' : 'text-white/80'} /> 
                     {getText('درباره ما', 'زموږ په اړه', 'About Us')}
                     <ChevronDown size={14} className={`transition-transform duration-200 ${isAboutMenuOpen ? 'rotate-180' : ''}`}/>
                 </button>
@@ -132,7 +152,12 @@ export default function Navbar({ lang, setLang, page, setPage, settings }) {
                 className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors border border-transparent hover:border-white/30"
               >
                 <Globe size={18} />
-                <span>{getText('دری', 'پښتو', 'EN')}</span>
+                {/* اصلاح فونت اینجا: 
+                   چک می‌کنیم اگر زبان انگلیسی است، برای نمایش متن زبان فعلی (اگر دری یا پشتو باشد) فونت وزیر را اعمال کن
+                */}
+                <span className={lang !== 'en' ? 'font-[Vazirmatn]' : ''}>
+                    {getText('دری', 'پښتو', 'EN')}
+                </span>
                 <ChevronDown size={14} className={`transition-transform duration-200 ${isLangMenuOpen ? 'rotate-180' : ''}`} />
               </button>
 
@@ -142,17 +167,19 @@ export default function Navbar({ lang, setLang, page, setPage, settings }) {
                     onClick={() => {setLang('dr'); setIsLangMenuOpen(false)}} 
                     className={`w-full px-4 py-3 hover:bg-blue-50 text-sm font-bold text-gray-700 flex justify-between items-center border-b border-gray-50 ${alignClass}`}
                   >
-                      <span>دری</span>
+                      {/* اضافه کردن کلاس font-[Vazirmatn] برای اجبار فونت فارسی */}
+                      <span className="font-[Vazirmatn]">دری</span>
                       {lang === 'dr' && <Check size={14} className="text-[#058B8C]"/>}
                   </button>
                   <button 
                     onClick={() => {setLang('ps'); setIsLangMenuOpen(false)}} 
                     className={`w-full px-4 py-3 hover:bg-blue-50 text-sm font-bold text-gray-700 flex justify-between items-center border-b border-gray-50 ${alignClass}`}
                   >
-                      <span>پښتو</span>
+                      {/* اضافه کردن کلاس font-[Vazirmatn] برای اجبار فونت پشتو */}
+                      <span className="font-[Vazirmatn]">پښتو</span>
                       {lang === 'ps' && <Check size={14} className="text-[#058B8C]"/>}
                   </button>
-                   <button 
+                  <button 
                     onClick={() => {setLang('en'); setIsLangMenuOpen(false)}} 
                     className={`w-full px-4 py-3 hover:bg-blue-50 text-sm font-bold text-gray-700 flex justify-between items-center ${alignClass}`}
                   >
@@ -164,15 +191,13 @@ export default function Navbar({ lang, setLang, page, setPage, settings }) {
             </div>
 
             {/* دکمه ادمین/ورود */}
-            <button 
-              onClick={() => setPage('admin')}
-              // کلاس‌ها دقیقاً مشابه دکمه زبان تنظیم شدند (ارتفاع، رنگ، حاشیه)
+            <Link 
+              to="/admin"
               className="flex items-center justify-center px-3 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors border border-transparent hover:border-white/30"
               title={getText('حساب کاربری', 'خپل حساب', 'Account')}
             >
-              {/* سایز آیکون هم ۱۸ شد تا با کره زمین دکمه زبان برابر شود */}
               <User size={18} />
-            </button>
+            </Link>
           </div>
 
           {/* دکمه همبرگری موبایل */}
@@ -185,7 +210,10 @@ export default function Navbar({ lang, setLang, page, setPage, settings }) {
               }}
               className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/10 text-white font-black text-xs hover:bg-white/20"
             >
-               {getText('Fa', 'Ps', 'EN')}
+               {/* اصلاح فونت دکمه تغییر زبان در موبایل */}
+               <span className={lang !== 'en' ? 'font-[Vazirmatn]' : ''}>
+                  {getText('Fa', 'Ps', 'EN')}
+               </span>
             </button>
             <button 
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -201,22 +229,43 @@ export default function Navbar({ lang, setLang, page, setPage, settings }) {
       {isMobileMenuOpen && (
         <div className="xl:hidden absolute top-full left-0 w-full bg-white border-t border-gray-100 shadow-xl animate-in slide-in-from-top-5">
           <div className="p-4 space-y-2">
-            <button onClick={() => {setPage('home'); setIsMobileMenuOpen(false);}} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50"><Home size={20} /> {getText('خانه', 'کور', 'Home')}</button>
+            
+            <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50">
+                <Home size={20} /> {getText('خانه', 'کور', 'Home')}
+            </Link>
             
             <div className="bg-gray-50 rounded-xl p-2">
                 <div className="text-xs font-bold text-gray-400 px-2 mb-1">{getText('درباره ما', 'زموږ په اړه', 'About')}</div>
-                <button onClick={() => handleNavClick('about')} className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-bold text-gray-600 hover:bg-white"><Info size={18} /> {getText('درباره شرکت', 'د شرکت په اړه', 'Company Info')}</button>
-                <button onClick={() => handleNavClick('contact')} className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-bold text-gray-600 hover:bg-white"><Phone size={18} /> {getText('تماس با ما', 'موږ سره اړیکه', 'Contact Us')}</button>
+                <button onClick={() => handleNavClick('about')} className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-bold text-gray-600 hover:bg-white">
+                    <Info size={18} /> {getText('درباره شرکت', 'د شرکت په اړه', 'Company Info')}
+                </button>
+                <button onClick={() => handleNavClick('contact')} className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-bold text-gray-600 hover:bg-white">
+                    <Phone size={18} /> {getText('تماس با ما', 'موږ سره اړیکه', 'Contact Us')}
+                </button>
             </div>
 
-            <button onClick={() => {setPage('tickets'); setIsMobileMenuOpen(false);}} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50"><Ticket size={20} /> {getText('تکت', 'ټکټ', 'Tickets')}</button>
-            <button onClick={() => {setPage('visa'); setIsMobileMenuOpen(false);}} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50"><FileText size={20} /> {getText('ویزا', 'ویزه', 'Visas')}</button>
-            <button onClick={() => {setPage('news'); setIsMobileMenuOpen(false);}} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50"><Megaphone size={20} /> {getText('اخبار', 'خبرونه', 'News')}</button>
-            <button onClick={() => {setPage('scholarship'); setIsMobileMenuOpen(false);}} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50"><GraduationCap size={20} /> {getText('بورسیه', 'بورسونه', 'Scholarships')}</button>
-            <button onClick={() => {setPage('cargo'); setIsMobileMenuOpen(false);}} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50"><Package size={20} /> {getText('کارگو', 'کارګو', 'Cargo')}</button>
-            <button onClick={() => {setPage('tracking'); setIsMobileMenuOpen(false);}} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50"><Search size={20} /> {getText('پیگیری', 'تعقیب', 'Tracking')}</button>
+            <Link to="/tickets" onClick={() => setIsMobileMenuOpen(false)} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50">
+                <Ticket size={20} /> {getText('تکت', 'ټکټ', 'Tickets')}
+            </Link>
+            <Link to="/visa" onClick={() => setIsMobileMenuOpen(false)} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50">
+                <FileText size={20} /> {getText('ویزا', 'ویزه', 'Visas')}
+            </Link>
+            <Link to="/news" onClick={() => setIsMobileMenuOpen(false)} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50">
+                <Megaphone size={20} /> {getText('اخبار', 'خبرونه', 'News')}
+            </Link>
+            <Link to="/scholarship" onClick={() => setIsMobileMenuOpen(false)} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50">
+                <GraduationCap size={20} /> {getText('بورسیه', 'بورسونه', 'Scholarships')}
+            </Link>
+            <Link to="/cargo" onClick={() => setIsMobileMenuOpen(false)} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50">
+                <Package size={20} /> {getText('کارگو', 'کارګو', 'Cargo')}
+            </Link>
+            <Link to="/tracking" onClick={() => setIsMobileMenuOpen(false)} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50">
+                <Search size={20} /> {getText('پیگیری', 'تعقیب', 'Tracking')}
+            </Link>
             <div className="h-px bg-gray-100 my-2"></div>
-            <button onClick={() => {setPage('admin'); setIsMobileMenuOpen(false);}} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50"><User size={20} /> {getText('حساب کاربری', 'خپل حساب', 'Account')}</button>
+            <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-50">
+                <User size={20} /> {getText('حساب کاربری', 'خپل حساب', 'Account')}
+            </Link>
           </div>
         </div>
       )}
