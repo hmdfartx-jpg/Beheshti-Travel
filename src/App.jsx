@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { translations } from './constants/translations';
 import { supabase } from './lib/supabase';
 
@@ -20,38 +20,83 @@ import Admin from './pages/Admin';
 import News from './pages/News';
 import About from './pages/About';
 
-// تنظیمات پیش‌فرض برای جلوگیری از ارور قبل از لود شدن دیتابیس
+// تنظیمات پیش‌فرض کامل (برای جلوگیری از ارور قبل از لود شدن دیتابیس)
 const DEFAULT_SETTINGS = {
-  general: { brandName: "بهشتی تراول", logoText: "B" },
+  general: { 
+    brandName: "بهشتی تراول", 
+    logoText: "B" 
+  },
   hero: { 
-    title: "", 
-    subtitle: "", 
-    
-    // فیلدهای دوزبانه/سه‌زبانه
     title_dr: "سفر آگاهانه، آینده درخشان", 
     title_ps: "پوه سفر، روښانه راتلونکې",
     title_en: "Conscious Travel, Bright Future",
-
     subtitle_dr: "از کابل تا دورترین نقاط جهان، ما همراه شما هستیم.",
     subtitle_ps: "له کابل څخه تر نړۍ لرې ځایونو پورې، موږ ستاسو سره یو.",
     subtitle_en: "From Kabul to the farthest corners of the world, we are with you.",
-
-    // عکس پیش‌فرض (تک عکس)
     image: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05",
-    // آرایه تصاویر اسلایدر
     images: [
       "https://images.unsplash.com/photo-1436491865332-7a61a109cc05",
       "https://images.unsplash.com/photo-1500835556837-99ac94a94552",
       "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1"
     ]
   },
-  stats: { customers: 1200, flights: 3500, visas: 850, experience: 10 },
+  stats: { 
+    customers: 1200, 
+    flights: 3500, 
+    visas: 850, 
+    experience: 10 
+  },
   services: [
-    { icon: 'Plane', title: 'تکت طیاره', title_en: 'Flight Ticket', desc: 'رزرو سریع و ارزان پروازهای داخلی و خارجی', desc_en: 'Fast and cheap booking of domestic and international flights', color: 'blue' },
-    { icon: 'FileText', title: 'اخذ ویزا', title_en: 'Visa Services', desc: 'خدمات ویزای ایران، پاکستان، ترکیه و روسیه', desc_en: 'Visa services for Iran, Pakistan, Turkey, and Russia', color: 'orange' },
-    { icon: 'GraduationCap', title: 'بورسیه تحصیلی', title_en: 'Scholarships', desc: 'مشاوره رایگان و اخذ پذیرش از دانشگاه‌ها', desc_en: 'Free consultation and admission from universities', color: 'green' },
-    { icon: 'Package', title: 'خدمات باربری', title_en: 'Cargo Services', desc: 'ارسال امانات و بارهای تجاری به سراسر جهان', desc_en: 'Sending consignments and commercial cargo worldwide', color: 'purple' },
-    { icon: 'Hotel', title: 'رزرو هتل', title_en: 'Hotel Booking', desc: 'اقامت راحت در بهترین هتل‌های جهان', desc_en: 'Comfortable stay in the best hotels in the world', color: 'teal' },
+    { 
+      icon: 'Plane', 
+      title: 'تکت طیاره', 
+      title_en: 'Flight Ticket', 
+      title_ps: 'د الوتکې ټکټ',
+      desc: 'رزرو سریع و ارزان پروازهای داخلی و خارجی', 
+      desc_en: 'Fast and cheap booking of domestic and international flights', 
+      desc_ps: 'د کورنیو او بهرنیو الوتنو ګړندی او ارزانه بکینګ',
+      color: '#3b82f6' 
+    },
+    { 
+      icon: 'FileText', 
+      title: 'اخذ ویزا', 
+      title_en: 'Visa Services', 
+      title_ps: 'د ویزې خدمات',
+      desc: 'خدمات ویزای ایران، پاکستان، ترکیه و روسیه', 
+      desc_en: 'Visa services for Iran, Pakistan, Turkey, and Russia', 
+      desc_ps: 'د ایران، پاکستان، ترکیې او روسیې د ویزې خدمات',
+      color: '#f97316' 
+    },
+    { 
+      icon: 'GraduationCap', 
+      title: 'بورسیه تحصیلی', 
+      title_en: 'Scholarships', 
+      title_ps: 'تحصیلي بورسونه',
+      desc: 'مشاوره رایگان و اخذ پذیرش از دانشگاه‌ها', 
+      desc_en: 'Free consultation and admission from universities', 
+      desc_ps: 'وړیا مشوره او د پوهنتونونو داخلې اخیستل',
+      color: '#22c55e' 
+    },
+    { 
+      icon: 'Package', 
+      title: 'خدمات باربری', 
+      title_en: 'Cargo Services', 
+      title_ps: 'د کارګو خدمات',
+      desc: 'ارسال امانات و بارهای تجاری به سراسر جهان', 
+      desc_en: 'Sending consignments and commercial cargo worldwide', 
+      desc_ps: 'نړۍ ته د سوداګریزو بارونو او امانتونو لیږل',
+      color: '#a855f7' 
+    },
+    { 
+      icon: 'Hotel', 
+      title: 'رزرو هتل', 
+      title_en: 'Hotel Booking', 
+      title_ps: 'د هوټل بکینګ',
+      desc: 'اقامت راحت در بهترین هتل‌های جهان', 
+      desc_en: 'Comfortable stay in the best hotels in the world', 
+      desc_ps: 'د نړۍ په غوره هوټلونو کې آرام استوګنه',
+      color: '#14b8a6' 
+    },
   ],
   weather_cities: [
     { id: 1, name: 'Kabul', faName: 'کابل', countryName: 'افغانستان', timezone: 'Asia/Kabul', image: 'https://images.unsplash.com/photo-1626016335087-433b24855dd4' },
@@ -72,6 +117,7 @@ const DEFAULT_SETTINGS = {
     facebook: "",
     map_link: "",
     copyright_dr: "تمام حقوق برای بهشتی تراول محفوظ است © ۲۰۲۴",
+    copyright_ps: "ټول حقوق د بهشتي سفر لپاره خوندي دي © ۲۰۲۴",
     copyright_en: "All rights reserved © 2024 Beheshti Travel"
   },
   useful_links: [
@@ -82,12 +128,10 @@ const DEFAULT_SETTINGS = {
     logo_en: ""  
   },
   about: {
-    title: "سفر رویایی شما از اینجا آغاز می‌شود",
     title_dr: "سفر رویایی شما از اینجا آغاز می‌شود",
     title_ps: "ستاسو خوب سفر له دې ځایه پیلیږي",
     title_en: "Your Dream Journey Begins Here",
     
-    desc: "ما در بهشتی تراول با بیش از ۱۰ سال تجربه، متعهد به ارائه بهترین خدمات مسافرتی هستیم...",
     desc_dr: "ما در بهشتی تراول با بیش از ۱۰ سال تجربه، متعهد به ارائه بهترین خدمات مسافرتی هستیم...",
     desc_ps: "موږ په بهشتي ټراول کې د ۱۰ کلونو تجربې سره ژمن یو چې غوره خدمات وړاندې کړو...",
     desc_en: "At Beheshti Travel, with over 10 years of experience, we are committed to providing the best travel services...",
@@ -114,31 +158,28 @@ const DEFAULT_SETTINGS = {
 };
 
 export default function App() {
-  // زبان پیش‌فرض: انگلیسی
-  const [lang, setLang] = useState('en');
-  
+  const [lang, setLang] = useState('en'); // زبان پیش‌فرض
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [news, setNews] = useState([]);
   const [bookings, setBookings] = useState([]);
-  
-  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // استفاده از هوک location برای اسکرول به بالا در تغییر صفحه
   const location = useLocation();
-
+  const navigate = useNavigate();
   const t = translations[lang] || translations.dr;
 
+  // اسکرول به بالا در تغییر مسیر
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
+  // تابع دریافت داده‌ها از دیتابیس
   const fetchData = async () => {
     try {
       setLoading(true);
       
       // 1. دریافت تنظیمات سایت
-      let { data: settingsData, error: settingsError } = await supabase
+      let { data: settingsData } = await supabase
         .from('site_settings')
         .select('*')
         .limit(1);
@@ -160,6 +201,7 @@ export default function App() {
            navbar: { ...prev.navbar, ...dbConfig.navbar }
         }));
       } else {
+        // ایجاد تنظیمات پیش‌فرض اگر وجود نداشت
         await supabase.from('site_settings').insert([{ config: DEFAULT_SETTINGS }]);
       }
 
@@ -180,34 +222,37 @@ export default function App() {
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
-      // پایان عملیات لودینگ
       setLoading(false);
     }
   };
 
+  // دریافت داده‌ها هنگام لود شدن سایت
   useEffect(() => {
     fetchData();
   }, []);
 
-  // شرط نمایش لودینگ
   if (loading) {
     return <LoadingScreen />;
   }
 
-  // بررسی اینکه آیا در صفحه ادمین هستیم (برای مخفی کردن هدر و فوتر)
-const isAdminPage = location.pathname.startsWith('/admin');
+  // بررسی آیا در صفحه ادمین هستیم؟ (برای حذف هدر/فوتر یا تنظیم استایل)
+  const isAdminPage = location.pathname.startsWith('/admin');
 
   return (
-    <div className={`min-h-screen flex flex-col font-[Vazirmatn] ${lang === 'en' ? 'font-sans' : ''}`} dir={lang === 'en' ? 'ltr' : 'rtl'}>      
-
-        <Navbar 
+    <div className={`min-h-screen flex flex-col font-[Vazirmatn] ${lang === 'en' ? 'font-sans' : ''}`} dir={lang === 'en' ? 'ltr' : 'rtl'}>
+      
+      {/* ناوبار در تمام صفحات (حتی ادمین) نمایش داده می‌شود */}
+      <Navbar 
         lang={lang} 
         setLang={setLang} 
         settings={settings} 
       />
-    
 
-      <main className="flex-1 pt-24 pb-12">
+      {/* تنظیم فاصله محتوا از ناوبار:
+         - اگر صفحه ادمین باشد: هیچ پدینگی نده (چون Admin.jsx خودش مدیریت می‌کند)
+         - اگر صفحه عادی باشد: pt-24 (فاصله از بالا) و pb-12 (فاصله از پایین)
+      */}
+      <main className={`flex-1 ${isAdminPage ? '' : 'pt-24 pb-12'}`}>
         <Routes>
           <Route path="/" element={
             <Home 
@@ -242,15 +287,19 @@ const isAdminPage = location.pathname.startsWith('/admin');
 
           <Route path="/about" element={<About t={t} lang={lang} settings={settings} />} />
           
+          {/* صفحه ادمین */}
           <Route path="/admin" element={
             <Admin 
               t={t} 
-              user={user} 
               news={news} 
               bookings={bookings} 
               settings={settings} 
               onUpdate={fetchData}
               lang={lang} 
+              setPage={(page) => {
+                // برای پشتیبانی از دکمه خروج که از setPage استفاده می‌کرد
+                if (page === 'home') navigate('/');
+              }}
             />
           } />
           
@@ -270,6 +319,7 @@ const isAdminPage = location.pathname.startsWith('/admin');
         </Routes>
       </main>
 
+      {/* فوتر و دکمه واتساپ فقط در صفحات غیر ادمین */}
       {!isAdminPage && (
         <>
           <WhatsAppButton t={t} />

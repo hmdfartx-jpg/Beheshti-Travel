@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Layout, Ticket, Home, Info, Settings, FileText, Users, ChevronDown, ChevronLeft, LogOut, Megaphone } from 'lucide-react';
+import { Layout, Ticket, Home, Info, Settings, FileText, Users, ChevronDown, ChevronLeft, LogOut } from 'lucide-react';
 
-export default function Sidebar({ activeTab, setActiveTab, setPage }) {
+export default function Sidebar({ activeTab, setActiveTab, onLogout }) {
   const [expandedMenus, setExpandedMenus] = useState({
-    home: true,
+    home: false,
     about: false,
     settings: false
   });
@@ -47,80 +47,48 @@ export default function Sidebar({ activeTab, setActiveTab, setPage }) {
   );
 
   return (
-    <aside className="w-64 bg-white border-l border-gray-100 hidden md:flex flex-col fixed h-full z-10 overflow-y-auto pb-20 scrollbar-hide">
-      <div className="p-6 border-b border-gray-50 flex items-center gap-3 sticky top-0 bg-white z-20">
-         <div className="w-10 h-10 bg-[#058B8C] rounded-xl flex items-center justify-center text-white font-black">A</div>
-         <div>
-           <h1 className="font-black text-gray-800">پنل مدیریت</h1>
-           <p className="text-xs text-gray-400">بهشتی تراول</p>
-         </div>
-      </div>
+    // top-20 باعث می‌شود سایدبار دقیقاً زیر ناوبار (که h-20 است) بچسبد
+    <aside className="w-64 bg-white border-l border-gray-100 hidden md:flex flex-col fixed top-20 right-0 h-[calc(100vh-80px)] z-40 shadow-lg">
       
-      <nav className="p-4 space-y-1">
-        {/* 1. Overview */}
+      {/* بخش اسکرول‌خور منوها */}
+      <nav className="flex-1 overflow-y-auto p-4 space-y-1 pb-4 scrollbar-hide">
         <MenuItem id="dashboard" label="اورویو" icon={Layout} onClick={() => setActiveTab('dashboard')} />
-
-        {/* 2. Bookings */}
         <MenuItem id="bookings" label="رزروها" icon={Ticket} onClick={() => setActiveTab('bookings')} />
 
-        {/* 3. Home Page (Tree) */}
-        <MenuItem 
-          label="صفحه اصلی" 
-          icon={Home} 
-          hasSub 
-          subKey="home" 
-          onClick={() => toggleMenu('home')} 
-        />
+        <MenuItem label="صفحه اصلی" icon={Home} hasSub subKey="home" onClick={() => toggleMenu('home')} />
         {expandedMenus.home && (
-          <div className="space-y-1 mb-2 animate-in slide-in-from-top-2">
+          <div className="space-y-1 mb-2 bg-gray-50/50 rounded-xl p-1 animate-in slide-in-from-top-2">
             <SubItem id="hero" label="هیرو (Hero)" />
             <SubItem id="services" label="خدمات" />
             <SubItem id="weather" label="آب و هوا" />
-            {/* منوی اخبار را اینجا اضافه کردم چون مربوط به محتوای اصلی است */}
             <SubItem id="news" label="اخبار و مقالات" />
           </div>
         )}
 
-        {/* 4. About & Contact (Tree) */}
-        <MenuItem 
-          label="درباره ما و تماس" 
-          icon={Info} 
-          hasSub 
-          subKey="about" 
-          onClick={() => toggleMenu('about')} 
-        />
+        <MenuItem label="درباره ما و تماس" icon={Info} hasSub subKey="about" onClick={() => toggleMenu('about')} />
         {expandedMenus.about && (
-          <div className="space-y-1 mb-2 animate-in slide-in-from-top-2">
+          <div className="space-y-1 mb-2 bg-gray-50/50 rounded-xl p-1 animate-in slide-in-from-top-2">
             <SubItem id="about" label="درباره ما / تیم" />
             <SubItem id="contact_branches" label="تماس با ما (شعب)" />
           </div>
         )}
 
-        {/* 5. Site Settings (Tree) */}
-        <MenuItem 
-          label="تنظیمات سایت" 
-          icon={Settings} 
-          hasSub 
-          subKey="settings" 
-          onClick={() => toggleMenu('settings')} 
-        />
+        <MenuItem label="تنظیمات سایت" icon={Settings} hasSub subKey="settings" onClick={() => toggleMenu('settings')} />
         {expandedMenus.settings && (
-          <div className="space-y-1 mb-2 animate-in slide-in-from-top-2">
+          <div className="space-y-1 mb-2 bg-gray-50/50 rounded-xl p-1 animate-in slide-in-from-top-2">
             <SubItem id="navbar" label="تنظیمات ناوبار" />
             <SubItem id="footer" label="تنظیمات فوتر" />
           </div>
         )}
 
-        {/* 6. Reports */}
         <MenuItem id="reports" label="گزارش ها" icon={FileText} onClick={() => setActiveTab('reports')} />
-
-        {/* 7. Admins */}
         <MenuItem id="admins" label="ادمین ها" icon={Users} onClick={() => setActiveTab('admins')} />
       </nav>
       
-      <div className="p-4 border-t border-gray-50 mt-auto bg-white sticky bottom-0">
-        <button onClick={() => setPage('home')} className="w-full bg-red-50 text-red-500 px-4 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors">
-          <LogOut size={20} /> خروج
+      {/* بخش خروج - ثابت در پایین */}
+      <div className="p-4 border-t border-gray-50 bg-white shrink-0">
+        <button onClick={onLogout} className="w-full bg-red-50 text-red-500 px-4 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors">
+          <LogOut size={20} /> خروج از پنل
         </button>
       </div>
     </aside>
