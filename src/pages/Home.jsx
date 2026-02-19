@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, MapPin, ArrowRightLeft, ChevronDown, User, Calendar, Plus, Minus, Check, ShieldCheck, Clock, Globe, Plane, FileText, Hotel, Package, CreditCard, GraduationCap, Users, CheckCircle, Briefcase, Megaphone, Pin, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import ServiceCard from '../components/ServiceCard';
 import WeatherBlock from '../components/WeatherBlock';
 
@@ -488,6 +489,7 @@ const TopFilterBtn = ({ label, active, onClick, icon: Icon }) => (
 );
 
 export default function Home({ t, setPage, lang, onSearch, newsData, settings }) {
+  const navigate = useNavigate();
   const [activeDropdown, setActiveDropdown] = useState(null);
   const dropdownRef = useRef(null);
   const [stats, setStats] = useState({ customers: 0, flights: 0, visas: 0, experience: 0 });
@@ -552,7 +554,7 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
        const msg = lang === 'en' ? "Please select origin and destination" : (lang === 'dr' ? "لطفا مبدا و مقصد را وارد کنید" : "مهربانی وکړئ مبدا او مقصد دننه کړئ");
        alert(msg); return;
     }
-    if (onSearch) onSearch(formData);
+    navigate('/tickets', { state: { initialData: formData } });
   };
 
   const getServiceTitle = (srv) => getLangContent(srv, 'title');
@@ -642,18 +644,22 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
                    <AirportSearch lang={lang} icon={Plane} value={formData.origin} onChange={(val)=>setFormData({...formData, origin: val})} placeholder={lang==='dr'?"مبدا (شهر یا فرودگاه)":(lang==='en'?"Origin (City or Airport)":"له کوم ځای؟")} />
                </div>
                
-               {/* مقصد (همراه با دکمه سویچ شناور) */}
-               <div className="flex-1 h-20 lg:h-auto relative">
-                   <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 lg:top-1/2 lg:right-0 lg:left-auto lg:translate-x-1/2 lg:-translate-y-1/2 z-20">
-                      <button 
-                        type="button" 
-                        onClick={() => setFormData(p => ({...p, origin: p.destination, destination: p.origin}))} 
-                        className="bg-white p-2 rounded-full text-gray-500 hover:bg-[#058B8C] hover:text-white transition shadow-md border border-gray-100 flex items-center justify-center"
-                        style={{ width: '36px', height: '36px' }}
-                      >
-                        <ArrowRightLeft size={16} />
-                      </button>
-                   </div>
+               {/* دکمه سوییچ مستقل و ثابت در مرکز */}
+               <div className="relative h-0 lg:h-auto lg:w-0 z-40 flex items-center justify-center">
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                        <button 
+                          type="button" 
+                          onClick={() => setFormData(p => ({...p, origin: p.destination, destination: p.origin}))} 
+                          className="bg-white p-2.5 rounded-full text-gray-500 hover:bg-[#058B8C] hover:text-white transition shadow-md border border-gray-100 flex items-center justify-center" 
+                          style={{ width: '40px', height: '40px' }}
+                        >
+                          <ArrowRightLeft size={18} />
+                        </button>
+                  </div>
+               </div>
+               
+               {/* مقصد */}
+               <div className="flex-1 h-20 lg:h-auto">
                    <AirportSearch lang={lang} icon={MapPin} value={formData.destination} onChange={(val)=>setFormData({...formData, destination: val})} placeholder={lang==='dr'?"مقصد (شهر یا فرودگاه)":(lang==='en'?"Destination (City or Airport)":"چیرته؟")} />
                </div>
                

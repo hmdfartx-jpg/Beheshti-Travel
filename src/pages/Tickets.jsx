@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, MapPin, ArrowRightLeft, ChevronDown, User, Calendar, Plus, Minus, Check, Plane, ChevronLeft, ChevronRight, X, Phone, Loader2, Users, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import PaymentModal from '../components/PaymentModal';
+import { useLocation } from 'react-router-dom';
 
 // --- لیست جامع و کامل فرودگاه‌ها (بدون حذفیات) ---
 const AIRPORTS = [
@@ -553,6 +554,8 @@ const TopFilterBtn = ({ label, active, onClick, icon: Icon }) => (
 );
 
 export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }) {
+  const location = useLocation();
+  const searchData = location.state?.initialData || initialData;
   const [searchState, setSearchState] = useState('idle');
   const [bookingLoading, setBookingLoading] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -572,11 +575,11 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
   const [results, setResults] = useState([]);
 
   useEffect(() => {
-    if (initialData) {
-      setFormData(initialData);
-      performSearch(initialData);
+    if (searchData) {
+      setFormData(searchData);
+      performSearch(searchData);
     }
-  }, [initialData]);
+  }, [searchData]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -660,7 +663,7 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in font-[Vazirmatn]" dir={isLtr ? 'ltr' : 'rtl'}>
+    <div className="max-w-7xl mx-auto w-full px-4 pt-8 space-y-8 animate-in fade-in font-[Vazirmatn]" dir={isLtr ? 'ltr' : 'rtl'}>
        
        {selectedFlight && (
          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">

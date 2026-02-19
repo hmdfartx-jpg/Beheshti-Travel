@@ -10,6 +10,8 @@ import CustomAlert from '../components/admin/CustomAlert'; // <--- ایمپور�
 // Tab Components
 import Dashboard from '../components/admin/Dashboard';
 import BookingsTab from '../components/admin/BookingsTab';
+import CustomFlightsTab from '../components/admin/CustomFlightsTab';
+import ExchangeRatesTab from '../components/admin/ExchangeRatesTab';
 import HeroTab from '../components/admin/HeroTab';
 import ServicesTab from '../components/admin/ServicesTab';
 import WeatherTab from '../components/admin/WeatherTab';
@@ -20,6 +22,7 @@ import NavbarTab from '../components/admin/NavbarTab';
 import FooterTab from '../components/admin/FooterTab';
 import ReportsTab from '../components/admin/ReportsTab';
 import AdminsTab from '../components/admin/AdminsTab';
+
 
 const GOOGLE_TRANSLATE_URL = "https://script.google.com/macros/s/AKfycbyz_6Zw2PmqIFv5LFlx0ebLF0j52o0tEpFZ7Lw-W_kqRLTajbLazK9H5Wgzjmo5bd895w/exec";
 
@@ -279,7 +282,9 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
             <div className="mt-4">
                 {activeTab === 'dashboard' && <Dashboard bookings={bookings} news={news} />}
                 {activeTab === 'bookings' && <BookingsTab bookings={bookings} onStatusUpdate={handleStatusUpdate} />}
-                
+                {activeTab === 'custom_flights' && <CustomFlightsTab />}
+                {activeTab === 'exchange_rates' && <ExchangeRatesTab />}
+
                 {activeTab === 'hero' && <HeroTab settings={localSettings} onUpdate={handleSettingChange} fetchTranslation={fetchTranslation} showAlert={showAlert} />}
                 {activeTab === 'services' && <ServicesTab services={localSettings.services} onServiceUpdate={handleServicesChange} fetchTranslation={fetchTranslation} />}
                 {activeTab === 'weather' && <WeatherTab cities={localSettings.weather_cities} onUpdateCities={handleWeatherUpdate} showAlert={showAlert} />}
