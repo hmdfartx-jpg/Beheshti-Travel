@@ -5,7 +5,7 @@ import { Save, Loader2, Menu } from 'lucide-react';
 // Components
 import Login from '../components/admin/Login';
 import Sidebar from '../components/admin/Sidebar';
-import CustomAlert from '../components/admin/CustomAlert'; // <--- ایمپورت جدید
+import CustomAlert from '../components/admin/CustomAlert';
 
 // Tab Components
 import Dashboard from '../components/admin/Dashboard';
@@ -23,10 +23,10 @@ import FooterTab from '../components/admin/FooterTab';
 import ReportsTab from '../components/admin/ReportsTab';
 import AdminsTab from '../components/admin/AdminsTab';
 
-
 const GOOGLE_TRANSLATE_URL = "https://script.google.com/macros/s/AKfycbyz_6Zw2PmqIFv5LFlx0ebLF0j52o0tEpFZ7Lw-W_kqRLTajbLazK9H5Wgzjmo5bd895w/exec";
 
 export default function Admin({ news, bookings, settings, onUpdate, setPage, lang }) {
+  // ۱. بررسی وضعیت لاگین از حافظه مرورگر
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     const session = localStorage.getItem('admin_session');
     if (session) {
@@ -37,7 +37,20 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
     return false;
   });
 
-  // --- مدیریت سیستم آلرت (پاپ‌آپ) ---
+  // ۲. خواندن اطلاعات مدیر به صورت زنده (Live)
+  // با این کار به محض تغییر اکانت، سیستم سریعاً دسترسی‌ها را بروزرسانی می‌کند
+  let currentUser = null;
+  if (isAuthenticated) {
+    const session = localStorage.getItem('admin_session');
+    if (session) {
+      currentUser = JSON.parse(session).user;
+    }
+  }
+
+  // ۳. مدیریت تب فعال در سایدبار
+  const [activeTab, setActiveTab] = useState('dashboard');
+
+  // ۴. مدیریت سیستم آلرت (پاپ‌آپ)
   const [alertConfig, setAlertConfig] = useState({
     open: false,
     title: '',
@@ -49,7 +62,6 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
     cancelText: 'لغو'
   });
 
-  // تابع کمکی برای نمایش آلرت
   const showAlert = ({ title, message, type = 'info', showCancel = false, onConfirm = null, confirmText = 'تایید', cancelText = 'انصراف' }) => {
     setAlertConfig({ open: true, title, message, type, showCancel, onConfirm, confirmText, cancelText });
   };
@@ -57,9 +69,8 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
   const closeAlert = () => {
     setAlertConfig(prev => ({ ...prev, open: false }));
   };
-  // -----------------------------------
 
-  const [activeTab, setActiveTab] = useState('dashboard');
+  // ۵. استیت‌های مربوط به اطلاعات سایت (تنظیمات، تیم، نمایندگی‌ها)
   const [localSettings, setLocalSettings] = useState(settings || {});
   const [teamMembers, setTeamMembers] = useState([]);
   const [agencies, setAgencies] = useState([]);
@@ -89,7 +100,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
     }
   };
 
-  // --- هندلر خروج با آلرت کاستوم ---
+  // هندلر خروج
   const handleLogout = () => {
     showAlert({
       title: "خروج از پنل",
@@ -122,7 +133,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
      setLocalSettings(prev => ({ ...prev, services: newServices }));
      setHasChanges(true);
   };
-  
+
   const handleWeatherUpdate = (newCities) => {
       setLocalSettings(prev => ({ ...prev, weather_cities: newCities }));
       setHasChanges(true);
@@ -132,12 +143,12 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
     setTeamMembers([...teamMembers, { id: Date.now(), name: '', role_dr: '', role_ps: '', role_en: '', image: '' }]);
     setHasChanges(true);
   };
+
   const handleTeamChange = (id, key, value) => {
     setTeamMembers(teamMembers.map(m => m.id === id ? { ...m, [key]: value } : m));
     setHasChanges(true);
   };
   
-  // --- هندلر حذف عضو با آلرت کاستوم ---
   const handleDeleteMember = (id) => {
     showAlert({
       title: "حذف عضو تیم",
@@ -148,7 +159,6 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
       onConfirm: () => {
         setTeamMembers(teamMembers.filter(m => m.id !== id));
         setHasChanges(true);
-        // showAlert({ title: "انجام شد", message: "عضو با موفقیت حذف شد", type: "success" }); // اختیاری
       }
     });
   };
@@ -162,12 +172,12 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
     setAgencies([...agencies, { id: Date.now(), city_dr: '', address_dr: '', phone: '' }]);
     setHasChanges(true);
   };
+
   const handleAgencyChange = (id, key, value) => {
     setAgencies(agencies.map(a => a.id === id ? { ...a, [key]: value } : a));
     setHasChanges(true);
   };
 
-  // --- هندلر حذف نمایندگی با آلرت کاستوم ---
   const handleDeleteAgency = (id) => {
     showAlert({
       title: "حذف نمایندگی",
@@ -183,7 +193,6 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
   };
 
   const handleStatusUpdate = async (id, status) => {
-    // برای تغییر وضعیت رزرو هم می‌توان تاییدیه گرفت
     const statusText = status === 'confirmed' ? 'تایید' : 'رد';
     const type = status === 'confirmed' ? 'success' : 'warning';
     
@@ -199,7 +208,6 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
     });
   };
 
-  // --- ذخیره تنظیمات با آلرت موفقیت/خطا ---
   const saveSettings = async () => {
     setLoading(true);
     const finalSettings = {
@@ -207,9 +215,10 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
         team: teamMembers,
         agencies: agencies
     };
-    
+
     try {
         const { data } = await supabase.from('site_settings').select('id').order('id', { ascending: true });
+        
         if (data && data.length > 0) {
             await supabase.from('site_settings').update({ config: finalSettings }).eq('id', data[0].id);
         } else {
@@ -235,6 +244,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
     }
   };
 
+  // اگر لاگین نکرده بود، فرم ورود نمایش داده شود
   if (!isAuthenticated) {
     return <Login onLogin={() => setIsAuthenticated(true)} lang={lang} setPage={setPage} />;
   }
@@ -254,6 +264,7 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
         setActiveTab={setActiveTab} 
         setPage={setPage} 
         onLogout={handleLogout} 
+        currentUser={currentUser} /* <--- ارسال اطلاعات مدیر به سایدبار */
       />
 
       <main className="flex-1 md:mr-64 px-4 md:px-8 pb-8 overflow-x-hidden transition-all pt-20"> 
@@ -281,8 +292,11 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
         <div className="w-full max-w-7xl mx-auto pb-20">
             <div className="mt-4">
                 {activeTab === 'dashboard' && <Dashboard bookings={bookings} news={news} />}
-                {activeTab === 'bookings' && <BookingsTab bookings={bookings} onStatusUpdate={handleStatusUpdate} />}
-                {activeTab === 'custom_flights' && <CustomFlightsTab />}
+                
+                {/* ارسال currentUser به داخل تب‌ها برای محدودسازی عملیات */}
+                {activeTab === 'bookings' && <BookingsTab bookings={bookings} onStatusUpdate={handleStatusUpdate} currentUser={currentUser} />}
+                {activeTab === 'custom_flights' && <CustomFlightsTab currentUser={currentUser} />}
+                
                 {activeTab === 'exchange_rates' && <ExchangeRatesTab />}
 
                 {activeTab === 'hero' && <HeroTab settings={localSettings} onUpdate={handleSettingChange} fetchTranslation={fetchTranslation} showAlert={showAlert} />}
@@ -318,13 +332,13 @@ export default function Admin({ news, bookings, settings, onUpdate, setPage, lan
                 {activeTab === 'footer' && <FooterTab settings={localSettings} onUpdate={handleSettingChange} fetchTranslation={fetchTranslation} />}
 
                 {activeTab === 'reports' && <ReportsTab />}
-                {activeTab === 'admins' && <AdminsTab />}
+                {activeTab === 'admins' && <AdminsTab currentUser={currentUser} />}
             </div>
         </div>
 
       </main>
 
-      <style jsx>{`
+      <style>{`
         .input-admin {
           width: 100%;
           padding: 0.75rem 1rem;

@@ -58,13 +58,20 @@ const jalaali = {
   }
 };
 
-export default function BookingsTab({ bookings, onStatusUpdate }) {
+// <--- دریافت currentUser به عنوان پراپ --->
+export default function BookingsTab({ bookings, onStatusUpdate, currentUser }) {
   const [selectedBooking, setSelectedBooking] = useState(null);
   
   // استیت‌های جستجو و فیلتر
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [routeFilter, setRouteFilter] = useState('');
+
+  // --- بررسی دسترسی‌های کاربر برای دکمه‌های عملیاتی ---
+  const isSuperAdmin = currentUser?.role === 'super_admin';
+  const hasEditPermission = currentUser?.permissions?.reservations?.includes('edit') || currentUser?.permissions?.finance?.includes('approve');
+  const canEditStatus = isSuperAdmin || hasEditPermission;
+  // --------------------------------------------------
 
   // ماه‌های شمسی افغانی
   const afghanMonths = ["حمل", "ثور", "جوزا", "سرطان", "اسد", "سنبله", "میزان", "عقرب", "قوس", "جدی", "دلو", "حوت"];
@@ -137,13 +144,12 @@ export default function BookingsTab({ bookings, onStatusUpdate }) {
               const originName = getCityName(originRaw).toLowerCase();
               const destName = getCityName(destRaw).toLowerCase();
 
-              // بررسی اینکه آیا متن جستجو شده در کد انگلیسی یا نام فارسی وجود دارد یا خیر
               matchesRoute = originRaw.toLowerCase().includes(q) || 
                              destRaw.toLowerCase().includes(q) || 
                              originName.includes(q) || 
                              destName.includes(q);
           } else {
-              matchesRoute = false; // اگر پرواز نیست و کاربر مسیر را سرچ کرده، نمایش داده نشود
+              matchesRoute = false;
           }
       }
 
@@ -479,30 +485,38 @@ export default function BookingsTab({ bookings, onStatusUpdate }) {
                )}
             </div>
 
-            {/* فوتر مودال (عملیات ادمین) */}
+            {/* --- کنترل نمایش دکمه‌ها بر اساس دسترسی کاربر (canEditStatus) --- */}
             <div className="bg-white p-6 border-t border-gray-100 flex flex-wrap items-center justify-between gap-4 sticky bottom-0">
                <div className="flex flex-wrap gap-3 w-full md:w-auto">
-                  {selectedBooking.status !== 'confirmed' && (
-                      <button 
-                          onClick={() => { 
-                              onStatusUpdate(selectedBooking.id, 'confirmed'); 
-                              setSelectedBooking({...selectedBooking, status: 'confirmed'}); 
-                          }} 
-                          className="flex-1 md:flex-none px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition shadow-lg"
-                      >
-                          <CheckCircle size={18}/> تایید نهایی
-                      </button>
-                  )}
-                  {selectedBooking.status !== 'rejected' && (
-                      <button 
-                          onClick={() => { 
-                              onStatusUpdate(selectedBooking.id, 'rejected'); 
-                              setSelectedBooking({...selectedBooking, status: 'rejected'}); 
-                          }} 
-                          className="flex-1 md:flex-none px-6 py-3 bg-red-100 hover:bg-red-200 text-red-600 rounded-xl font-bold flex items-center justify-center gap-2 transition"
-                      >
-                          <XCircle size={18}/> لغو سفارش
-                      </button>
+                  {canEditStatus ? (
+                     <>
+                        {selectedBooking.status !== 'confirmed' && (
+                            <button 
+                                onClick={() => { 
+                                    onStatusUpdate(selectedBooking.id, 'confirmed'); 
+                                    setSelectedBooking({...selectedBooking, status: 'confirmed'}); 
+                                }} 
+                                className="flex-1 md:flex-none px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition shadow-lg"
+                            >
+                                <CheckCircle size={18}/> تایید نهایی
+                            </button>
+                        )}
+                        {selectedBooking.status !== 'rejected' && (
+                            <button 
+                                onClick={() => { 
+                                    onStatusUpdate(selectedBooking.id, 'rejected'); 
+                                    setSelectedBooking({...selectedBooking, status: 'rejected'}); 
+                                }} 
+                                className="flex-1 md:flex-none px-6 py-3 bg-red-100 hover:bg-red-200 text-red-600 rounded-xl font-bold flex items-center justify-center gap-2 transition"
+                            >
+                                <XCircle size={18}/> لغو سفارش
+                            </button>
+                        )}
+                     </>
+                  ) : (
+                      <span className="text-sm font-bold text-orange-500 bg-orange-50 px-4 py-2 rounded-lg flex items-center gap-2">
+                         شما فقط دسترسی مشاهده دارید و مجاز به تغییر وضعیت نیستید.
+                      </span>
                   )}
                </div>
             </div>

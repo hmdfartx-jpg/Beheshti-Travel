@@ -1,44 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { User, Lock, Eye, EyeOff, ArrowRight, Shield, CheckCircle, RefreshCw } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, ArrowRight, Shield, CheckCircle, RefreshCw, Loader2 } from 'lucide-react';
+import { supabase } from '../../lib/supabase'; // <--- اتصال به دیتابیس اضافه شد
 
 const loginTranslations = {
   dr: {
     title: "ورود به پنل مدیریت",
     subtitle: "امنیت بالا، مدیریت آسان",
-    user: "نام کاربری",
+    user: "نام کاربری (ایمیل)",
     pass: "رمز عبور",
     captcha: "کد امنیتی",
     btn: "ورود به سیستم",
     back: "بازگشت به صفحه اصلی",
     error_captcha: "کد امنیتی اشتباه است!",
     error_auth: "نام کاربری یا رمز عبور اشتباه است",
-    ph_user: "نام کاربری",
+    ph_user: "ایمیل مدیر",
     ph_pass: "رمز عبور"
   },
   ps: {
     title: "د مدیریت پینل ته ننوتل",
     subtitle: "لوړ امنیت، اسانه مدیریت",
-    user: "کارن نوم",
+    user: "کارن نوم (بریښنالیک)",
     pass: "پټ نوم",
     captcha: "امنیتي کوډ",
     btn: "سیستم ته ننوتل",
     back: "اصلي پاڼې ته ستنیدل",
     error_captcha: "امنیتي کوډ غلط دی!",
     error_auth: "کارن نوم یا پټ نوم غلط دی",
-    ph_user: "کارن نوم",
+    ph_user: "ایمیل",
     ph_pass: "پټ نوم"
   },
   en: {
     title: "Admin Panel Login",
     subtitle: "High Security, Easy Management",
-    user: "Username",
+    user: "Username (Email)",
     pass: "Password",
     captcha: "Security Code",
     btn: "Login to System",
     back: "Back to Home",
     error_captcha: "Invalid Security Code!",
     error_auth: "Invalid Username or Password",
-    ph_user: "Username",
+    ph_user: "Admin Email",
     ph_pass: "Password"
   }
 };
@@ -49,6 +50,9 @@ export default function Login({ onLogin, lang = 'dr', setPage }) {
   const [captchaInput, setCaptchaInput] = useState('');
   const [generatedCaptcha, setGeneratedCaptcha] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  
+  // استیت جدید برای حالت لودینگ هنگام ارتباط با دیتابیس
+  const [loading, setLoading] = useState(false); 
 
   const currentLang = lang || 'dr';
   const t = loginTranslations[currentLang];
@@ -66,9 +70,11 @@ export default function Login({ onLogin, lang = 'dr', setPage }) {
     generateCaptcha();
   }, []);
 
-  const handleSubmit = (e) => {
+  // --- تغییر تابع به Async برای ارتباط با دیتابیس ---
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // ۱. بررسی کپچا (دقیقاً مثل کد خودتان)
     if (captchaInput !== generatedCaptcha) {
       alert(t.error_captcha);
       generateCaptcha();
@@ -76,18 +82,49 @@ export default function Login({ onLogin, lang = 'dr', setPage }) {
       return;
     }
 
-    if (username === 'admin' && password === '123456') {
-      // ذخیره سشن برای ۲۴ ساعت
+    setLoading(true);
+
+    try {
+      // ۲. جستجوی کاربر در دیتابیس (نام کاربری را همان ایمیل در نظر می‌گیریم)
+      const { data: admin, error: fetchError } = await supabase
+        .from('admins')
+        .select('*')
+        .eq('email', username) // جستجو در دیتابیس بر اساس ایمیل وارد شده
+        .single();
+
+      // ۳. بررسی صحت نام کاربری و رمز عبور
+      if (fetchError || !admin) {
+        throw new Error(t.error_auth);
+      }
+
+      if (admin.password !== password) {
+        throw new Error(t.error_auth);
+      }
+
+      // ۴. در صورت موفقیت: ذخیره سشن برای ۲۴ ساعت همراه با اطلاعات کاربر و دسترسی‌های او
       const expiry = new Date().getTime() + (24 * 60 * 60 * 1000);
-      const sessionData = { token: 'valid_admin_token', expiry: expiry };
+      const sessionData = { 
+        user: {
+          id: admin.id,
+          name: admin.name,
+          email: admin.email,
+          role: admin.role,
+          permissions: admin.permissions || {}
+        },
+        expiry: expiry 
+      };
+      
       localStorage.setItem('admin_session', JSON.stringify(sessionData));
       
-      onLogin(); 
-    } else {
-      alert(t.error_auth);
+      onLogin();
+
+    } catch (err) {
+      alert(err.message || t.error_auth);
       generateCaptcha();
       setPassword('');
       setCaptchaInput('');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -113,6 +150,7 @@ export default function Login({ onLogin, lang = 'dr', setPage }) {
                 className={`w-full px-5 py-4 ${currentLang === 'en' ? 'pl-12' : 'pr-12'} rounded-xl bg-gray-50 border border-gray-100 focus:border-[#058B8C] focus:ring-2 focus:ring-[#058B8C]/20 outline-none transition-all font-bold text-gray-700 ${alignClass}`}
                 dir="ltr"
                 placeholder={t.ph_user}
+                required
               />
               <User className={`absolute ${currentLang === 'en' ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 text-gray-400`} size={20} />
             </div>
@@ -128,6 +166,7 @@ export default function Login({ onLogin, lang = 'dr', setPage }) {
                 className={`w-full px-5 py-4 ${currentLang === 'en' ? 'pl-12' : 'pr-12'} rounded-xl bg-gray-50 border border-gray-100 focus:border-[#058B8C] focus:ring-2 focus:ring-[#058B8C]/20 outline-none transition-all font-bold text-gray-700 ${alignClass}`}
                 dir="ltr"
                 placeholder={t.ph_pass}
+                required
               />
               <Lock className={`absolute ${currentLang === 'en' ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 text-gray-400`} size={20} />
               <button 
@@ -151,6 +190,7 @@ export default function Login({ onLogin, lang = 'dr', setPage }) {
                         onChange={e => setCaptchaInput(e.target.value)} 
                         className={`w-full px-5 py-4 ${currentLang === 'en' ? 'pl-12' : 'pr-12'} rounded-xl bg-gray-50 border border-gray-100 focus:border-[#058B8C] outline-none font-bold text-gray-800 tracking-widest text-center`}
                         placeholder="_ _ _ _"
+                        required
                     />
                     <CheckCircle className={`absolute ${currentLang === 'en' ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 text-gray-400`} size={20} />
                  </div>
@@ -167,9 +207,16 @@ export default function Login({ onLogin, lang = 'dr', setPage }) {
 
           <button 
             type="submit"
-            className="w-full bg-[#058B8C] hover:bg-[#047070] text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-[#058B8C]/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+            disabled={loading}
+            className="w-full bg-[#058B8C] hover:bg-[#047070] text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-[#058B8C]/20 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-70"
           >
-            {t.btn} <ArrowRight size={20} className={currentLang === 'en' ? "" : "rotate-180"}/>
+            {loading ? (
+                <Loader2 size={24} className="animate-spin" />
+            ) : (
+                <>
+                    {t.btn} <ArrowRight size={20} className={currentLang === 'en' ? "" : "rotate-180"}/>
+                </>
+            )}
           </button>
 
           <button 
