@@ -11,7 +11,9 @@ export default function CustomFlightsTab({ currentUser }) {
   const [loading, setLoading] = useState(true);
   const [showCalendar, setShowCalendar] = useState(false);
   const calendarRef = useRef(null);
-  const [alertConfig, setAlertConfig] = useState({ open: false, type: 'info', title: '', message: '' });
+  
+  // رفع مشکل زیرِ فرم رفتن پاپ‌آپ با برداشتن z-index های اضافی از صفحه
+  const [alertConfig, setAlertConfig] = useState({ open: false, type: 'info', title: '', message: '', onConfirm: null, showCancel: false });
 
   const isSuperAdmin = currentUser?.role === 'super_admin';
 
@@ -97,40 +99,53 @@ export default function CustomFlightsTab({ currentUser }) {
   if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-[#058B8C]" size={40}/></div>;
 
   return (
-    // لایه‌بندی کل صفحه به ۱۰۰ ارتقا یافت
-    <div className="space-y-8 animate-in fade-in font-[Vazirmatn] relative z-[100]" dir="rtl">
+    // لایه‌بندی مخرب قبلی پاک شد تا در اسکرول کردن به مشکل نخورید
+    <div className="space-y-8 animate-in fade-in font-[Vazirmatn]" dir="rtl">
       <CustomAlert open={alertConfig.open} config={alertConfig} onClose={() => setAlertConfig({ ...alertConfig, open: false })} />
 
-      {/* لایه‌بندی فرم به ۱۱۰ ارتقا یافت */}
-      <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-6 relative z-[110]">
+      <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-6">
         <h3 className="font-black text-gray-800 flex items-center gap-2 border-b pb-4">
             <Plus size={20} className="text-[#058B8C]"/> افزودن پرواز چارتر (دستی)
         </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="h-[50px] relative z-50">
+          {/* مقدارهای Z-Index به صورت نزولی تنظیم شده تا هیچ دراپ‌داونی زیر دیگری نرود */}
+          <div className="h-[50px] relative z-[80]">
             <AirlineSearch value={newFlight.airline_name} onChange={(name) => setNewFlight({...newFlight, airline_name: name, airline_code: name === 'Kam Air' ? 'RQ' : (name === 'Ariana Afghan Airlines' ? 'FG' : 'XX')})} placeholder="جستجوی ایرلاین..." icon={PlaneTakeoff} />
           </div>
-          <input type="text" value={newFlight.flight_no} onChange={e=>setNewFlight({...newFlight, flight_no: e.target.value})} placeholder="شماره پرواز (FG-101)" className="input-admin font-mono ltr" />
-          <div className="h-[50px] relative z-40">
+          <div className="relative z-10">
+            <input type="text" value={newFlight.flight_no} onChange={e=>setNewFlight({...newFlight, flight_no: e.target.value})} placeholder="شماره پرواز (FG-101)" className="input-admin font-mono ltr w-full" />
+          </div>
+          <div className="h-[50px] relative z-[70]">
             <AirportSearch value={newFlight.origin} onChange={(val)=>setNewFlight({...newFlight, origin: val})} placeholder="فرودگاه مبدا" icon={Plane} />
           </div>
-          <div className="h-[50px] relative z-40">
+          <div className="h-[50px] relative z-[60]">
             <AirportSearch value={newFlight.destination} onChange={(val)=>setNewFlight({...newFlight, destination: val})} placeholder="فرودگاه مقصد" icon={MapPin} />
           </div>
           
-          {/* لایه‌بندی تقویم به ۱۲۰ (بالاترین سطح) ارتقا یافت */}
-          <div className="relative z-[120]" ref={calendarRef}>
-             <div onClick={() => setShowCalendar(!showCalendar)} className="input-admin flex justify-between items-center cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
-                <span className={newFlight.departure_date ? 'text-gray-800' : 'text-gray-400'}>{newFlight.departure_date || 'تاریخ پرواز'}</span>
-                <Calendar size={16} className="text-[#058B8C]"/>
+          <div className="relative z-[50]" ref={calendarRef}>
+             <div onClick={() => setShowCalendar(!showCalendar)} className="input-admin flex justify-between items-center cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors w-full">
+                <span className={newFlight.departure_date ? 'text-gray-800 font-bold' : 'text-gray-400 font-bold'} dir="ltr">
+                    {newFlight.departure_date || 'تاریخ پرواز'}
+                </span>
+                <Calendar size={18} className="text-[#058B8C]"/>
              </div>
-             {showCalendar && <SmartCalendar selectedDate={newFlight.departure_date} onSelect={(d) => { setNewFlight({...newFlight, departure_date: d}); setShowCalendar(false); }} onClose={() => setShowCalendar(false)} />}
+             {showCalendar && (
+                <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '4px', zIndex: 9999, minWidth: '300px' }}>
+                    <SmartCalendar selectedDate={newFlight.departure_date} onSelect={(d) => { setNewFlight({...newFlight, departure_date: d}); setShowCalendar(false); }} onClose={() => setShowCalendar(false)} />
+                </div>
+             )}
           </div>
           
-          <input type="time" value={newFlight.departure_time} onChange={e=>setNewFlight({...newFlight, departure_time: e.target.value})} className="input-admin" />
-          <input type="number" value={newFlight.price} onChange={e=>setNewFlight({...newFlight, price: e.target.value})} placeholder="قیمت فروش (دلار)" className="input-admin font-bold text-[#058B8C]" />
-          <input type="number" value={newFlight.capacity} onChange={e=>setNewFlight({...newFlight, capacity: e.target.value})} placeholder="ظرفیت صندلی" className="input-admin" />
+          <div className="relative z-10">
+             <input type="time" value={newFlight.departure_time} onChange={e=>setNewFlight({...newFlight, departure_time: e.target.value})} className="input-admin w-full" />
+          </div>
+          <div className="relative z-10">
+             <input type="number" value={newFlight.price} onChange={e=>setNewFlight({...newFlight, price: e.target.value})} placeholder="قیمت فروش (دلار)" className="input-admin font-bold text-[#058B8C] w-full" />
+          </div>
+          <div className="relative z-10">
+             <input type="number" value={newFlight.capacity} onChange={e=>setNewFlight({...newFlight, capacity: e.target.value})} placeholder="ظرفیت صندلی" className="input-admin w-full" />
+          </div>
         </div>
         
         <div className="flex justify-end pt-2">
@@ -140,7 +155,7 @@ export default function CustomFlightsTab({ currentUser }) {
         </div>
       </div>
 
-      <div className="bg-white rounded-[2rem] border border-gray-100 overflow-hidden shadow-sm relative z-10">
+      <div className="bg-white rounded-[2rem] border border-gray-100 overflow-hidden shadow-sm">
         <table className="w-full text-sm text-right">
           <thead className="bg-gray-50 text-gray-400 font-bold">
             <tr>
