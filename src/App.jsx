@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { translations } from './constants/translations';
-import { supabase } from './lib/supabase';
+import { db } from './lib/firebase'; 
+import { collection, getDocs, query, orderBy, limit, addDoc } from 'firebase/firestore';
 
 // Components
 import Navbar from './components/Navbar';
@@ -19,8 +20,9 @@ import Tracking from './pages/Tracking';
 import Admin from './pages/Admin';
 import News from './pages/News';
 import About from './pages/About';
+import Search from './pages/Search'; // این خط را به بخش Import ها اضافه کنید
 
-// تنظیمات پیش‌فرض کامل (برای جلوگیری از ارور قبل از لود شدن دیتابیس)
+// تنظیمات پیش‌فرض کامل
 const DEFAULT_SETTINGS = {
   general: { 
     brandName: "بهشتی تراول", 
@@ -154,38 +156,34 @@ const DEFAULT_SETTINGS = {
   },
   team: [],
   why_us: [],
-  agencies: []
+  agencies: [],
+  clients: []
 };
 
 export default function App() {
-  const [lang, setLang] = useState('en'); // زبان پیش‌فرض
+  const [lang, setLang] = useState('en'); 
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [news, setNews] = useState([]);
-  const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const location = useLocation();
   const navigate = useNavigate();
   const t = translations[lang] || translations.dr;
 
-  // اسکرول به بالا در تغییر مسیر
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
-  // تابع دریافت داده‌ها از دیتابیس
-  const fetchData = async () => {
+  // اضافه شدن قابلیت آپدیت بی‌صدا برای جلوگیری از باز شدن صفحه لودینگ هنگام ذخیره تنظیمات در پنل مدیریت
+  const fetchData = async (silent = false) => {
     try {
-      setLoading(true);
-      
-      // 1. دریافت تنظیمات سایت
-      let { data: settingsData } = await supabase
-        .from('site_settings')
-        .select('*')
-        .limit(1);
+      if (!silent) setLoading(true);
 
-      if (settingsData && settingsData.length > 0) {
-        const dbConfig = settingsData[0].config;
+      const settingsQuery = query(collection(db, 'site_settings'), limit(1));
+      const settingsSnapshot = await getDocs(settingsQuery);
+      
+      if (!settingsSnapshot.empty) {
+        const dbConfig = settingsSnapshot.docs[0].data().config;
         setSettings(prev => ({
            ...prev,
            ...dbConfig,
@@ -197,36 +195,26 @@ export default function App() {
            team: dbConfig.team || [],
            why_us: dbConfig.why_us || [],
            agencies: dbConfig.agencies || [],
+           clients: dbConfig.clients || [],
            useful_links: dbConfig.useful_links || prev.useful_links,
            navbar: { ...prev.navbar, ...dbConfig.navbar }
         }));
       } else {
-        // ایجاد تنظیمات پیش‌فرض اگر وجود نداشت
-        await supabase.from('site_settings').insert([{ config: DEFAULT_SETTINGS }]);
+        await addDoc(collection(db, 'site_settings'), { config: DEFAULT_SETTINGS });
       }
 
-      // 2. دریافت اخبار
-      let { data: newsData } = await supabase
-        .from('news')
-        .select('*')
-        .order('created_at', { ascending: false });
-      setNews(newsData || []);
-
-      // 3. دریافت رزروها
-      let { data: bookingsData } = await supabase
-        .from('bookings')
-        .select('*')
-        .order('created_at', { ascending: false });
-      setBookings(bookingsData || []);
+      const newsQuery = query(collection(db, 'news'), orderBy('created_at', 'desc'));
+      const newsSnapshot = await getDocs(newsQuery);
+      const newsData = newsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setNews(newsData);
 
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
-  // دریافت داده‌ها هنگام لود شدن سایت
   useEffect(() => {
     fetchData();
   }, []);
@@ -235,23 +223,17 @@ export default function App() {
     return <LoadingScreen />;
   }
 
-  // بررسی آیا در صفحه ادمین هستیم؟ (برای حذف هدر/فوتر یا تنظیم استایل)
   const isAdminPage = location.pathname.startsWith('/admin');
 
   return (
     <div className={`min-h-screen flex flex-col font-[Vazirmatn] ${lang === 'en' ? 'font-sans' : ''}`} dir={lang === 'en' ? 'ltr' : 'rtl'}>
       
-      {/* ناوبار در تمام صفحات (حتی ادمین) نمایش داده می‌شود */}
       <Navbar 
         lang={lang} 
         setLang={setLang} 
         settings={settings} 
       />
 
-      {/* تنظیم فاصله محتوا از ناوبار:
-         - اگر صفحه ادمین باشد: هیچ پدینگی نده (چون Admin.jsx خودش مدیریت می‌کند)
-         - اگر صفحه عادی باشد: pt-24 (فاصله از بالا) و pb-12 (فاصله از پایین)
-      */}
       <main className={`flex-1 ${isAdminPage ? '' : 'pt-24 pb-12'}`}>
         <Routes>
           <Route path="/" element={
@@ -267,7 +249,6 @@ export default function App() {
             <Tickets 
               t={t} 
               lang={lang} 
-              onBookSuccess={fetchData} 
             />
           } />
           
@@ -285,19 +266,27 @@ export default function App() {
             />
           } />
 
+          {/* ----- کدهای جدید صفحه جستجو از اینجا شروع میشود ----- */}
+          <Route path="/search" element={
+            <Search 
+              t={t} 
+              lang={lang} 
+              newsData={news} 
+              settings={settings} 
+            />
+          } />
+          {/* ----- پایان کدهای جستجو ----- */}
+
           <Route path="/about" element={<About t={t} lang={lang} settings={settings} />} />
           
-          {/* صفحه ادمین */}
           <Route path="/admin" element={
             <Admin 
               t={t} 
               news={news} 
-              bookings={bookings} 
               settings={settings} 
-              onUpdate={fetchData}
+              onUpdate={() => fetchData(true)} // فراخوانی تابع با پارامتر silent = true
               lang={lang} 
               setPage={(page) => {
-                // برای پشتیبانی از دکمه خروج که از setPage استفاده می‌کرد
                 if (page === 'home') navigate('/');
               }}
             />
@@ -308,7 +297,6 @@ export default function App() {
           <Route path="/cargo" element={<Cargo t={t} lang={lang} />} />
           <Route path="/tracking" element={<Tracking t={t} lang={lang} />} />
 
-          {/* صفحه ۴۰۴ */}
           <Route path="*" element={
             <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
               <h1 className="text-6xl font-black text-gray-200 mb-4">404</h1>
@@ -319,7 +307,6 @@ export default function App() {
         </Routes>
       </main>
 
-      {/* فوتر و دکمه واتساپ فقط در صفحات غیر ادمین */}
       {!isAdminPage && (
         <>
           <WhatsAppButton t={t} />

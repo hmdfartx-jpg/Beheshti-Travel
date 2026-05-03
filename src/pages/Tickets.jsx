@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, MapPin, ArrowRightLeft, ChevronDown, User, Calendar, Plus, Minus, Check, Plane, ChevronLeft, ChevronRight, X, Phone, Loader2, Users, AlertTriangle } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import PaymentModal from '../components/PaymentModal';
+import { Search, MapPin, ArrowRightLeft, ChevronDown, User, Calendar, Plus, Minus, Check, Plane, Users, AlertTriangle, Hammer } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
 // --- وارد کردن کامپوننت‌های مشترک جدید ---
@@ -13,90 +11,61 @@ const translations = {
   dr: {
     one_way: "یک طرفه", round_trip: "رفت و برگشت",
     economy: "اکونومی", business: "بیزنس", first: "فرست کلاس",
-    adults: "بزرگسال", children: "کودک", passenger: "مسافر", confirm: "تایید و رزرو",
-    modalInfoTitle: "اطلاعات مسافر",
-    modalInfoDesc: "برای رزرو پرواز، لطفاً مشخصات زیر را وارد کنید.",
-    labelName: "نام و نام خانوادگی مسافر", labelPhone: "شماره تماس",
-    placeName: "مثلا: احمد محمدی", placePhone: "0799...",
-    btnSubmit: "ثبت و ادامه جهت پرداخت", btnLoading: "در حال ثبت...",
-    modalSuccessTitle: "رزرو اولیه انجام شد!", labelOrderId: "شماره سفارش",
-    modalPayDesc: "برای نهایی کردن بلیط، لطفاً پرداخت را انجام دهید.",
-    paySuccessMsg: "پرداخت با موفقیت انجام شد و بلیط صادر گردید!",
-    errorEmpty: "لطفا نام و شماره تماس را وارد کنید",
-    errorBooking: "خطا در ثبت رزرو. لطفا دوباره تلاش کنید.",
-    searching: "در حال جستجو در ایرلاین‌ها و دیتابیس...",
-    noResult: "پروازی در این تاریخ و مسیر یافت نشد. لطفاً روز دیگری را امتحان کنید.",
+    adults: "بزرگسال", children: "کودک", passenger: "مسافر", confirm: "تایید",
+    errorEmpty: "لطفا مبدا و مقصد را وارد کنید",
     originLabel: "مبدا (شهر یا فرودگاه)", destLabel: "مقصد (شهر یا فرودگاه)",
-    select_date: "تاریخ رفت", return_date: "تاریخ برگشت", close: "بستن", today: "برو به امروز"
+    select_date: "تاریخ رفت", return_date: "تاریخ برگشت", close: "بستن", today: "برو به امروز",
+    coming_soon_title: "در حال بروزرسانی سیستم",
+    coming_soon_desc: "سیستم هوشمند رزرو آنلاین بلیط پروازهای داخلی و خارجی در حال توسعه است و به زودی فعال خواهد شد. برای رزرو بلیط لطفاً با پشتیبانی تماس بگیرید."
   },
   ps: {
     one_way: "یو طرفه", round_trip: "تګ راتګ",
     economy: "اکونومي", business: "بیزنس", first: "لومړۍ درجه",
     adults: "لویان", children: "ماشومان", passenger: "مسافر", confirm: "تایید",
-    modalInfoTitle: "د مسافر معلومات", modalInfoDesc: "د الوتنې د ثبت لپاره، مهرباني وکړئ لاندې مشخصات دننه کړئ.",
-    labelName: "بشپړ نوم", labelPhone: "د اړیکې شمېره",
-    placeName: "مثلا: احمد محمدي", placePhone: "0799...",
-    btnSubmit: "ثبت او د تادیې لپاره دوام", btnLoading: "د ثبت په حال کې...",
-    modalSuccessTitle: "لومړنی ثبت ترسره شو!", labelOrderId: "د سپارښتنې شمېره",
-    modalPayDesc: "د ټکټ نهایي کولو لپاره، مهرباني وکړئ تادیه ترسره کړئ.",
-    paySuccessMsg: "تادیه په بریالیتوب سره ترسره شوه!",
-    errorEmpty: "مهرباني وکړئ نوم او د اړیکې شمېره دننه کړئ",
-    errorBooking: "د ثبت پرمهال ستونزه. مهرباني وکړئ بیا هڅه وکړئ.",
-    searching: "د الوتنو پلټنه...", noResult: "هیڅ الوتنه ونه موندل شوه.",
+    errorEmpty: "مهرباني وکړئ مبدا او مقصد دننه کړئ",
     originLabel: "مبدا (ښار یا هوايي ډګر)", destLabel: "مقصد (ښار یا هوايي ډګر)",
-    select_date: "د تګ نیټه", return_date: "د راستنیدو نیټه", close: "بندول", today: "نن ورځ"
+    select_date: "د تګ نیټه", return_date: "د راستنیدو نیټه", close: "بندول", today: "نن ورځ",
+    coming_soon_title: "سیسټم تازه کیږي",
+    coming_soon_desc: "د کورنیو او بهرنیو الوتنو د آنلاین بکینګ هوښیار سیسټم د پراختیا په حال کې دی او ژر به فعال شي. د ټکټ بک کولو لپاره مهرباني وکړئ ملاتړ سره اړیکه ونیسئ."
   },
   en: {
     one_way: "One Way", round_trip: "Round Trip",
     economy: "Economy", business: "Business", first: "First Class",
-    adults: "Adults", children: "Children", passenger: "Passenger", confirm: "Book Now",
-    modalInfoTitle: "Passenger Info", modalInfoDesc: "Please enter your details to book the flight.",
-    labelName: "Full Name", labelPhone: "Phone Number",
-    placeName: "Ex: John Doe", placePhone: "+93...",
-    btnSubmit: "Register & Pay", btnLoading: "Registering...",
-    modalSuccessTitle: "Booking Initiated!", labelOrderId: "Order ID",
-    modalPayDesc: "Please proceed with payment to finalize your ticket.",
-    paySuccessMsg: "Payment successful! Ticket has been issued.",
-    errorEmpty: "Please enter your name and phone number.",
-    errorBooking: "Booking failed. Please try again.",
-    searching: "Searching airlines...", noResult: "No flights found. Please try another route.",
+    adults: "Adults", children: "Children", passenger: "Passenger", confirm: "Confirm",
+    errorEmpty: "Please enter origin and destination.",
     originLabel: "Origin (City or Airport)", destLabel: "Destination (City or Airport)",
-    select_date: "Depart Date", return_date: "Return Date", close: "Close", today: "Go to Today"
+    select_date: "Depart Date", return_date: "Return Date", close: "Close", today: "Go to Today",
+    coming_soon_title: "System Under Construction",
+    coming_soon_desc: "Our smart online flight booking system is currently under development and will be active soon. Please contact support to book your tickets."
   }
 };
 
 const TopFilterBtn = ({ label, active, onClick, icon: Icon }) => (
-  <button type="button" onClick={onClick} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all relative ${active ? 'bg-white text-[#1e3a8a] border border-gray-200 shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}> 
-    {Icon && <Icon size={16}/>} {label} 
-    <ChevronDown size={14} className={`transition-transform duration-200 ${active ? 'rotate-180' : ''}`}/> 
-  </button>
+  <button type="button" onClick={onClick} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all relative ${active ? 'bg-white text-[#1e3a8a] border border-gray-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}> {Icon && <Icon size={16}/>} {label} <ChevronDown size={14} className={`transition-transform duration-200 ${active ? 'rotate-180' : ''}`}/> </button>
 );
 
-export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }) {
+export default function Tickets({ t, lang, initialData }) {
   const location = useLocation();
+  
   const searchData = location.state?.initialData || initialData;
-  const [searchState, setSearchState] = useState('idle');
-  const [bookingLoading, setBookingLoading] = useState(false);
+  const [searchState, setSearchState] = useState('idle'); // idle, coming_soon
   const [activeDropdown, setActiveDropdown] = useState(null);
   const dropdownRef = useRef(null);
-  const [selectedFlight, setSelectedFlight] = useState(null);
-  const [customerInfo, setCustomerInfo] = useState({ name: '', phone: '' });
-  const [bookedOrder, setBookedOrder] = useState(null);
+  
   const isLtr = lang === 'en';
-
   const txt = translations[lang] || translations.dr;
   const lt = { 
       search: lang==='en'?'Search':(lang==='dr'?'جستجوی پرواز':'لټون'), 
       select_date: lang==='en'?'Depart Date':(lang==='dr'?'تاریخ رفت':'نیټه'), 
       return_date: lang==='en'?'Return Date':(lang==='dr'?'تاریخ برگشت':'راستنیدو نیټه') 
   };
+  
   const [formData, setFormData] = useState({ origin: '', destination: '', date: '', returnDate: '', tripType: 'one_way', flightClass: 'economy', adults: 1, children: 0 });
-  const [results, setResults] = useState([]);
 
   useEffect(() => {
-    if (searchData && searchData.origin && searchData.destination) {
+    if (searchData) {
       setFormData(searchData);
-      performSearch(searchData);
+      setSearchState('coming_soon');
     }
   }, [searchData]);
 
@@ -110,146 +79,19 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // تابع هوشمند برای استخراج کدهای IATA (مثلا KBL) از متن انتخاب شده
-  const extractIATA = (text) => {
-    if (!text) return '';
-    // ابتدا به دنبال ۳ حرف داخل پرانتز می‌گردد
-    const exactMatch = text.match(/\(([A-Za-z]{3})\)/);
-    if (exactMatch) return exactMatch[1].toUpperCase();
-    
-    // در غیر این صورت به دنبال ۳ حرف انگلیسی پشت سر هم می‌گردد
-    const wordMatch = text.match(/\b([A-Za-z]{3})\b/);
-    if (wordMatch) return wordMatch[1].toUpperCase();
-    
-    return text.trim().toUpperCase();
-  };
-
-  const performSearch = async (data) => {
-    setSearchState('loading');
-    setResults([]);
-    try {
-        const originCode = extractIATA(data.origin);
-        const destCode = extractIATA(data.destination);
-
-        const { data: resData, error } = await supabase.functions.invoke('search-flights', {
-            body: { 
-                origin: originCode, 
-                destination: destCode,
-                date: data.date 
-            }
-        });
-        if (error) throw error;
-        
-        if (resData && resData.flights && resData.flights.length > 0) {
-            setResults(resData.flights);
-            setSearchState('results');
-        } else {
-            setSearchState('empty');
-        }
-
-    } catch (err) {
-        console.error("Search Error:", err);
-        setSearchState('empty');
-    }
-  };
-
   const handleSearch = (e) => {
     e.preventDefault();
     if(!formData.origin || !formData.destination) {
         alert(txt.errorEmpty);
         return;
     }
-    performSearch(formData);
-  };
-
-  const openInfoModal = (flight) => {
-    setSelectedFlight(flight);
-    setCustomerInfo({ name: '', phone: '' });
-  };
-
-  const handleSubmitBooking = async (e) => {
-     e.preventDefault();
-     if(!customerInfo.name || !customerInfo.phone) {
-         alert(txt.errorEmpty);
-         return;
-     }
-     
-     setBookingLoading(true);
-     const { data, error } = await supabase.from('bookings').insert([{ 
-        customer_name: customerInfo.name,
-        customer_phone: customerInfo.phone,
-        flight_info: selectedFlight, 
-        status: 'pending_payment',
-        amount: selectedFlight.price * 70 // تبدیل حدودی به افغانی (میتوانید تغییر دهید)
-     }]).select();
-     setBookingLoading(false);
-
-     if (error) {
-       console.error("Error booking:", error);
-       alert(`${txt.errorBooking}`);
-     } else {
-       if (data && data.length > 0) {
-           const newOrder = data[0];
-           setBookedOrder({
-               id: newOrder.id,
-               amount: newOrder.amount
-           });
-           setSelectedFlight(null);
-       }
-     }
+    // نمایش حالت "در دست ساخت" به جای جستجو در سرور
+    setSearchState('coming_soon');
   };
 
   return (
     <div className="max-w-7xl mx-auto w-full px-4 pt-8 space-y-8 animate-in fade-in font-[Vazirmatn]" dir={isLtr ? 'ltr' : 'rtl'}>
-       
-       {/* مدال دریافت اطلاعات مسافر */}
-       {selectedFlight && (
-         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-            <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl relative" dir={isLtr ? 'ltr' : 'rtl'}>
-                <button onClick={() => setSelectedFlight(null)} className={`absolute top-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition ${isLtr ? 'right-4' : 'left-4'}`}><X size={20}/></button>
-                <h3 className="text-xl font-black text-gray-800 mb-1">{txt.modalInfoTitle}</h3>
-                <p className="text-sm text-gray-500 mb-6">{txt.modalInfoDesc}</p>
-                <form onSubmit={handleSubmitBooking} className="space-y-4">
-                    <div>
-                        <label className="block text-xs font-bold text-gray-500 mb-1">{txt.labelName}</label>
-                        <div className="flex items-center gap-2 bg-gray-50 border border-transparent focus-within:border-[#058B8C] rounded-xl p-3 transition-colors">
-                            <User size={18} className="text-gray-400"/>
-                            <input autoFocus value={customerInfo.name} onChange={e => setCustomerInfo({...customerInfo, name: e.target.value})} className="bg-transparent outline-none w-full text-sm font-bold" placeholder={txt.placeName}/>
-                        </div>
-                    </div>
-                    <div>
-                        <label className="block text-xs font-bold text-gray-500 mb-1">{txt.labelPhone}</label>
-                        <div className="flex items-center gap-2 bg-gray-50 border border-transparent focus-within:border-[#058B8C] rounded-xl p-3 transition-colors">
-                            <Phone size={18} className="text-gray-400"/>
-                            <input type="tel" value={customerInfo.phone} onChange={e => setCustomerInfo({...customerInfo, phone: e.target.value})} className="bg-transparent outline-none w-full text-sm font-bold text-left dir-ltr" placeholder={txt.placePhone}/>
-                        </div>
-                    </div>
-                    <button type="submit" disabled={bookingLoading} className="w-full bg-[#f97316] hover:bg-orange-600 text-white py-3 rounded-xl font-bold transition flex items-center justify-center gap-2 mt-6 shadow-lg shadow-orange-200">
-                        {bookingLoading ? <Loader2 className="animate-spin" size={18}/> : null}
-                        {bookingLoading ? txt.btnLoading : txt.btnSubmit}
-                    </button>
-                </form>
-            </div>
-         </div>
-       )}
 
-       {/* مدال پرداخت */}
-       {bookedOrder && (
-         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in zoom-in-95">
-            <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl relative" dir={isLtr ? 'ltr' : 'rtl'}>
-                <button onClick={() => setBookedOrder(null)} className={`absolute top-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200 ${isLtr ? 'right-4' : 'left-4'}`}><X size={20}/></button>
-                <div className="text-center mb-6">
-                    <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce"><Check size={40}/></div>
-                    <h3 className="text-2xl font-black text-gray-800">{txt.modalSuccessTitle}</h3>
-                    <p className="text-gray-500 mt-2 text-sm">{txt.labelOrderId}: <span className="font-mono bg-gray-100 px-2 rounded mx-1 font-bold">{String(bookedOrder.id).slice(0,8)}</span></p>
-                    <p className="text-gray-600 mt-4 text-sm">{txt.modalPayDesc}</p>
-                </div>
-                <PaymentModal lang={lang} amount={bookedOrder.amount} orderId={bookedOrder.id} onClose={() => setBookedOrder(null)} onSuccess={() => { alert(txt.paySuccessMsg); setBookedOrder(null); if(onBookSuccess) onBookSuccess(); }}/>
-            </div>
-         </div>
-       )}
-
-       {/* بخش فرم جستجو */}
        <div className="bg-white p-6 rounded-[2rem] shadow-xl border border-gray-100 space-y-6 relative z-30" ref={dropdownRef}>
           <div className="flex flex-wrap items-center gap-3 relative z-50">
              
@@ -276,7 +118,7 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
                          <div key={k} className="flex justify-between items-center mb-4 last:mb-0">
                            <span className="font-bold text-gray-700">{txt[k]}</span>
                            <div className="flex items-center gap-3 bg-gray-100 rounded-lg p-1">
-                             <button onClick={() => setFormData(p => ({...p, [k]: Math.max(0, p[k]-1)}))} className="w-8 h-8 flex items-center justify-center bg-white rounded shadow text-gray-600 hover:text-red-500"><Minus size={14}/></button>
+                               <button onClick={() => setFormData(p => ({...p, [k]: Math.max(0, p[k]-1)}))} className="w-8 h-8 flex items-center justify-center bg-white rounded shadow text-gray-600 hover:text-red-500"><Minus size={14}/></button>
                              <span className="w-4 text-center font-bold text-sm">{formData[k]}</span>
                              <button onClick={() => setFormData(p => ({...p, [k]: p[k]+1}))} className="w-8 h-8 flex items-center justify-center bg-[#058B8C] text-white rounded shadow"><Plus size={14}/></button>
                            </div>
@@ -325,7 +167,7 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
 
              <div className={`flex-1 relative h-20 lg:h-auto ${isLtr ? 'border-l border-gray-100' : 'border-r border-gray-100'}`}>
                 <div onClick={()=>setActiveDropdown(activeDropdown==='date'?null:'date')} className="flex items-center gap-3 px-4 py-3 cursor-pointer h-full hover:bg-gray-50 rounded-xl transition">
-                   <Calendar size={20} className="text-[#058B8C]"/>
+                   <Calendar size={20} className="text-gray-400"/>
                    <div className="flex flex-col">
                         <span className="text-[10px] text-gray-400 font-bold">{lt.select_date}</span>
                         <span className={`text-sm font-black ${formData.date?'text-gray-800':'text-gray-300'}`}>{formData.date || '---'}</span>
@@ -346,61 +188,27 @@ export default function Tickets({ t, setPage, lang, initialData, onBookSuccess }
              </div>
 
              <div className="p-2 lg:w-auto w-full h-20 lg:h-auto">
-                 <button onClick={handleSearch} disabled={searchState==='loading'} className="w-full lg:w-auto h-full min-w-[140px] bg-[#f97316] text-white rounded-xl font-bold px-8 py-3 flex items-center justify-center gap-2 transition disabled:opacity-70 shadow-lg shadow-orange-200 active:scale-95 transform">
-                   {searchState==='loading' ? <Loader2 className="animate-spin"/> : <><Search size={20}/> {lt.search}</>}
+                 <button onClick={handleSearch} className="w-full lg:w-auto h-full min-w-[140px] bg-[#f97316] text-white rounded-xl font-bold px-8 py-3 flex items-center justify-center gap-2 transition hover:bg-orange-600 shadow-lg shadow-orange-200 active:scale-95 transform">
+                   <Search size={20}/> {lt.search}
                 </button>
              </div>
           </div>
        </div>
 
-       {/* لیست نتایج پرواز */}
-       {searchState === 'results' && (
-          <div className="space-y-4 animate-in slide-in-from-bottom-4">
-             {results.map(flight => (
-                 <div key={flight.id} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 hover:border-[#1e3a8a] transition-all flex flex-col md:flex-row items-center justify-between gap-6 hover:shadow-lg">
-                   <div className="flex items-center gap-4 min-w-[200px] w-full md:w-auto">
-                      <div className="w-16 h-16 flex items-center justify-center bg-gray-50 rounded-2xl p-2 shrink-0 border border-gray-100">
-                          <img src={`https://pics.avs.io/200/200/${flight.logo}.png`} alt={flight.airline} className="max-w-full max-h-full object-contain" onError={(e) => e.target.src = 'https://cdn-icons-png.flaticon.com/512/7893/7893979.png'}/>
-                      </div>
-                      <div className="flex-1">
-                         <div className="flex items-center flex-wrap gap-2 mb-1">
-                            {/* نشانگر منبع پرواز */}
-                            {flight.source === 'manual' && <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md font-black">چارتر ویژه</span>}
-                            {flight.source !== 'manual' && <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md font-bold">سیستمی</span>}
-                            <span className="text-xs text-gray-500 font-bold">{flight.airline} | {flight.flightNo}</span>
-                         </div>
-                         <div className="font-black text-xl text-gray-800" dir="ltr">{flight.dep} - {flight.arr}</div>
-                         <div className="text-[11px] text-gray-400 mt-1 font-bold">مدت زمان: {flight.duration}</div>
-                      </div>
-                   </div>
-
-                   <div className="flex md:flex-col items-center justify-between md:items-end w-full md:w-auto border-t md:border-t-0 pt-4 md:pt-0">
-                      <div className="font-black text-2xl text-[#f97316] mb-2">${flight.price}</div>
-                      <button onClick={()=>openInfoModal(flight)} className="px-8 py-3 bg-[#1e3a8a] text-white rounded-xl font-bold hover:bg-blue-900 transition shadow-lg shadow-blue-200 active:scale-95">
-                         {txt.confirm}
-                      </button>
-                   </div>
-                </div>
-             ))}
+       {/* نمایش حالت در حال ساخت */}
+       {searchState === 'coming_soon' && (
+          <div className="bg-white rounded-3xl p-12 text-center border border-blue-100 shadow-sm animate-in slide-in-from-bottom-4">
+             <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Hammer size={40} className="text-blue-400 animate-pulse"/>
+             </div>
+             <h2 className="text-2xl font-black text-gray-800 mb-3">{txt.coming_soon_title}</h2>
+             <p className="text-gray-500 font-bold max-w-lg mx-auto leading-relaxed">
+                 {txt.coming_soon_desc}
+             </p>
           </div>
        )}
 
-       {searchState === 'empty' && (
-          <div className="bg-white rounded-3xl p-10 text-center border border-gray-100 shadow-sm">
-             <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4"><Plane size={32} className="text-gray-300"/></div>
-             <p className="font-bold text-gray-600">{txt.noResult}</p>
-          </div>
-       )}
-       
-       {searchState === 'loading' && (
-          <div className="bg-white rounded-3xl p-20 text-center border border-gray-100 shadow-sm flex flex-col items-center justify-center gap-4">
-             <Loader2 size={40} className="animate-spin text-[#058B8C]"/>
-             <span className="font-bold text-gray-500">{txt.searching}</span>
-          </div>
-       )}
-
-       {/* تذکرات مهم */}
-       <div className="bg-orange-50 border border-orange-100 rounded-3xl p-6 md:p-8 relative overflow-hidden">
+       <div className="bg-orange-50 border border-orange-100 rounded-3xl p-6 md:p-8 relative overflow-hidden mt-8">
           <div className="absolute -top-6 -left-6 opacity-5 rotate-12">
              <AlertTriangle size={150} className="text-[#f97316]"/>
           </div>

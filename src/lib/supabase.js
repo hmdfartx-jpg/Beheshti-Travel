@@ -1,10 +1,3 @@
 import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error("⚠️ Supabase Keys are missing in .env file!");
-}
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// یک کلید الکی می‌دهیم تا سایت موقتاً کرش نکند تا بقیه فایل‌ها را به فایربیس منتقل کنیم
+export const supabase = createClient('https://dummy.supabase.co', 'dummy-key');

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import ServiceCard from '../components/ServiceCard';
 import WeatherBlock from '../components/WeatherBlock';
 
-// --- لیست جامع و کامل فرودگاه‌ها (بدون حذفیات) ---
+// --- لیست جامع و کامل فرودگاه‌ها ---
 const AIRPORTS = [
   // --- افغانستان (Afghanistan) ---
   { code: 'KBL', name: 'Kabul International', city: 'Kabul', fa: 'کابل', ps: 'کابل', country: 'Afghanistan' },
@@ -138,7 +138,7 @@ const AIRPORTS = [
   { code: 'MEL', name: 'Tullamarine', city: 'Melbourne', fa: 'ملبورن', ps: 'ملبورن', country: 'Australia' }
 ];
 
-// --- توابع تبدیل تاریخ (Jalaali Logic) ---
+// --- توابع تبدیل تاریخ ---
 const jalaali = {
   toJalaali: (gy, gm, gd) => {
     let g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
@@ -306,7 +306,7 @@ const AirportSearch = ({ value, onChange, placeholder, icon: Icon, lang = 'dr' }
       {isOpen && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 max-h-60 overflow-y-auto z-50 animate-in fade-in zoom-in-95">
            {filteredAirports.length > 0 ?
-          filteredAirports.map(item => (
+            filteredAirports.map(item => (
             <div 
               key={item.code} 
               className={`px-4 py-3 hover:bg-blue-50 cursor-pointer flex items-center border-b border-gray-50 last:border-0 ${isLtr ? 'flex-row text-left justify-between' : 'flex-row-reverse text-right justify-between'}`}
@@ -337,7 +337,7 @@ const AirportSearch = ({ value, onChange, placeholder, icon: Icon, lang = 'dr' }
   );
 };
 
-// --- کامپوننت هوشمند تقویم (Smart Calendar) ---
+// --- کامپوننت هوشمند تقویم ---
 const SmartCalendar = ({ selectedDate, onSelect, onClose, lang }) => {
   const isLtr = lang === 'en';
   const today = new Date();
@@ -370,24 +370,19 @@ const SmartCalendar = ({ selectedDate, onSelect, onClose, lang }) => {
   const generateDays = () => {
       const days = [];
       let daysInMonth, startDayOfWeek;
-
       if (isLtr) {
           daysInMonth = new Date(currentView.year, currentView.month + 1, 0).getDate();
-          startDayOfWeek = new Date(currentView.year, currentView.month, 1).getDay(); // 0=Sun
+          startDayOfWeek = new Date(currentView.year, currentView.month, 1).getDay();
       } else {
           daysInMonth = jalaali.jalaaliMonthLength(currentView.year, currentView.month + 1);
           const gDate = jalaali.toGregorian(currentView.year, currentView.month + 1, 1);
           const jsDay = gDate.getDay(); 
-          // 0=Sun, 6=Sat. For Persian week starting Saturday:
-          // Sat(6)->0, Sun(0)->1 ... Fri(5)->6
-          startDayOfWeek = (jsDay + 1) % 7; 
+          startDayOfWeek = (jsDay + 1) % 7;
       }
 
       for (let i = 0; i < startDayOfWeek; i++) days.push({ empty: true });
-
       for (let i = 1; i <= daysInMonth; i++) {
           let dateObj, isPast, dateString, secondaryDay;
-          
           if (isLtr) {
               dateObj = new Date(currentView.year, currentView.month, i);
               isPast = dateObj < today;
@@ -436,9 +431,9 @@ const SmartCalendar = ({ selectedDate, onSelect, onClose, lang }) => {
   const primaryMonthName = isLtr 
       ? MONTH_NAMES.en[currentView.month] 
       : (lang === 'ps' ? MONTH_NAMES.ps_solar[currentView.month] : MONTH_NAMES.dr_solar[currentView.month]);
-
+      
   const toNativeNum = (num) => isLtr ? num : String(num).replace(/\d/g, d => "۰۱۲۳۴۵۶۷۸۹"[d]);
-
+  
   return (
     <div className="absolute top-full left-0 mt-3 bg-white rounded-3xl shadow-2xl border border-gray-100 p-5 z-50 w-[340px] md:w-[360px] animate-in zoom-in-95 origin-top-left" onClick={e => e.stopPropagation()} dir={isLtr ? 'ltr' : 'rtl'}>
         <div className="flex justify-between items-center mb-4 bg-gray-50 p-2 rounded-2xl">
@@ -495,8 +490,13 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
   const [stats, setStats] = useState({ customers: 0, flights: 0, visas: 0, experience: 0 });
   const [formData, setFormData] = useState({ origin: '', destination: '', date: '', returnDate: '', tripType: 'one_way', flightClass: 'economy', adults: 1, children: 0 });
   const [currentSlide, setCurrentSlide] = useState(0);
+  
   const isLtr = lang === 'en';
-  const heroImages = settings?.hero?.images && settings.hero.images.length > 0 ? settings.hero.images : [settings.hero.image];
+  
+  // استفاده مستقیم از آرایه تصاویر پنل مدیریت برای اسلایدر
+  const heroImages = settings?.hero?.images && settings.hero.images.length > 0 ? settings.hero.images : [
+    "https://images.unsplash.com/photo-1436491865332-7a61a109cc05" // بک‌گراند پیش‌فرض در صورت خالی بودن
+  ];
 
   const st = searchT[lang] || searchT.dr;
   const getLt = () => {
@@ -506,6 +506,7 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
   };
   const lt = getLt();
 
+  // تابع هوشمند و امن دریافت متن
   const getLangContent = (obj, field) => {
       if (!obj) return '';
       if (lang === 'en') return obj[`${field}_en`] || obj[field];
@@ -520,9 +521,16 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
   }, [heroImages]);
 
   useEffect(() => {
-    const targets = settings?.stats || { customers: 0, flights: 0, visas: 0, experience: 0 };
+    // تبدیل ایمن اعداد از دیتابیس برای جلوگیری از کرش شدن انیمیشن
+    const s = settings?.stats || {};
+    const targets = { 
+        customers: Number(s.customers) || 0, flights: Number(s.flights) || 0, 
+        visas: Number(s.visas) || 0, experience: Number(s.experience) || 0 
+    };
+
     const duration = 2500; const interval = 20; const steps = duration / interval;
     const increments = { customers: targets.customers/steps, flights: targets.flights/steps, visas: targets.visas/steps, experience: targets.experience/steps };
+    
     const timer = setInterval(() => {
       setStats(prev => {
         const next = {
@@ -536,7 +544,7 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
       });
     }, interval);
     return () => clearInterval(timer);
-  }, [settings.stats]);
+  }, [settings?.stats]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -567,13 +575,14 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
      {/* 1. Hero Section + Search Bar */}
       <div className="relative w-screen mx-[calc(50%-50vw)] h-[90vh] min-h-[600px] -mt-32">
         
-        {/* لایه پس‌زمینه */}
-        <div className="absolute inset-0 w-full h-full overflow-hidden z-0">
+        {/* لایه پس‌زمینه (تغییر برای استفاده از آرایه) */}
+        <div className="absolute inset-0 w-full h-full overflow-hidden z-0 bg-gray-900">
             {heroImages.map((img, index) => (
                <div key={index} className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentSlide ? 'opacity-100' : 'opacity-0'}`}>
                    <img src={img} className={`w-full h-full object-cover transform transition-transform duration-[10000ms] ease-out ${index === currentSlide ? 'scale-110' : 'scale-100'}`} alt={`Slide ${index}`} />
                 </div>
             ))}
+            
             <div className="absolute inset-0 bg-black/40 z-10" />
             <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#058B8C] via-[#058B8C]/80 to-transparent z-20 w-full" />
         </div>
@@ -582,8 +591,8 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center text-center px-4 pb-12 pt-20">
              <div className="space-y-6">
                  <div className="flex flex-col items-center gap-2">
-                    <h2 className="text-4xl md:text-7xl font-black text-white drop-shadow-lg leading-tight">{getLangContent(settings.hero, 'title')}</h2>
-                    <p className="text-lg md:text-3xl font-medium text-white/90 drop-shadow-md">{getLangContent(settings.hero, 'subtitle')}</p>
+                    <h2 className="text-4xl md:text-7xl font-black text-white drop-shadow-lg leading-tight">{getLangContent(settings?.hero, 'title')}</h2>
+                    <p className="text-lg md:text-3xl font-medium text-white/90 drop-shadow-md">{getLangContent(settings?.hero, 'subtitle')}</p>
                  </div>
                  <div className="w-20 h-1.5 bg-white/40 rounded-full mx-auto"></div>
              </div>
@@ -614,13 +623,13 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
                            <div key={k} className="flex justify-between items-center mb-4 last:mb-0">
                            <span className="font-bold text-gray-700">{st[k]}</span>
                            <div className="flex items-center gap-3 bg-gray-100 rounded-lg p-1">
-                               <button onClick={() => setFormData(p => ({...p, [k]: Math.max(0, p[k]-1)}))} className="w-8 h-8 flex items-center justify-center bg-white rounded shadow text-gray-600 hover:text-red-500"><Minus size={14}/></button>
+                              <button onClick={() => setFormData(p => ({...p, [k]: Math.max(0, p[k]-1)}))} className="w-8 h-8 flex items-center justify-center bg-white rounded shadow text-gray-600 hover:text-red-500"><Minus size={14}/></button>
                              <span className="w-4 text-center font-bold text-sm">{formData[k]}</span>
                              <button onClick={() => setFormData(p => ({...p, [k]: p[k]+1}))} className="w-8 h-8 flex items-center justify-center bg-[#058B8C] text-white rounded shadow"><Plus size={14}/></button>
                            </div>
                          </div>
                        ))}
-                       <button onClick={() => setActiveDropdown(null)} className="w-full mt-2 py-2 text-[#058B8C] font-black text-sm hover:bg-blue-50 rounded-lg">{st.confirm}</button>
+                        <button onClick={() => setActiveDropdown(null)} className="w-full mt-2 py-2 text-[#058B8C] font-black text-sm hover:bg-blue-50 rounded-lg">{st.confirm}</button>
                     </div>
                   )}
                </div>
@@ -629,7 +638,7 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
                   {activeDropdown === 'class' && (
                     <div className={`absolute top-full mt-2 w-48 bg-white rounded-xl shadow-xl py-2 overflow-hidden animate-in zoom-in-95 ${isLtr ? 'left-0' : 'right-0'}`}>
                       {['economy', 'business', 'first'].map(k => (
-                           <button key={k} onClick={() => {setFormData({...formData, flightClass: k}); setActiveDropdown(null)}} className={`w-full px-4 py-3 hover:bg-gray-50 text-sm font-bold text-gray-700 flex justify-between ${isLtr ? 'text-left' : 'text-right'}`}>{st[k]}</button>
+                             <button key={k} onClick={() => {setFormData({...formData, flightClass: k}); setActiveDropdown(null)}} className={`w-full px-4 py-3 hover:bg-gray-50 text-sm font-bold text-gray-700 flex justify-between ${isLtr ? 'text-left' : 'text-right'}`}>{st[k]}</button>
                       ))}
                     </div>
                   )}
@@ -644,7 +653,7 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
                    <AirportSearch lang={lang} icon={Plane} value={formData.origin} onChange={(val)=>setFormData({...formData, origin: val})} placeholder={lang==='dr'?"مبدا (شهر یا فرودگاه)":(lang==='en'?"Origin (City or Airport)":"له کوم ځای؟")} />
                </div>
                
-               {/* دکمه سوییچ مستقل و ثابت در مرکز */}
+               {/* دکمه سوییچ */}
                <div className="relative h-0 lg:h-auto lg:w-0 z-40 flex items-center justify-center">
                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                         <button 
@@ -699,6 +708,7 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
             </div>
           </div>
           </div>
+       
         </div>
       </div>
 
@@ -707,9 +717,12 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
       {/* 2. اخبار و اطلاعیه‌ها */}
       <div className="max-w-7xl mx-auto px-4 py-6">
          <h2 className="text-3xl font-black text-center text-[#058B8C] mb-8 relative">{lt.news_title}<span className="absolute bottom-[-10px] left-1/2 transform -translate-x-1/2 w-16 h-1 bg-[#D4AF37] rounded-full"></span></h2>
-         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+         
+         {/* چینش صحیح و وسط‌چین با flex */}
+         <div className="flex flex-wrap justify-center gap-6">
              {sortedNews.slice(0, 5).map((news) => (
-               <div key={news.id} onClick={() => setPage('news')} className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group relative">
+                 <div key={news.id} onClick={() => navigate(`/news/${news.id}`)} className="w-full sm:w-[calc(50%-1.5rem)] lg:w-[calc(33.33%-1.5rem)] xl:w-[calc(20%-1.5rem)] bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group relative">
+                  
                   {news.pinned && <div className={`absolute top-2 bg-yellow-400 text-white p-1 rounded-full shadow-sm z-10 ${isLtr ? 'right-2' : 'left-2'}`}><Pin size={12} fill="white"/></div>}
                   <div className="h-32 overflow-hidden">
                       <img src={news.image_url} alt={getLangContent(news, 'title')} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
@@ -722,7 +735,7 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
                      <h3 className="font-black text-gray-800 text-sm mb-2 line-clamp-1">{getLangContent(news, 'title')}</h3>
                       <p className="text-gray-500 text-[11px] leading-relaxed line-clamp-2">{getLangContent(news, 'description')}</p>
                   </div>
-               </div>
+                 </div>
              ))}
          </div>
       </div>
@@ -731,7 +744,7 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
       <div className="max-w-7xl mx-auto px-4 py-6">
          <h2 className="text-3xl font-black text-center text-[#058B8C] mb-8 relative">{lt.services_title}<span className="absolute bottom-[-10px] left-1/2 transform -translate-x-1/2 w-16 h-1 bg-[#D4AF37] rounded-full"></span></h2>
          <div className="flex flex-wrap justify-center gap-6">
-            {settings.services && settings.services.map((srv, index) => {
+             {settings?.services && settings.services.map((srv, index) => {
                const IconComponent = ICON_MAP[srv.icon] || FileText;
                const colorClasses = { blue: 'bg-blue-50 text-[#058B8C] group-hover:bg-[#058B8C] group-hover:text-white', orange: 'bg-orange-50 text-[#f97316] group-hover:bg-[#f97316] group-hover:text-white', green: 'bg-green-50 text-green-600 group-hover:bg-green-600 group-hover:text-white', purple: 'bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white', teal: 'bg-teal-50 text-teal-600 group-hover:bg-teal-600 group-hover:text-white' };
                const activeColor = colorClasses[srv.color] || colorClasses.blue;
@@ -742,7 +755,7 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
                      <p className="text-gray-500 text-xs leading-relaxed">{getServiceDesc(srv)}</p>
                   </div>
                );
-            })}
+             })}
          </div>
       </div>
 
@@ -751,7 +764,7 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
          <div className="absolute top-0 left-0 w-32 h-32 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl"></div>
          <div className="absolute bottom-0 right-0 w-64 h-64 bg-[#D4AF37]/20 rounded-full translate-x-1/3 translate-y-1/3 blur-3xl"></div>
          <div className="max-w-7xl mx-auto px-4 relative z-10">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x divide-x-reverse divide-white/10">
+             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x divide-x-reverse divide-white/10">
                <div className="space-y-2 group"><div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mx-auto"><Users size={24} className="text-[#D4AF37]"/></div><div><div className="text-3xl font-black text-white" dir="ltr">+{Math.floor(stats.customers)}</div><div className="text-xs font-bold text-gray-200">{lt.stat_customers}</div></div></div>
                <div className="space-y-2 group"><div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mx-auto"><Plane size={24} className="text-[#D4AF37]"/></div><div><div className="text-3xl font-black text-white" dir="ltr">+{Math.floor(stats.flights)}</div><div className="text-xs font-bold text-gray-200">{lt.stat_flights}</div></div></div>
                <div className="space-y-2 group"><div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mx-auto"><CheckCircle size={24} className="text-[#D4AF37]"/></div><div><div className="text-3xl font-black text-white" dir="ltr">+{Math.floor(stats.visas)}</div><div className="text-xs font-bold text-gray-200">{lt.stat_visas}</div></div></div>
@@ -762,7 +775,7 @@ export default function Home({ t, setPage, lang, onSearch, newsData, settings })
 
       {/* 5. آب و هوا */}
       <div className="max-w-7xl mx-auto px-4 mt-4">
-         <WeatherBlock cities={settings?.weather_cities} lang={lang} />
+          <WeatherBlock cities={settings?.weather_cities} lang={lang} />
       </div>
 
       {/* 6. ویژگی‌های شرکت */}

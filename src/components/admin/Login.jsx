@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Lock, Eye, EyeOff, ArrowRight, Shield, CheckCircle, RefreshCw, Loader2 } from 'lucide-react';
-import { supabase } from '../../lib/supabase'; // <--- اتصال به دیتابیس اضافه شد
+import { db } from '../../lib/firebase'; 
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 const loginTranslations = {
   dr: {
@@ -50,9 +51,7 @@ export default function Login({ onLogin, lang = 'dr', setPage }) {
   const [captchaInput, setCaptchaInput] = useState('');
   const [generatedCaptcha, setGeneratedCaptcha] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  
-  // استیت جدید برای حالت لودینگ هنگام ارتباط با دیتابیس
-  const [loading, setLoading] = useState(false); 
+  const [loading, setLoading] = useState(false);
 
   const currentLang = lang || 'dr';
   const t = loginTranslations[currentLang];
@@ -70,11 +69,9 @@ export default function Login({ onLogin, lang = 'dr', setPage }) {
     generateCaptcha();
   }, []);
 
-  // --- تغییر تابع به Async برای ارتباط با دیتابیس ---
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // ۱. بررسی کپچا (دقیقاً مثل کد خودتان)
+
     if (captchaInput !== generatedCaptcha) {
       alert(t.error_captcha);
       generateCaptcha();
@@ -85,23 +82,22 @@ export default function Login({ onLogin, lang = 'dr', setPage }) {
     setLoading(true);
 
     try {
-      // ۲. جستجوی کاربر در دیتابیس (نام کاربری را همان ایمیل در نظر می‌گیریم)
-      const { data: admin, error: fetchError } = await supabase
-        .from('admins')
-        .select('*')
-        .eq('email', username) // جستجو در دیتابیس بر اساس ایمیل وارد شده
-        .single();
+      // جستجوی کاربر در کالکشن admins فایربیس
+      const adminsRef = collection(db, 'admins');
+      const q = query(adminsRef, where('email', '==', username));
+      const querySnapshot = await getDocs(q);
 
-      // ۳. بررسی صحت نام کاربری و رمز عبور
-      if (fetchError || !admin) {
+      if (querySnapshot.empty) {
         throw new Error(t.error_auth);
       }
+
+      const adminDoc = querySnapshot.docs[0];
+      const admin = { id: adminDoc.id, ...adminDoc.data() };
 
       if (admin.password !== password) {
         throw new Error(t.error_auth);
       }
 
-      // ۴. در صورت موفقیت: ذخیره سشن برای ۲۴ ساعت همراه با اطلاعات کاربر و دسترسی‌های او
       const expiry = new Date().getTime() + (24 * 60 * 60 * 1000);
       const sessionData = { 
         user: {
@@ -115,7 +111,6 @@ export default function Login({ onLogin, lang = 'dr', setPage }) {
       };
       
       localStorage.setItem('admin_session', JSON.stringify(sessionData));
-      
       onLogin();
 
     } catch (err) {
@@ -224,7 +219,7 @@ export default function Login({ onLogin, lang = 'dr', setPage }) {
             onClick={() => setPage('home')}
             className="w-full bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 py-3 rounded-xl font-bold transition flex items-center justify-center gap-2"
           >
-             {t.back}
+              {t.back}
           </button>
         </form>
       </div>

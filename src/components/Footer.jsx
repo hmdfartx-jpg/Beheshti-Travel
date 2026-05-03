@@ -2,9 +2,8 @@ import React from 'react';
 import { Phone, Mail, MapPin, Instagram, Facebook, Send, Link as LinkIcon, MessageCircle } from 'lucide-react';
 
 export default function Footer({ t, lang, settings }) {
-  // استفاده از تنظیمات تماس (شامل آدرس، تلفن و اکنون متن کوتاه فوتر)
+  // استفاده از تنظیمات تماس (شامل آدرس، تلفن و متن کوتاه فوتر)
   const contact = settings?.contact || {};
-  // تنظیمات about برای عنوان (اگر نیاز بود)
   const about = settings?.about || {};
   const usefulLinks = settings?.useful_links || [];
   
@@ -62,7 +61,6 @@ export default function Footer({ t, lang, settings }) {
             
             {/* متن کوتاه شده اختصاصی فوتر */}
             <p className="text-white/90 text-xs leading-6 text-justify">
-              {/* اینجا به جای about.desc از contact.footer_about استفاده می‌کنیم */}
               {getSettingText(contact, 'footer_about') || getText(
                   "متن کوتاه درباره ما را از پنل مدیریت > تنظیمات سایت > فوتر وارد کنید.",
                   "د پنل مدیریت څخه لنډ متن دننه کړئ.",
@@ -94,21 +92,21 @@ export default function Footer({ t, lang, settings }) {
           <div>
             <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
                <span className="w-8 h-1 bg-[#D4AF37] rounded-full"></span>
-               {t.footer?.quick_links || getText("دسترسی سریع", "چټک لاسرسی", "Quick Links")}
+               {t?.footer?.quick_links || getText("دسترسی سریع", "چټک لاسرسی", "Quick Links")}
             </h3>
             <ul className="space-y-4 text-sm text-white/90">
-              <li><a href="#" className="hover:text-[#D4AF37] transition-colors flex items-center gap-2"><span className="w-1 h-1 bg-current rounded-full"></span> {t.nav?.home}</a></li>
-              <li><a href="#" className="hover:text-[#D4AF37] transition-colors flex items-center gap-2"><span className="w-1 h-1 bg-current rounded-full"></span> {t.nav?.tickets}</a></li>
-              <li><a href="#" className="hover:text-[#D4AF37] transition-colors flex items-center gap-2"><span className="w-1 h-1 bg-current rounded-full"></span> {t.nav?.visa}</a></li>
-              <li><a href="#" className="hover:text-[#D4AF37] transition-colors flex items-center gap-2"><span className="w-1 h-1 bg-current rounded-full"></span> {t.nav?.news}</a></li>
+              <li><a href="#" className="hover:text-[#D4AF37] transition-colors flex items-center gap-2"><span className="w-1 h-1 bg-current rounded-full"></span> {t?.nav?.home || getText('خانه', 'کور', 'Home')}</a></li>
+              <li><a href="#" className="hover:text-[#D4AF37] transition-colors flex items-center gap-2"><span className="w-1 h-1 bg-current rounded-full"></span> {t?.nav?.tickets || getText('پروازها', 'الوتنې', 'Flights')}</a></li>
+              <li><a href="#" className="hover:text-[#D4AF37] transition-colors flex items-center gap-2"><span className="w-1 h-1 bg-current rounded-full"></span> {t?.nav?.visa || getText('ویزا', 'ویزا', 'Visa')}</a></li>
+              <li><a href="#" className="hover:text-[#D4AF37] transition-colors flex items-center gap-2"><span className="w-1 h-1 bg-current rounded-full"></span> {t?.nav?.news || getText('اخبار', 'خبرونه', 'News')}</a></li>
             </ul>
           </div>
 
-          {/* ستون سوم: تماس با ما (دیپ لینک و هوشمند) */}
+          {/* ستون سوم: تماس با ما (دیپ لینک و متصل به نقشه مدیریت) */}
           <div>
             <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
                <span className="w-8 h-1 bg-[#D4AF37] rounded-full"></span>
-               {t.footer?.contact_us || getText("تماس با ما", "موږ سره اړیکه", "Contact Us")}
+               {t?.footer?.contact_us || getText("تماس با ما", "موږ سره اړیکه", "Contact Us")}
             </h3>
             <ul className="space-y-6 text-sm">
               <li className="flex items-start gap-4 group">
@@ -116,8 +114,7 @@ export default function Footer({ t, lang, settings }) {
                    <Phone size={18}/>
                 </div>
                 <div className="flex flex-col">
-                   <span className="text-[10px] text-white/70 mb-1">{t.common?.phone}</span>
-                   {/* دیپ لینک تلفن */}
+                   <span className="text-[10px] text-white/70 mb-1">{t?.common?.phone || getText('تلفن', 'تلیفون', 'Phone')}</span>
                    <a href={`tel:${contact.phone}`} className="font-bold dir-ltr text-right hover:text-[#D4AF37] transition-colors" style={{ direction: 'ltr', textAlign: lang === 'en' ? 'left' : 'right' }}>
                        {contact.phone || '...'}
                    </a>
@@ -131,7 +128,6 @@ export default function Footer({ t, lang, settings }) {
                    <span className="text-[10px] text-white/70 mb-1">
                        {getText("ایمیل", "بریښنالیک", "Email")}
                    </span>
-                   {/* دیپ لینک ایمیل */}
                    <a href={`mailto:${contact.email}`} className="font-bold hover:text-[#D4AF37] transition-colors">{contact.email || '...'}</a>
                 </div>
                </li>
@@ -143,7 +139,6 @@ export default function Footer({ t, lang, settings }) {
                    <span className="text-[10px] text-white/70 mb-1">
                        {getText("آدرس", "پته", "Address")}
                    </span>
-                   {/* دیپ لینک آدرس به گوگل مپ */}
                    <a 
                      href={contact.map_link || '#'} 
                      target="_blank" 
@@ -172,7 +167,7 @@ export default function Footer({ t, lang, settings }) {
                         </a>
                     </li>
                 )) : (
-                    // فال‌بک استاتیک اگر لینکی در ادمین نباشد
+                    // فال‌بک استاتیک
                     <>
                         <li>
                              <a href="https://passport.gov.af/" target="_blank" rel="noopener noreferrer" className="hover:text-[#D4AF37] transition-colors flex items-center gap-2 group">
@@ -187,9 +182,10 @@ export default function Footer({ t, lang, settings }) {
 
         </div>
 
-        {/* کپی رایت */}
+        {/* کپی رایت و لینک‌های بازیابی شده */}
         <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-white/60">
-          <p>{getSettingText(contact, 'copyright')}</p>
+          <p>{getSettingText(contact, 'copyright') || getText('تمامی حقوق محفوظ است.', 'ټول حقونه خوندي دي.', 'All rights reserved.')}</p>
+          
           <div className="flex gap-6">
              <a href="#" className="hover:text-white">
                  {getText("قوانین و مقررات", "قوانین او مقررات", "Terms & Conditions")}
