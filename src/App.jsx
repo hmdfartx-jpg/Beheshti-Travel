@@ -8,7 +8,6 @@ import { collection, getDocs, query, orderBy, limit, addDoc } from 'firebase/fir
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
-import LoadingScreen from './components/LoadingScreen';
 import SEO from './components/SEO';
 
 // Pages
@@ -167,7 +166,7 @@ const DEFAULT_SETTINGS = {
 };
 
 export default function App() {
-  const [lang, setLang] = useState('dr'); // زبان پیش‌فرض روی دری قرار گرفت
+  const [lang, setLang] = useState('dr');
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -224,10 +223,6 @@ export default function App() {
     fetchData();
   }, []);
 
-  if (loading) {
-    return <LoadingScreen />;
-  }
-
   const isAdminPage = location.pathname.startsWith('/admin');
 
   return (
@@ -280,6 +275,7 @@ export default function App() {
               <News
                 newsList={news}
                 lang={lang}
+                loading={loading}
               />
             </>
           } />
@@ -288,6 +284,7 @@ export default function App() {
             <News
               newsList={news}
               lang={lang}
+              loading={loading}
             />
           } />
 
