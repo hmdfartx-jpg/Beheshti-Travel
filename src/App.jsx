@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { translations } from './constants/translations';
-import { db } from './lib/firebase'; 
+import { db } from './lib/firebase';
 import { collection, getDocs, query, orderBy, limit, addDoc } from 'firebase/firestore';
 
 // Components
@@ -9,6 +9,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
 import LoadingScreen from './components/LoadingScreen';
+import SEO from './components/SEO';
 
 // Pages
 import Home from './pages/Home';
@@ -20,16 +21,16 @@ import Tracking from './pages/Tracking';
 import Admin from './pages/Admin';
 import News from './pages/News';
 import About from './pages/About';
-import Search from './pages/Search'; // این خط را به بخش Import ها اضافه کنید
+import Search from './pages/Search';
 
 // تنظیمات پیش‌فرض کامل
 const DEFAULT_SETTINGS = {
-  general: { 
-    brandName: "بهشتی تراول", 
-    logoText: "B" 
+  general: {
+    brandName: "بهشتی تراول",
+    logoText: "B"
   },
-  hero: { 
-    title_dr: "سفر آگاهانه، آینده درخشان", 
+  hero: {
+    title_dr: "سفر آگاهانه، آینده درخشان",
     title_ps: "پوه سفر، روښانه راتلونکې",
     title_en: "Conscious Travel, Bright Future",
     subtitle_dr: "از کابل تا دورترین نقاط جهان، ما همراه شما هستیم.",
@@ -42,62 +43,67 @@ const DEFAULT_SETTINGS = {
       "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1"
     ]
   },
-  stats: { 
-    customers: 1200, 
-    flights: 3500, 
-    visas: 850, 
-    experience: 10 
+  stats: {
+    customers: 1200,
+    flights: 3500,
+    visas: 850,
+    experience: 10
   },
   services: [
-    { 
-      icon: 'Plane', 
-      title: 'تکت طیاره', 
-      title_en: 'Flight Ticket', 
+    {
+      icon: 'Plane',
+      title: 'تکت طیاره',
+      title_en: 'Flight Ticket',
       title_ps: 'د الوتکې ټکټ',
-      desc: 'رزرو سریع و ارزان پروازهای داخلی و خارجی', 
-      desc_en: 'Fast and cheap booking of domestic and international flights', 
+      desc: 'رزرو سریع و ارزان پروازهای داخلی و خارجی',
+      desc_en: 'Fast and cheap booking of domestic and international flights',
       desc_ps: 'د کورنیو او بهرنیو الوتنو ګړندی او ارزانه بکینګ',
-      color: '#3b82f6' 
+      color: '#3b82f6',
+      url: '/tickets'
     },
-    { 
-      icon: 'FileText', 
-      title: 'اخذ ویزا', 
-      title_en: 'Visa Services', 
+    {
+      icon: 'FileText',
+      title: 'اخذ ویزا',
+      title_en: 'Visa Services',
       title_ps: 'د ویزې خدمات',
-      desc: 'خدمات ویزای ایران، پاکستان، ترکیه و روسیه', 
-      desc_en: 'Visa services for Iran, Pakistan, Turkey, and Russia', 
+      desc: 'خدمات ویزای ایران، پاکستان، ترکیه و روسیه',
+      desc_en: 'Visa services for Iran, Pakistan, Turkey, and Russia',
       desc_ps: 'د ایران، پاکستان، ترکیې او روسیې د ویزې خدمات',
-      color: '#f97316' 
+      color: '#f97316',
+      url: '/visa'
     },
-    { 
-      icon: 'GraduationCap', 
-      title: 'بورسیه تحصیلی', 
-      title_en: 'Scholarships', 
+    {
+      icon: 'GraduationCap',
+      title: 'بورسیه تحصیلی',
+      title_en: 'Scholarships',
       title_ps: 'تحصیلي بورسونه',
-      desc: 'مشاوره رایگان و اخذ پذیرش از دانشگاه‌ها', 
-      desc_en: 'Free consultation and admission from universities', 
+      desc: 'مشاوره رایگان و اخذ پذیرش از دانشگاه‌ها',
+      desc_en: 'Free consultation and admission from universities',
       desc_ps: 'وړیا مشوره او د پوهنتونونو داخلې اخیستل',
-      color: '#22c55e' 
+      color: '#22c55e',
+      url: '/scholarship'
     },
-    { 
-      icon: 'Package', 
-      title: 'خدمات باربری', 
-      title_en: 'Cargo Services', 
+    {
+      icon: 'Package',
+      title: 'خدمات باربری',
+      title_en: 'Cargo Services',
       title_ps: 'د کارګو خدمات',
-      desc: 'ارسال امانات و بارهای تجاری به سراسر جهان', 
-      desc_en: 'Sending consignments and commercial cargo worldwide', 
+      desc: 'ارسال امانات و بارهای تجاری به سراسر جهان',
+      desc_en: 'Sending consignments and commercial cargo worldwide',
       desc_ps: 'نړۍ ته د سوداګریزو بارونو او امانتونو لیږل',
-      color: '#a855f7' 
+      color: '#a855f7',
+      url: '/cargo'
     },
-    { 
-      icon: 'Hotel', 
-      title: 'رزرو هتل', 
-      title_en: 'Hotel Booking', 
+    {
+      icon: 'Hotel',
+      title: 'رزرو هتل',
+      title_en: 'Hotel Booking',
       title_ps: 'د هوټل بکینګ',
-      desc: 'اقامت راحت در بهترین هتل‌های جهان', 
-      desc_en: 'Comfortable stay in the best hotels in the world', 
+      desc: 'اقامت راحت در بهترین هتل‌های جهان',
+      desc_en: 'Comfortable stay in the best hotels in the world',
       desc_ps: 'د نړۍ په غوره هوټلونو کې آرام استوګنه',
-      color: '#14b8a6' 
+      color: '#14b8a6',
+      url: '/tickets'
     },
   ],
   weather_cities: [
@@ -126,20 +132,20 @@ const DEFAULT_SETTINGS = {
     { title_dr: "ریاست پاسپورت", title_ps: "د پاسپورت ریاست", title_en: "Passport Directorate", url: "https://passport.gov.af/" }
   ],
   navbar: {
-    logo_dr: "", 
-    logo_en: ""  
+    logo_dr: "",
+    logo_en: ""
   },
   about: {
     title_dr: "سفر رویایی شما از اینجا آغاز می‌شود",
     title_ps: "ستاسو خوب سفر له دې ځایه پیلیږي",
     title_en: "Your Dream Journey Begins Here",
-    
+
     desc_dr: "ما در بهشتی تراول با بیش از ۱۰ سال تجربه، متعهد به ارائه بهترین خدمات مسافرتی هستیم...",
     desc_ps: "موږ په بهشتي ټراول کې د ۱۰ کلونو تجربې سره ژمن یو چې غوره خدمات وړاندې کړو...",
     desc_en: "At Beheshti Travel, with over 10 years of experience, we are committed to providing the best travel services...",
-    
+
     image: "https://images.unsplash.com/photo-1507608616759-54f48f0af0ee",
-    
+
     mission_title_dr: "ماموریت ما",
     mission_title_ps: "زموږ ماموریت",
     mission_title_en: "Our Mission",
@@ -161,7 +167,7 @@ const DEFAULT_SETTINGS = {
 };
 
 export default function App() {
-  const [lang, setLang] = useState('en'); 
+  const [lang, setLang] = useState('dr'); // زبان پیش‌فرض روی دری قرار گرفت
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -174,30 +180,29 @@ export default function App() {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
-  // اضافه شدن قابلیت آپدیت بی‌صدا برای جلوگیری از باز شدن صفحه لودینگ هنگام ذخیره تنظیمات در پنل مدیریت
   const fetchData = async (silent = false) => {
     try {
       if (!silent) setLoading(true);
 
       const settingsQuery = query(collection(db, 'site_settings'), limit(1));
       const settingsSnapshot = await getDocs(settingsQuery);
-      
+
       if (!settingsSnapshot.empty) {
         const dbConfig = settingsSnapshot.docs[0].data().config;
         setSettings(prev => ({
-           ...prev,
-           ...dbConfig,
-           hero: { ...prev.hero, ...dbConfig.hero },
-           contact: { ...prev.contact, ...dbConfig.contact },
-           about: { ...prev.about, ...dbConfig.about },
-           services: dbConfig.services || prev.services,
-           weather_cities: dbConfig.weather_cities || prev.weather_cities,
-           team: dbConfig.team || [],
-           why_us: dbConfig.why_us || [],
-           agencies: dbConfig.agencies || [],
-           clients: dbConfig.clients || [],
-           useful_links: dbConfig.useful_links || prev.useful_links,
-           navbar: { ...prev.navbar, ...dbConfig.navbar }
+          ...prev,
+          ...dbConfig,
+          hero: { ...prev.hero, ...dbConfig.hero },
+          contact: { ...prev.contact, ...dbConfig.contact },
+          about: { ...prev.about, ...dbConfig.about },
+          services: dbConfig.services || prev.services,
+          weather_cities: dbConfig.weather_cities || prev.weather_cities,
+          team: dbConfig.team || [],
+          why_us: dbConfig.why_us || [],
+          agencies: dbConfig.agencies || [],
+          clients: dbConfig.clients || [],
+          useful_links: dbConfig.useful_links || prev.useful_links,
+          navbar: { ...prev.navbar, ...dbConfig.navbar }
         }));
       } else {
         await addDoc(collection(db, 'site_settings'), { config: DEFAULT_SETTINGS });
@@ -227,78 +232,150 @@ export default function App() {
 
   return (
     <div className={`min-h-screen flex flex-col font-[Vazirmatn] ${lang === 'en' ? 'font-sans' : ''}`} dir={lang === 'en' ? 'ltr' : 'rtl'}>
-      
-      <Navbar 
-        lang={lang} 
-        setLang={setLang} 
-        settings={settings} 
+
+      <Navbar
+        lang={lang}
+        setLang={setLang}
+        settings={settings}
       />
 
       <main className={`flex-1 ${isAdminPage ? '' : 'pt-24 pb-12'}`}>
         <Routes>
           <Route path="/" element={
-            <Home 
-              t={t} 
-              lang={lang} 
-              newsData={news}
-              settings={settings}
-            />
+            <>
+              <SEO
+                lang={lang}
+                title={lang === 'en' ? 'Home' : (lang === 'ps' ? 'اصلي پاڼه' : 'صفحه اصلی')}
+                description={lang === 'en' ? settings?.hero?.subtitle_en : (lang === 'ps' ? settings?.hero?.subtitle_ps : settings?.hero?.subtitle_dr)}
+              />
+              <Home
+                t={t}
+                lang={lang}
+                newsData={news}
+                settings={settings}
+              />
+            </>
           } />
-          
+
           <Route path="/tickets" element={
-            <Tickets 
-              t={t} 
-              lang={lang} 
-            />
+            <>
+              <SEO
+                lang={lang}
+                title={lang === 'en' ? 'Flight Tickets' : (lang === 'ps' ? 'د الوتکې ټکټ' : 'رزرو تکت طیاره')}
+                description={lang === 'en' ? 'Book domestic and international flights at the best prices.' : 'رزرو آنلاین و ارزان تکت پروازهای داخلی و خارجی.'}
+              />
+              <Tickets
+                t={t}
+                lang={lang}
+              />
+            </>
           } />
-          
+
           <Route path="/news" element={
-            <News 
-              newsList={news} 
-              lang={lang} 
-            />
+            <>
+              <SEO
+                lang={lang}
+                title={lang === 'en' ? 'News & Announcements' : (lang === 'ps' ? 'خبرونه او خبرتیاوې' : 'اخبار و اطلاعیه‌ها')}
+              />
+              <News
+                newsList={news}
+                lang={lang}
+              />
+            </>
           } />
 
           <Route path="/news/:id" element={
-            <News 
-              newsList={news} 
-              lang={lang} 
+            <News
+              newsList={news}
+              lang={lang}
             />
           } />
 
-          {/* ----- کدهای جدید صفحه جستجو از اینجا شروع میشود ----- */}
           <Route path="/search" element={
-            <Search 
-              t={t} 
-              lang={lang} 
-              newsData={news} 
-              settings={settings} 
-            />
+            <>
+              <SEO lang={lang} title={lang === 'en' ? 'Search Results' : 'نتایج جستجو'} />
+              <Search
+                t={t}
+                lang={lang}
+                newsData={news}
+                settings={settings}
+              />
+            </>
           } />
-          {/* ----- پایان کدهای جستجو ----- */}
 
-          <Route path="/about" element={<About t={t} lang={lang} settings={settings} />} />
-          
-          <Route path="/admin" element={
-            <Admin 
-              t={t} 
-              news={news} 
-              settings={settings} 
-              onUpdate={() => fetchData(true)} // فراخوانی تابع با پارامتر silent = true
-              lang={lang} 
-              setPage={(page) => {
-                if (page === 'home') navigate('/');
-              }}
-            />
+          <Route path="/about" element={
+            <>
+              <SEO
+                lang={lang}
+                title={lang === 'en' ? 'About & Contact Us' : (lang === 'ps' ? 'زموږ په اړه' : 'درباره و تماس با ما')}
+                description={lang === 'en' ? settings?.about?.desc_en : settings?.about?.desc_dr}
+              />
+              <About t={t} lang={lang} settings={settings} />
+            </>
           } />
-          
-          <Route path="/visa" element={<Visa t={t} lang={lang} />} />
-          <Route path="/scholarship" element={<Scholarship t={t} lang={lang} />} />
-          <Route path="/cargo" element={<Cargo t={t} lang={lang} />} />
-          <Route path="/tracking" element={<Tracking t={t} lang={lang} />} />
+
+          <Route path="/admin" element={
+            <>
+              <SEO lang={lang} title="Admin Panel | پنل مدیریت" />
+              <Admin
+                t={t}
+                news={news}
+                settings={settings}
+                onUpdate={() => fetchData(true)}
+                lang={lang}
+                setPage={(page) => {
+                  if (page === 'home') navigate('/');
+                }}
+              />
+            </>
+          } />
+
+          <Route path="/visa" element={
+            <>
+              <SEO
+                lang={lang}
+                title={lang === 'en' ? 'Visa Services' : (lang === 'ps' ? 'د ویزې خدمات' : 'خدمات اخذ ویزا')}
+                description="خدمات اخذ ویزای ایران، پاکستان، ترکیه، روسیه و سایر کشورها با بهشتی تراول."
+              />
+              <Visa t={t} lang={lang} />
+            </>
+          } />
+
+          <Route path="/scholarship" element={
+            <>
+              <SEO
+                lang={lang}
+                title={lang === 'en' ? 'Scholarships' : (lang === 'ps' ? 'تحصیلي بورسونه' : 'بورسیه‌های تحصیلی')}
+                description="مشاوره تخصصی و اخذ پذیرش و بورسیه تحصیلی از معتبرترین دانشگاه‌های جهان."
+              />
+              <Scholarship t={t} lang={lang} />
+            </>
+          } />
+
+          <Route path="/cargo" element={
+            <>
+              <SEO
+                lang={lang}
+                title={lang === 'en' ? 'Cargo Services' : (lang === 'ps' ? 'د کارګو خدمات' : 'خدمات باربری و کارگو')}
+                description="ارسال سریع و مطمئن بارهای تجاری و امانات پستی به سراسر جهان."
+              />
+              <Cargo t={t} lang={lang} />
+            </>
+          } />
+
+          <Route path="/tracking" element={
+            <>
+              <SEO
+                lang={lang}
+                title={lang === 'en' ? 'Application Tracking' : (lang === 'ps' ? 'د اسنادو تعقیب' : 'رهگیری خدمات و مرسولات')}
+              />
+              <Tracking t={t} lang={lang} />
+            </>
+          } />
 
           <Route path="*" element={
             <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
+              <SEO lang={lang} title="404 - Page Not Found" />
               <h1 className="text-6xl font-black text-gray-200 mb-4">404</h1>
               <p className="text-xl text-gray-500 font-bold">صفحه مورد نظر یافت نشد</p>
               <p className="text-gray-400 mt-2">Page Not Found</p>
