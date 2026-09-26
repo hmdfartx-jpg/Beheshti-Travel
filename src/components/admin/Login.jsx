@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { User, Lock, Eye, EyeOff, ArrowRight, Shield, CheckCircle, RefreshCw, Loader2 } from 'lucide-react';
-import { db } from '../../lib/firebase'; 
+import { db } from '../../lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 
 const loginTranslations = {
   dr: {
@@ -82,39 +83,46 @@ export default function Login({ onLogin, lang = 'dr', setPage }) {
     setLoading(true);
 
     try {
-      // جستجوی کاربر در کالکشن admins فایربیس
+      // ۱. احراز هویت امن با سیستم رسمی Firebase Authentication
+      const auth = getAuth();
+      await signInWithEmailAndPassword(auth, username.trim(), password);
+
+      // ۲. دریافت اطلاعات نقش و دسترسی ادمین از کالکشن admins
       const adminsRef = collection(db, 'admins');
-      const q = query(adminsRef, where('email', '==', username));
+      const q = query(adminsRef, where('email', '==', username.trim()));
       const querySnapshot = await getDocs(q);
 
-      if (querySnapshot.empty) {
-        throw new Error(t.error_auth);
-      }
+      let adminData = {
+        id: auth.currentUser.uid,
+        name: 'Admin',
+        email: username.trim(),
+        role: 'super_admin',
+        permissions: {}
+      };
 
-      const adminDoc = querySnapshot.docs[0];
-      const admin = { id: adminDoc.id, ...adminDoc.data() };
-
-      if (admin.password !== password) {
-        throw new Error(t.error_auth);
+      if (!querySnapshot.empty) {
+        const adminDoc = querySnapshot.docs[0];
+        adminData = { id: adminDoc.id, ...adminDoc.data() };
       }
 
       const expiry = new Date().getTime() + (24 * 60 * 60 * 1000);
-      const sessionData = { 
+      const sessionData = {
         user: {
-          id: admin.id,
-          name: admin.name,
-          email: admin.email,
-          role: admin.role,
-          permissions: admin.permissions || {}
+          id: adminData.id,
+          name: adminData.name,
+          email: adminData.email,
+          role: adminData.role,
+          permissions: adminData.permissions || {}
         },
-        expiry: expiry 
+        expiry: expiry
       };
-      
+
       localStorage.setItem('admin_session', JSON.stringify(sessionData));
       onLogin();
 
     } catch (err) {
-      alert(err.message || t.error_auth);
+      console.error("Login Error:", err);
+      alert(t.error_auth);
       generateCaptcha();
       setPassword('');
       setCaptchaInput('');
@@ -138,8 +146,8 @@ export default function Login({ onLogin, lang = 'dr', setPage }) {
           <div className="space-y-2">
             <label className={`text-sm font-bold text-gray-700 block ${alignClass}`}>{t.user}</label>
             <div className="relative">
-              <input 
-                type="text" 
+              <input
+                type="email"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className={`w-full px-5 py-4 ${currentLang === 'en' ? 'pl-12' : 'pr-12'} rounded-xl bg-gray-50 border border-gray-100 focus:border-[#058B8C] focus:ring-2 focus:ring-[#058B8C]/20 outline-none transition-all font-bold text-gray-700 ${alignClass}`}
@@ -154,8 +162,8 @@ export default function Login({ onLogin, lang = 'dr', setPage }) {
           <div className="space-y-2">
             <label className={`text-sm font-bold text-gray-700 block ${alignClass}`}>{t.pass}</label>
             <div className="relative">
-              <input 
-                type={showPassword ? "text" : "password"} 
+              <input
+                type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className={`w-full px-5 py-4 ${currentLang === 'en' ? 'pl-12' : 'pr-12'} rounded-xl bg-gray-50 border border-gray-100 focus:border-[#058B8C] focus:ring-2 focus:ring-[#058B8C]/20 outline-none transition-all font-bold text-gray-700 ${alignClass}`}
@@ -164,7 +172,7 @@ export default function Login({ onLogin, lang = 'dr', setPage }) {
                 required
               />
               <Lock className={`absolute ${currentLang === 'en' ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 text-gray-400`} size={20} />
-              <button 
+              <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className={`absolute ${currentLang === 'en' ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#058B8C]`}
@@ -175,51 +183,51 @@ export default function Login({ onLogin, lang = 'dr', setPage }) {
           </div>
 
           <div className="space-y-2">
-              <label className={`text-sm font-bold text-gray-700 block ${alignClass}`}>{t.captcha}</label>
-              <div className="flex gap-3">
-                 <div className="flex-1 relative">
-                    <input 
-                        type="tel" 
-                        maxLength={4} 
-                        value={captchaInput} 
-                        onChange={e => setCaptchaInput(e.target.value)} 
-                        className={`w-full px-5 py-4 ${currentLang === 'en' ? 'pl-12' : 'pr-12'} rounded-xl bg-gray-50 border border-gray-100 focus:border-[#058B8C] outline-none font-bold text-gray-800 tracking-widest text-center`}
-                        placeholder="_ _ _ _"
-                        required
-                    />
-                    <CheckCircle className={`absolute ${currentLang === 'en' ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 text-gray-400`} size={20} />
-                 </div>
-                 <div 
-                    className="bg-[#f0f9ff] border border-blue-100 rounded-xl px-4 flex items-center justify-center gap-3 min-w-[120px] select-none cursor-pointer hover:bg-blue-50 transition" 
-                    onClick={generateCaptcha} 
-                    title="Refresh"
-                 >
-                    <span className="font-mono text-xl font-black text-blue-600 tracking-widest">{generatedCaptcha}</span>
-                    <RefreshCw size={16} className="text-blue-400"/>
-                 </div>
+            <label className={`text-sm font-bold text-gray-700 block ${alignClass}`}>{t.captcha}</label>
+            <div className="flex gap-3">
+              <div className="flex-1 relative">
+                <input
+                  type="tel"
+                  maxLength={4}
+                  value={captchaInput}
+                  onChange={e => setCaptchaInput(e.target.value)}
+                  className={`w-full px-5 py-4 ${currentLang === 'en' ? 'pl-12' : 'pr-12'} rounded-xl bg-gray-50 border border-gray-100 focus:border-[#058B8C] outline-none font-bold text-gray-800 tracking-widest text-center`}
+                  placeholder="_ _ _ _"
+                  required
+                />
+                <CheckCircle className={`absolute ${currentLang === 'en' ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 text-gray-400`} size={20} />
               </div>
+              <div
+                className="bg-[#f0f9ff] border border-blue-100 rounded-xl px-4 flex items-center justify-center gap-3 min-w-[120px] select-none cursor-pointer hover:bg-blue-50 transition"
+                onClick={generateCaptcha}
+                title="Refresh"
+              >
+                <span className="font-mono text-xl font-black text-blue-600 tracking-widest">{generatedCaptcha}</span>
+                <RefreshCw size={16} className="text-blue-400" />
+              </div>
+            </div>
           </div>
 
-          <button 
+          <button
             type="submit"
             disabled={loading}
             className="w-full bg-[#058B8C] hover:bg-[#047070] text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-[#058B8C]/20 transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-70"
           >
             {loading ? (
-                <Loader2 size={24} className="animate-spin" />
+              <Loader2 size={24} className="animate-spin" />
             ) : (
-                <>
-                    {t.btn} <ArrowRight size={20} className={currentLang === 'en' ? "" : "rotate-180"}/>
-                </>
+              <>
+                {t.btn} <ArrowRight size={20} className={currentLang === 'en' ? "" : "rotate-180"} />
+              </>
             )}
           </button>
 
-          <button 
-            type="button" 
+          <button
+            type="button"
             onClick={() => setPage('home')}
             className="w-full bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 py-3 rounded-xl font-bold transition flex items-center justify-center gap-2"
           >
-              {t.back}
+            {t.back}
           </button>
         </form>
       </div>
