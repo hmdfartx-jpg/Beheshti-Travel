@@ -8,17 +8,22 @@ export default function SEO({ title, description, keywords, image, lang = 'dr' }
     const location = useLocation();
 
     const defaultTitle = lang === 'en'
-        ? 'Beheshti Group & Travel Agency'
-        : (lang === 'ps' ? 'بهشتي ګروپ او سیاحتي شرکت' : 'بهشتی گروپ | آژانس مسافرتی بهشتی تراول');
+        ? 'Beheshti Travel Agency & Beheshti Group | شرکت سیاحتی بهشتی'
+        : (lang === 'ps'
+            ? 'بهشتي سیاحتي شرکت او بهشتي ګروپ | شرکت سیاحتی بهشتی'
+            : 'شرکت سیاحتی بهشتی | بهشتی گروپ و آژانس مسافرتی بهشتی تراول');
 
     const defaultDesc = lang === 'en'
-        ? 'Beheshti Group (Beheshti Travel): Online flight ticket booking, visa services, scholarships, and cargo services in Afghanistan.'
+        ? 'Official website of Beheshti Travel Agency (Beheshti Group - شرکت سیاحتی بهشتی): Online flight ticket booking, visa services, scholarships, and cargo services in Kabul, Afghanistan.'
         : (lang === 'ps'
-            ? 'بهشتي ګروپ (بهشتي ټراول): د الوتکې ټکټونو آنلاین بکینګ، د ویزې خدمات، تحصیلي بورسونه او کارګو خدمات.'
-            : 'بهشتی گروپ (بهشتی تراول)؛ رزرو آنلاین تکت طیاره، اخذ ویزا، بورسیه تحصیلی و خدمات کارگو در افغانستان.');
+            ? 'د بهشتي سیاحتي شرکت (بهشتي ګروپ / بهشتي ټراول) رسمي ویب پاڼه: د الوتکې ټکټونو آنلاین بکینګ، د ویزې خدمات، تحصیلي بورسونه او کارګو خدمات.'
+            : 'وب‌سایت رسمی شرکت سیاحتی بهشتی (بهشتی گروپ / بهشتی تراول)؛ رزرو آنلاین تکت طیاره، اخذ ویزا، بورسیه تحصیلی و خدمات کارگو در کابل و سراسر افغانستان.');
+
+    const defaultKeywords = 'شرکت سیاحتی بهشتی, شرکت سیاحتی و توریستی بهشتی, بهشتی تراول, بهشتی گروپ, آژانس مسافرتی بهشتی, تکت طیاره کابل, ویزای ایران, ویزای پاکستان, ویزای ترکیه, بورسیه تحصیلی, کارگو افغانستان, Beheshti Travel, Beheshti Group';
 
     const finalTitle = title ? `${title} | ${defaultTitle}` : defaultTitle;
     const finalDesc = description || defaultDesc;
+    const finalKeywords = keywords ? `${keywords}, ${defaultKeywords}` : defaultKeywords;
 
     // آدرس استاندارد و یکتا بر اساس دامنه اصلی beheshtigroup.com
     const canonicalUrl = `${PRIMARY_DOMAIN}${location.pathname === '/' ? '' : location.pathname}`;
@@ -43,13 +48,13 @@ export default function SEO({ title, description, keywords, image, lang = 'dr' }
         };
 
         setMetaTag('name', 'description', finalDesc);
-        if (keywords) setMetaTag('name', 'keywords', keywords);
+        setMetaTag('name', 'keywords', finalKeywords);
 
         // تگ‌های Open Graph
         setMetaTag('property', 'og:title', finalTitle);
         setMetaTag('property', 'og:description', finalDesc);
         setMetaTag('property', 'og:url', canonicalUrl);
-        setMetaTag('property', 'og:site_name', 'Beheshti Group & Travel');
+        setMetaTag('property', 'og:site_name', 'شرکت سیاحتی بهشتی | Beheshti Travel & Group');
         setMetaTag('property', 'og:type', 'website');
         if (image) setMetaTag('property', 'og:image', image);
 
@@ -62,7 +67,7 @@ export default function SEO({ title, description, keywords, image, lang = 'dr' }
         }
         canonical.setAttribute('href', canonicalUrl);
 
-    }, [finalTitle, finalDesc, keywords, image, lang, canonicalUrl]);
+    }, [finalTitle, finalDesc, finalKeywords, image, lang, canonicalUrl]);
 
     return null;
 }
